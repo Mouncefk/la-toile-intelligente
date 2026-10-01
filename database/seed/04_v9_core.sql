@@ -1,0 +1,8 @@
+CREATE TABLE IF NOT EXISTS traveler_profiles (id BIGSERIAL PRIMARY KEY, country_id BIGINT REFERENCES countries(id), locale TEXT, created_at TIMESTAMPTZ NOT NULL DEFAULT now());
+CREATE TABLE IF NOT EXISTS traveler_requests_v9 (id BIGSERIAL PRIMARY KEY, traveler_id BIGINT REFERENCES traveler_profiles(id), country_id BIGINT REFERENCES countries(id), raw_text TEXT NOT NULL, intent JSONB NOT NULL DEFAULT '{}'::jsonb, status TEXT NOT NULL DEFAULT 'draft', created_at TIMESTAMPTZ NOT NULL DEFAULT now());
+CREATE TABLE IF NOT EXISTS tourism_categories (id BIGSERIAL PRIMARY KEY, country_id BIGINT REFERENCES countries(id), slug TEXT NOT NULL, label TEXT NOT NULL, kind TEXT NOT NULL DEFAULT 'category', UNIQUE(country_id,slug));
+CREATE TABLE IF NOT EXISTS professional_profiles_v9 (id BIGSERIAL PRIMARY KEY, country_id BIGINT REFERENCES countries(id), name TEXT NOT NULL, latitude DOUBLE PRECISION, longitude DOUBLE PRECISION, verified BOOLEAN NOT NULL DEFAULT false, active BOOLEAN NOT NULL DEFAULT true);
+CREATE TABLE IF NOT EXISTS professional_services_v9 (professional_id BIGINT REFERENCES professional_profiles_v9(id) ON DELETE CASCADE, category_id BIGINT REFERENCES tourism_categories(id) ON DELETE CASCADE, PRIMARY KEY(professional_id,category_id));
+CREATE TABLE IF NOT EXISTS institutional_profiles_v9 (id BIGSERIAL PRIMARY KEY, country_id BIGINT REFERENCES countries(id), name TEXT NOT NULL, scope TEXT, active BOOLEAN NOT NULL DEFAULT true);
+CREATE INDEX IF NOT EXISTS idx_travel_req_country ON traveler_requests_v9(country_id);
+CREATE INDEX IF NOT EXISTS idx_prof_country ON professional_profiles_v9(country_id);

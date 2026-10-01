@@ -1,0 +1,5 @@
+{
+  "MAR": {"name":"Maroc","iso2":"MA","currency":{"code":"MAD","symbol":"DH"},"languages":["fr","ar","en"],"categories":["Artisanat","Tourisme senior","Culture & Patrimoine","Nature","Expériences","Santé & Sécurité"]},
+  "FRA": {"name":"France","iso2":"FR","currency":{"code":"EUR","symbol":"€"},"languages":["fr","en"],"categories":["Artisanat","Tourisme senior","Culture & Patrimoine","Nature","Expériences","Santé & Sécurité"]},
+  "JPN": {"name":"Japon","iso2":"JP","currency":{"code":"JPY","symbol":"¥"},"languages":["ja","en"],"categories":["Artisanat","Tourisme senior","Culture & Patrimoine","Nature","Expériences","Santé & Sécurité"]}
+}
