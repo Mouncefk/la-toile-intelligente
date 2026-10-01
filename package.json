@@ -1,1 +1,20 @@
-{"name":"la-toile-global-core-v16","private":true,"version":"16.0.0","type":"module","scripts":{"dev":"vite","build":"vite build","server":"node server/index.js"},"dependencies":{"@vitejs/plugin-react":"latest","vite":"latest","react":"latest","react-dom":"latest","express":"latest","pg":"latest"},"devDependencies":{}}
+{
+  "name": "la-toile-global-core-v27",
+  "private": true,
+  "version": "27.0.0",
+  "type": "module",
+  "scripts": {
+    "dev": "vite",
+    "build": "vite build",
+    "server": "node server/index.js"
+  },
+  "dependencies": {
+    "@vitejs/plugin-react": "latest",
+    "vite": "latest",
+    "react": "latest",
+    "react-dom": "latest",
+    "express": "latest",
+    "pg": "latest"
+  },
+  "devDependencies": {}
+}
