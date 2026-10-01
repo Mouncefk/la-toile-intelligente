@@ -71,3 +71,20 @@ Il vérifie :
 - l'activation de PostGIS.
 
 Ce contrôle doit être exécuté dans l'environnement PostgreSQL/PostGIS réel avant la fusion. Il ne constitue pas à lui seul un test fonctionnel de bout en bout.
+
+
+## Scénario d'intégration transactionnel
+
+Une validation plus proche du parcours réel est disponible :
+
+```powershell
+$env:DATABASE_URL="postgresql://latoile:latoile_dev@localhost:5432/la_toile"
+npm run test:v27:integration
+```
+
+Le scénario crée temporairement un voyageur, une demande, une session, un professionnel, une réponse et une comparaison, puis vérifie :
+- une décision confirmée ;
+- la présence d'un élément dans le coffre ;
+- l'absence de réservation automatique.
+
+La transaction est volontairement annulée (`ROLLBACK`) à la fin : les données de test ne restent pas en base.
