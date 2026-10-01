@@ -70,3 +70,10 @@ Voir `KNOWLEDGE_V25.md` et `database/seed/20_v25_knowledge_content.sql`.
 
 ## V26 — Guide Virtuel / Contextual Travel Companion
 Voir `GUIDE_V26.md` et `database/seed/21_v26_guide_companion.sql`.
+
+
+## V27 — Experience Core
+
+V27 ajoute un orchestrateur d'expérience transversal au-dessus des moteurs V9–V26. Le parcours cible est : Globe → Pays → Intention → Qualification → Territoire → Matching → Réponses professionnelles → Comparaison → Décision du voyageur → Coffre → Voyage.
+
+La branche `v27-experience-core` conserve `main` intact et prépare l'intégration via `server/index-v27.js`. Endpoint V27 : `/api/experience/v27`.
