@@ -57,4 +57,30 @@ const invalidRadius = await call('/request/1/dispatch', {
 });
 assert(invalidRadius.response.status === 400, 'Invalid dispatch radius should be rejected');
 
+const unconfirmedDecision = await call('/request/1/decision', {
+  method: 'POST',
+  body: JSON.stringify({
+    sessionId: 1,
+    decision: 'selected',
+    confirmed: false
+  })
+});
+assert(unconfirmedDecision.response.status === 400, 'Unconfirmed decision should be rejected');
+
+const missingSelection = await call('/request/1/decision', {
+  method: 'POST',
+  body: JSON.stringify({
+    sessionId: 1,
+    decision: 'selected',
+    confirmed: true
+  })
+});
+assert(missingSelection.response.status === 400, 'Selected decision without responseId should be rejected');
+
+const unconfirmedHandoff = await call('/session/1/handoff', {
+  method: 'POST',
+  body: JSON.stringify({ confirmed: false })
+});
+assert(unconfirmedHandoff.response.status === 400, 'Unconfirmed handoff should be rejected');
+
 console.log('V27 contract smoke checks passed.');
