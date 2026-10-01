@@ -1,0 +1,18 @@
+name: V27 validation
+
+on:
+  push:
+    branches: [v27-experience-core]
+  pull_request:
+    branches: [main]
+
+jobs:
+  syntax:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 24
+      - name: Validate V27 JavaScript syntax
+        run: npm run test:v27
