@@ -26,6 +26,8 @@ Valider le parcours orchestré avant toute fusion de V27 vers `main`.
 | Comparaison avec réponse d'une autre demande | HTTP 400 |
 | Décision `selected` sans `responseId` | HTTP 400 |
 | Décision sans confirmation | HTTP 400 |
+| Décision `selected` sans `responseId` | HTTP 400 |
+| Handoff sans confirmation | HTTP 400 |
 | Handoff sans décision confirmée | HTTP 400 |
 | Handoff avec décision confirmée | autorisé |
 | Handoff créant une réservation automatiquement | interdit : aucune réservation n'est créée par V27 |
