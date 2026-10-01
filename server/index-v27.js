@@ -30,7 +30,7 @@ function scoreCandidate(row,intent){
  return {score:Math.max(0,Math.min(100,score)),reasons};
 }
 
-app.get('/api/health',(req,res)=>res.json({ok:true,version:'17.0.0',engine:'intent+matching+responses+professional-space+traveler-vault+journey+reservations+pro-network+b2b-rfq+institutional-dashboard'}));
+app.get('/api/health',(req,res)=>res.json({ok:true,version:'27.0.0',engine:'experience-orchestrator-v27+intent+matching+responses+professional-space+traveler-vault+journey+reservations+pro-network+b2b-rfq+institutional-dashboard'}));
 
 app.get('/api/institutions/v17/:institutionId/dashboard',async(req,res)=>{
  try{
@@ -231,7 +231,7 @@ app.get('/api/pro-network/v16/:professionalId/rfqs', async (req,res)=>{try{const
 app.post('/api/pro-network/v16/rfqs/:rfqId/responses', async (req,res)=>{const {professionalId,message,amount=null,currencyCode=null,availabilityStart=null,availabilityEnd=null}=req.body;if(!professionalId||!message?.trim())return res.status(400).json({error:'professionalId_message_required'});try{const q=await pool.query(`INSERT INTO b2b_rfq_responses_v16(rfq_id,professional_id,message,amount,currency_code,availability_start,availability_end) SELECT $1,$2,$3,$4,$5,$6,$7 WHERE EXISTS(SELECT 1 FROM b2b_rfq_recipients_v16 WHERE rfq_id=$1 AND professional_id=$2) RETURNING *`,[req.params.rfqId,professionalId,message,amount,currencyCode,availabilityStart,availabilityEnd]);if(!q.rows[0])return res.status(403).json({error:'not_invited'});await pool.query(`UPDATE b2b_rfq_recipients_v16 SET status='responded' WHERE rfq_id=$1 AND professional_id=$2`,[req.params.rfqId,professionalId]);res.status(201).json(q.rows[0])}catch(e){res.status(500).json({error:e.message})}});
 app.get('/api/pro-network/v16/rfqs/:rfqId/responses', async (req,res)=>{try{const q=await pool.query(`SELECT r.*,p.name AS professional_name FROM b2b_rfq_responses_v16 r JOIN professionals p ON p.id=r.professional_id WHERE r.rfq_id=$1 ORDER BY r.created_at DESC`,[req.params.rfqId]);res.json({responses:q.rows})}catch(e){res.status(500).json({error:e.message})}});
 
-app.listen(process.env.PORT||4300,()=>console.log('La Toile V16 API listening'));
+app.listen(process.env.PORT||4300,()=>console.log('La Toile V27 API listening'));
 
 // V14 — Traveler Vault / personal travel space
 app.get('/api/travelers/v14/:travelerId/vault', async (req,res)=>{
