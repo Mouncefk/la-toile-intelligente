@@ -19,6 +19,8 @@ Valider le parcours orchestré avant toute fusion de V27 vers `main`.
 | Test | Résultat attendu |
 |---|---|
 | Session sans `rawText` | HTTP 400 |
+| Création de demande sur session inexistante/invalide | HTTP 400/404 |
+| Dispatch avec rayon invalide | HTTP 400 |
 | Dispatch avec `confirmed=false` | HTTP 400 |
 | Comparaison avec liste vide | HTTP 400 |
 | Comparaison avec réponse d'une autre demande | HTTP 400 |
