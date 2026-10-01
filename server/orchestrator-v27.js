@@ -329,9 +329,28 @@ v27Router.post('/request/:id/dispatch', async (req, res) => {
   }
 
   try {
+    const radiusKm = Number(req.body.radiusKm || 100);
+    if (!Number.isFinite(radiusKm) || radiusKm <= 0) {
+      return res.status(400).json({ error: 'valid_radiusKm_required' });
+    }
+
+    const requestQ = await pool.query(
+      'SELECT id FROM traveler_requests_v12 WHERE id=$1',
+      [requestId]
+    );
+    if (!requestQ.rows[0]) {
+      return res.status(404).json({ error: 'request_not_found' });
+    }
+
     const q = await pool.query(
-      'SELECT dispatch_request_v12($1,$2) AS dispatched',
-      [requestId, Number(req.body.radiusKm || 100)]
+      `INSERT INTO request_dispatches_v12
+       (request_id,professional_id,match_score,distance_km)
+       SELECT m.request_id,m.professional_id,m.score,m.distance_km
+       FROM traveler_match_results_v11 m
+       WHERE m.request_id=$1
+         AND m.distance_km <= $2
+       ON CONFLICT (request_id,professional_id) DO NOTHING`,
+      [requestId, radiusKm]
     );
 
     await pool.query(
@@ -350,7 +369,7 @@ v27Router.post('/request/:id/dispatch', async (req, res) => {
 
     res.json({
       requestId,
-      dispatched: Number(q.rows[0].dispatched),
+      dispatched: q.rowCount,
       confirmed: true,
       next: 'professional_responses'
     });
