@@ -27,6 +27,12 @@ const emptySession = await call('/session', {
 });
 assert(emptySession.response.status === 400, 'Empty session should be rejected');
 
+const incompleteRequest = await call('/session/999999/request', {
+  method: 'POST',
+  body: JSON.stringify({ rawText: 'Je cherche quelque chose.' })
+});
+assert([400,404].includes(incompleteRequest.response.status), 'Request on missing session should be rejected');
+
 const unconfirmedDispatch = await call('/request/1/dispatch', {
   method: 'POST',
   body: JSON.stringify({ confirmed: false })
@@ -38,5 +44,17 @@ const invalidComparison = await call('/request/1/compare', {
   body: JSON.stringify({ responseIds: [] })
 });
 assert(invalidComparison.response.status === 400, 'Empty comparison should be rejected');
+
+const invalidResponseIds = await call('/request/1/compare', {
+  method: 'POST',
+  body: JSON.stringify({ responseIds: [0, 0] })
+});
+assert(invalidResponseIds.response.status === 400, 'Invalid response IDs should be rejected');
+
+const invalidRadius = await call('/request/1/dispatch', {
+  method: 'POST',
+  body: JSON.stringify({ confirmed: true, radiusKm: 0 })
+});
+assert(invalidRadius.response.status === 400, 'Invalid dispatch radius should be rejected');
 
 console.log('V27 contract smoke checks passed.');
