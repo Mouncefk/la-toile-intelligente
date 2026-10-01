@@ -7,7 +7,8 @@
     "dev": "vite",
     "build": "vite build",
     "server": "node server/index-v27.js",
-    "test:v27": "node --check server/orchestrator-v27.js && node --check server/index-v27.js && node --check scripts/test-v27-contract.mjs"
+    "test:v27": "node --check server/orchestrator-v27.js && node --check server/index-v27.js && node --check scripts/test-v27-contract.mjs",
+    "test:v27:db": "node scripts/test-v27-db.mjs"
   },
   "dependencies": {
     "@vitejs/plugin-react": "latest",
