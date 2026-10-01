@@ -54,3 +54,20 @@ Ne fusionner V27 dans `main` qu'après validation du parcours complet sur une ba
 - un handoff vers le coffre ;
 - éventuellement la création d'un voyage ;
 - vérification qu'aucune réservation n'est créée implicitement.
+
+
+## Validation PostgreSQL/PostGIS
+
+Un contrôle de contrat base de données est disponible :
+
+```powershell
+$env:DATABASE_URL="postgresql://latoile:latoile_dev@localhost:5432/la_toile"
+npm run test:v27:db
+```
+
+Il vérifie :
+- les tables V11/V12/V14/V15/V27 nécessaires à l'orchestrateur ;
+- les fonctions `match_professionals_v11` et `dispatch_request_v12` ;
+- l'activation de PostGIS.
+
+Ce contrôle doit être exécuté dans l'environnement PostgreSQL/PostGIS réel avant la fusion. Il ne constitue pas à lui seul un test fonctionnel de bout en bout.
