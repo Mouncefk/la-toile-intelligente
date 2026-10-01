@@ -172,6 +172,15 @@ v27Router.post('/session/:id/request', async (req, res) => {
     const requestText = (rawText || session.raw_text || '').trim();
     if (!requestText) return res.status(400).json({ error: 'rawText_required' });
 
+    const missingFields = missing(intent);
+    if (missingFields.length) {
+      return res.status(400).json({
+        error: 'qualification_incomplete',
+        missingFields,
+        next: 'qualification'
+      });
+    }
+
     const q = await client.query(
       `INSERT INTO traveler_requests_v12
        (country_id,traveler_id,raw_text,intent,status)
@@ -419,15 +428,23 @@ v27Router.post('/request/:id/compare', async (req, res) => {
     return res.status(400).json({ error: 'responseIds_required' });
   }
 
+  const normalizedResponseIds = responseIds.map(Number);
+  if (
+    normalizedResponseIds.some((id) => !Number.isInteger(id) || id <= 0) ||
+    new Set(normalizedResponseIds).size !== normalizedResponseIds.length
+  ) {
+    return res.status(400).json({ error: 'invalid_responseIds' });
+  }
+
   try {
     const valid = await pool.query(
       `SELECT r.id
        FROM professional_responses_v12 r
        JOIN request_dispatches_v12 d ON d.id=r.dispatch_id
        WHERE d.request_id=$1 AND r.id = ANY($2::bigint[])`,
-      [requestId, responseIds.map(Number)]
+      [requestId, normalizedResponseIds]
     );
-    if (valid.rowCount !== responseIds.length) {
+    if (valid.rowCount !== normalizedResponseIds.length) {
       return res.status(400).json({ error: 'response_not_in_request' });
     }
 
@@ -436,7 +453,7 @@ v27Router.post('/request/:id/compare', async (req, res) => {
        (request_id,traveler_id,compared_response_ids)
        VALUES($1,$2,$3)
        RETURNING *`,
-      [requestId, travelerId, responseIds]
+      [requestId, travelerId, normalizedResponseIds]
     );
 
     await pool.query(
