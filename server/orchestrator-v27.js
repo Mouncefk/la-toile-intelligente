@@ -505,6 +505,13 @@ v27Router.post('/request/:id/decision', async (req, res) => {
       });
     }
 
+    if (!['comparison', 'traveler_decision'].includes(session.stage)) {
+      await client.query('ROLLBACK');
+      return res.status(400).json({
+        error: 'comparison_required'
+      });
+    }
+
     if (responseId) {
       const valid = await client.query(
         `SELECT r.id
@@ -598,6 +605,12 @@ v27Router.post('/session/:id/handoff', async (req, res) => {
       return res.status(400).json({ error: 'traveler_decision_required' });
     }
 
+    const effectiveTravelerId = travelerId ?? session.traveler_id;
+    if (!effectiveTravelerId) {
+      await client.query('ROLLBACK');
+      return res.status(400).json({ error: 'travelerId_required_for_handoff' });
+    }
+
     const decisionCheck = await client.query(
       `SELECT id
        FROM experience_decisions_v27
@@ -617,7 +630,7 @@ v27Router.post('/session/:id/handoff', async (req, res) => {
          (traveler_id,item_type,title,summary,country_iso3,metadata,is_private)
          VALUES($1,'request',$2,$3,$4,$5,true)`,
         [
-          travelerId ?? session.traveler_id,
+          effectiveTravelerId,
           'Demande La Toile',
           session.raw_text || 'Demande validée',
           countryIso3 || session.country_iso3,
@@ -642,7 +655,7 @@ v27Router.post('/session/:id/handoff', async (req, res) => {
          VALUES($1,$2,$3,'planning',$4)
          RETURNING *`,
         [
-          travelerId ?? session.traveler_id,
+          effectiveTravelerId,
           tripTitle,
           countryIso3 || session.country_iso3,
           JSON.stringify({
