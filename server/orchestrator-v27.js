@@ -396,7 +396,22 @@ v27Router.post('/request/:id/compare', async (req, res) => {
   const requestId = Number(req.params.id);
   const { travelerId = null, responseIds = [] } = req.body;
 
+  if (!Array.isArray(responseIds) || responseIds.length === 0) {
+    return res.status(400).json({ error: 'responseIds_required' });
+  }
+
   try {
+    const valid = await pool.query(
+      `SELECT r.id
+       FROM professional_responses_v12 r
+       JOIN request_dispatches_v12 d ON d.id=r.dispatch_id
+       WHERE d.request_id=$1 AND r.id = ANY($2::bigint[])`,
+      [requestId, responseIds.map(Number)]
+    );
+    if (valid.rowCount !== responseIds.length) {
+      return res.status(400).json({ error: 'response_not_in_request' });
+    }
+
     const q = await pool.query(
       `INSERT INTO response_comparisons_v12
        (request_id,traveler_id,compared_response_ids)
@@ -437,6 +452,9 @@ v27Router.post('/request/:id/decision', async (req, res) => {
       error: 'explicit_confirmation_required',
       message: 'La décision finale doit être explicitement confirmée par le voyageur.'
     });
+  }
+  if (decision === 'selected' && !responseId) {
+    return res.status(400).json({ error: 'responseId_required_for_selection' });
   }
 
   const client = await pool.connect();
@@ -537,6 +555,24 @@ v27Router.post('/session/:id/handoff', async (req, res) => {
     if (!session) {
       await client.query('ROLLBACK');
       return res.status(404).json({ error: 'session_not_found' });
+    }
+
+    if (session.stage !== 'traveler_decision') {
+      await client.query('ROLLBACK');
+      return res.status(400).json({ error: 'traveler_decision_required' });
+    }
+
+    const decisionCheck = await client.query(
+      `SELECT id
+       FROM experience_decisions_v27
+       WHERE session_id=$1 AND request_id=$2 AND confirmed=true
+       ORDER BY created_at DESC
+       LIMIT 1`,
+      [sessionId, session.request_id]
+    );
+    if (!decisionCheck.rows[0]) {
+      await client.query('ROLLBACK');
+      return res.status(400).json({ error: 'journey_handoff_not_ready' });
     }
 
     if (createVaultItem) {
