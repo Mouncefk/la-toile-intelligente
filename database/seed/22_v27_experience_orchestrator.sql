@@ -20,6 +20,7 @@ CREATE TABLE IF NOT EXISTS experience_decisions_v27 (
   session_id BIGINT REFERENCES experience_sessions_v27(id) ON DELETE CASCADE,
   traveler_id BIGINT,
   request_id BIGINT,
+  response_id BIGINT,
   decision TEXT NOT NULL,
   confirmed BOOLEAN NOT NULL DEFAULT false,
   metadata JSONB NOT NULL DEFAULT '{}'::jsonb,
