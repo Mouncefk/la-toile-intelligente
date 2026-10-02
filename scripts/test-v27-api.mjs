@@ -10,6 +10,7 @@ const databaseUrl =
 
 const pool = new Pool({ connectionString: databaseUrl });
 let server;
+let travelerId = null;
 
 function assert(condition, message) {
   if (!condition) throw new Error(message);
@@ -68,7 +69,7 @@ try {
              'V27 API Test', 'fr')
      RETURNING traveler_id`
   );
-  const travelerId = traveler.rows[0].traveler_id;
+  travelerId = traveler.rows[0].traveler_id;
 
   const session = await call('/session', {
     method: 'POST',
