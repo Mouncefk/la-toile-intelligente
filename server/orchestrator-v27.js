@@ -528,8 +528,8 @@ v27Router.post('/request/:id/decision', async (req, res) => {
 
     const q = await client.query(
       `INSERT INTO experience_decisions_v27
-       (session_id,traveler_id,request_id,decision,confirmed,metadata)
-       VALUES($1,$2,$3,$4,true,$5)
+       (session_id,traveler_id,request_id,response_id,decision,confirmed,metadata)
+       VALUES($1,$2,$3,$4,$5,true,$6)
        RETURNING *`,
       [sessionId, travelerId ?? session.traveler_id, requestId, responseId, decision, metadata]
     );
