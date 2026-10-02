@@ -531,7 +531,7 @@ v27Router.post('/request/:id/decision', async (req, res) => {
        (session_id,traveler_id,request_id,decision,confirmed,metadata)
        VALUES($1,$2,$3,$4,true,$5)
        RETURNING *`,
-      [sessionId, travelerId ?? session.traveler_id, requestId, decision, metadata]
+      [sessionId, travelerId ?? session.traveler_id, requestId, responseId, decision, metadata]
     );
 
     await client.query(
