@@ -1,0 +1,44 @@
+<!doctype html>
+<html lang="fr">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>La Toile V27 — Experience Core</title>
+<style>
+body{margin:0;background:#05070b;color:#eef3f7;font:15px system-ui;padding:32px}
+main{max-width:980px;margin:auto}h1{font-size:38px;margin:8px 0 24px}
+.card{border:1px solid #263744;border-radius:20px;padding:22px;margin:14px 0;background:#0b1118}
+.flow{display:flex;flex-wrap:wrap;gap:8px}.flow b{padding:9px 12px;border:1px solid #2a4a59;border-radius:999px;font-size:12px}
+label{display:block;margin:12px 0 6px;color:#9eb0bb}input,textarea{width:100%;box-sizing:border-box;background:#070b10;color:#fff;border:1px solid #30424d;border-radius:10px;padding:11px}
+button{margin-top:14px;background:#dff7ff;color:#071018;border:0;border-radius:10px;padding:11px 16px;font-weight:700;cursor:pointer}
+pre{white-space:pre-wrap;background:#05080c;border-radius:12px;padding:14px;overflow:auto}
+.small{color:#9eb0bb;font-size:13px}
+</style>
+</head>
+<body><main>
+<div class="small">LA TOILE · V27 · EXPERIENCE CORE</div>
+<h1>Parcours voyageur intégré</h1>
+<div class="card"><h2>Globe → Pays → Intent → Qualification → Matching → Réponses → Comparaison → Décision → Coffre → Voyage</h2>
+<div class="flow"><b>Globe</b><b>Pays</b><b>Intention</b><b>Qualification</b><b>Territoire</b><b>Matching</b><b>Réponses</b><b>Comparaison</b><b>Décision</b><b>Coffre</b><b>Voyage</b></div></div>
+
+<div class="card"><h2>Tester l'Intent Engine V27</h2>
+<label>Adresse API V27</label><input id="base" value="/api/experience/v27">
+<label>Besoin du voyageur</label>
+<textarea id="raw" rows="4">Je cherche une expérience artisanale tranquille à Marrakech en octobre, avec un accompagnement pour mes parents seniors.</textarea>
+<button onclick="qualify()">Qualifier la demande</button>
+<pre id="out">En attente…</pre></div>
+
+<div class="card"><h2>Principe de décision</h2>
+<p>La Toile recherche, qualifie, organise, compare et explique.</p>
+<p><strong>Le voyageur décide.</strong> Les actions importantes nécessitent une confirmation explicite.</p>
+</div>
+<script>
+async function qualify(){
+ const out=document.getElementById('out'); out.textContent='Analyse…';
+ try{
+  const r=await fetch(document.getElementById('base').value+'/session',{method:'POST',headers:{'content-type':'application/json'},body:JSON.stringify({rawText:document.getElementById('raw').value})});
+  const j=await r.json(); out.textContent=JSON.stringify(j,null,2);
+ }catch(e){out.textContent='Connexion impossible : '+e.message+'\nLancer le serveur V27 puis ouvrir cette page depuis le même serveur.'}
+}
+</script>
+</main></body></html>
