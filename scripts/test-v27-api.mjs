@@ -3,6 +3,7 @@ import pg from 'pg';
 const { Pool } = pg;
 const port = Number(process.env.V27_API_TEST_PORT || 4377);
 const base = process.env.V27_BASE_URL || `http://localhost:${port}/api/experience/v27`;
+const apiRoot = process.env.V27_API_ROOT || `http://localhost:${port}/api`;
 const databaseUrl =
   process.env.DATABASE_URL ||
   'postgresql://latoile:latoile_dev@localhost:5432/la_toile';
@@ -12,6 +13,15 @@ let server;
 
 function assert(condition, message) {
   if (!condition) throw new Error(message);
+}
+
+async function callRoot(path, options = {}) {
+  const response = await fetch(apiRoot + path, {
+    headers: { 'content-type': 'application/json' },
+    ...options
+  });
+  const body = await response.json().catch(() => ({}));
+  return { response, body };
 }
 
 async function call(path, options = {}) {
@@ -119,7 +129,7 @@ try {
   assert(dispatchRow.rows[0], 'Dispatch row not found');
   const dispatchId = dispatchRow.rows[0].id;
 
-  const response = await call('/../responses/v12', {
+  const response = await callRoot('/responses/v12', {
     method: 'POST',
     body: JSON.stringify({
       dispatchId,
@@ -211,6 +221,13 @@ try {
   console.error(error.stack || error.message);
   process.exitCode = 1;
 } finally {
+  if (travelerId) {
+    await pool.query('DELETE FROM experience_decisions_v27 WHERE traveler_id=$1', [travelerId]);
+    await pool.query('DELETE FROM experience_sessions_v27 WHERE traveler_id=$1', [travelerId]);
+    await pool.query('DELETE FROM traveler_reservations_v15 WHERE traveler_id=$1', [travelerId]);
+    await pool.query('DELETE FROM traveler_vault_items_v14 WHERE traveler_id=$1', [travelerId]);
+    await pool.query('DELETE FROM traveler_profiles_v14 WHERE traveler_id=$1', [travelerId]);
+  }
   if (server) server.kill('SIGTERM');
   await pool.end();
 }
