@@ -1,6 +1,6 @@
-# La Toile — Global Core V17
+# La Toile — Global Core V27
 
-V17 extends V16 with the **Institutional Dashboard & Aggregated Insights layer**.
+V27 is the current integration branch, built on the V26 stable reference and adding the Experience Core orchestrator.
 
 ## Added in V17
 - institutional profiles
@@ -77,3 +77,30 @@ Voir `GUIDE_V26.md` et `database/seed/21_v26_guide_companion.sql`.
 V27 ajoute un orchestrateur d'expérience transversal au-dessus des moteurs V9–V26. Le parcours cible est : Globe → Pays → Intention → Qualification → Territoire → Matching → Réponses professionnelles → Comparaison → Décision du voyageur → Coffre → Voyage.
 
 La branche `v27-experience-core` conserve `main` intact et prépare l'intégration via `server/index-v27.js`. Endpoint V27 : `/api/experience/v27`.
+
+
+## Local PostgreSQL/PostGIS
+
+La branche V27 fournit maintenant `docker-compose.yml` pour démarrer une base PostgreSQL 16 + PostGIS. Les scripts `database/seed/` sont montés dans `/docker-entrypoint-initdb.d` et sont exécutés automatiquement lors de la **première** initialisation du volume.
+
+```bash
+git checkout v27-experience-core
+git pull origin v27-experience-core
+docker compose up -d
+```
+
+Pour reconstruire complètement la base locale après une initialisation incomplète :
+
+```bash
+docker compose down -v
+docker compose up -d
+```
+
+Puis valider :
+
+```bash
+npm run test:v27:db
+npm run test:v27:integration
+```
+
+> `docker compose down -v` supprime le volume local de cette configuration et donc la base qu'il contient. À utiliser uniquement pour une base de développement que l'on peut reconstruire à partir des seeds.
