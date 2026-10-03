@@ -240,43 +240,45 @@ v27Router.post('/request/:id/match', async (req, res) => {
     );
 
     const matches = matchesQ.rows.map((row) => {
-      let score = 100;
       const reasons = [];
       const distance = Number(row.distance_km || 0);
+      const radius = Math.max(1, Number(radiusKm));
+      let score = Math.max(0, Math.round(40 * (1 - Math.min(distance / radius, 1))));
 
-      if (distance <= 5) {
-        score += 20;
-        reasons.push('Très proche');
-      } else if (distance <= 20) {
-        score += 12;
-        reasons.push('À proximité');
-      } else if (distance <= 50) {
-        score += 5;
-        reasons.push('Dans le rayon recherché');
-      }
+      if (distance <= 5) reasons.push('Très proche');
+      else if (distance <= 20) reasons.push('À proximité');
+      else reasons.push('Dans le rayon sélectionné');
 
-      if (
-        intent.safety &&
-        row.service_label &&
-        /santé|sécurité|médec|pharm|urgence/i.test(row.service_label)
-      ) {
-        score += 25;
-        reasons.push('Santé & Sécurité compatible');
-      }
-
-      if (
-        intent.activity &&
-        row.service_label &&
-        row.service_label.toLowerCase().includes(intent.activity.toLowerCase())
-      ) {
-        score += 20;
+      const serviceLabel = String(row.service_label || '');
+      const activityMatch = Boolean(intent.activity && serviceLabel &&
+        serviceLabel.toLowerCase().includes(String(intent.activity).toLowerCase()));
+      if (activityMatch) {
+        score += 30;
         reasons.push('Spécialité compatible');
+      } else {
+        reasons.push('Spécialité non établie');
+      }
+
+      const safetyMatch = Boolean(intent.safety &&
+        /santé|sécurité|médec|pharm|urgence/i.test(serviceLabel));
+      if (safetyMatch) {
+        score += 20;
+        reasons.push('Santé & Sécurité compatible');
+      } else if (intent.safety) {
+        reasons.push('Santé & Sécurité non établie');
+      }
+
+      if (row.verified) {
+        score += 10;
+        reasons.push('Profil vérifié');
       }
 
       return {
         professional_id: row.professional_id,
+        professional_name: row.professional_name || 'Professionnel compatible',
+        verified: Boolean(row.verified),
         distance_km: distance,
-        service_label: row.service_label,
+        service_label: serviceLabel || 'Professionnel touristique',
         match_score: Math.max(0, Math.min(100, Math.round(score))),
         reasons
       };
