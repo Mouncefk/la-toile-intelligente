@@ -36,6 +36,8 @@ jobs:
       - run: npm run test:v28-5:v21-history-recommend
       - run: npm run test:v28-7:feedback
       - run: npm run test:v28-7:e2e
+      - name: Run V28.8 professional opportunity E2E
+        run: npm run test:v28-8:professional-opportunity
       - run: node --check server/index.js
       - run: node --check server/history-recommendation-v28-5.js
       - run: node --check server/recommendation-bridge-v28-5.js
