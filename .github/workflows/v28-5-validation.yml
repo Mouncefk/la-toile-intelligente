@@ -21,6 +21,7 @@ jobs:
       - run: npm run test:v28-5:history-context
       - run: npm run test:v28-5:recommendation-bridge
       - run: npm run test:v28-5:v21-adapter
+      - run: npm run test:v28-5:v21-history-recommend
       - run: node --check server/index.js
       - run: node --check server/history-recommendation-v28-5.js
       - run: node --check server/recommendation-bridge-v28-5.js
