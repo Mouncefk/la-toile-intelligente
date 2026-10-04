@@ -320,3 +320,17 @@ Le voyageur décide après réception des réponses pertinentes.
 
 > **La Toile fait le travail complexe en arrière-plan pour rendre le parcours simple en façade.**
 
+
+
+## 14. Interaction rule — positive AI commentary
+
+After every meaningful manual adjustment, the interface must let the AI comment on the choice without judging or directing the traveler.
+
+Preferred tone:
+- “👏 Excellent choix !”
+- “✨ Très bon choix !”
+- “👍 Ce choix correspond très bien à votre recherche.”
+- “ℹ️ À savoir : …”
+
+The AI may explain consequences and trade-offs, but must not frame the choice as an error or require the traveler to follow the recommendation.
+
