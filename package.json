@@ -14,7 +14,8 @@
     "test:v28-5:history": "node scripts/test-v28-5-history.mjs",
     "test:v28-5:history-context": "node scripts/test-v28-5-history-context.mjs",
     "test:v28-5:recommendation-bridge": "node scripts/test-v28-5-recommendation-bridge.mjs",
-    "test:v28-5:v21-adapter": "node scripts/test-v28-5-v21-adapter.mjs"
+    "test:v28-5:v21-adapter": "node scripts/test-v28-5-v21-adapter.mjs",
+    "test:v28-5:v21-history-recommend": "node scripts/test-v28-5-v21-history-recommend.mjs"
   },
   "dependencies": {
     "@vitejs/plugin-react": "latest",
