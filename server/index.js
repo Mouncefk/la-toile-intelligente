@@ -451,7 +451,9 @@ app.post('/api/ai/v21/recommendations/:recommendationId/reveal',async(req,res)=>
 });
 
 import { registerV29CommunicationRoutes } from './v29-communication.js';
+import { registerV29FileRoutes } from './v29-files.js';
 registerV29CommunicationRoutes({app,pool});
+registerV29FileRoutes({app,pool});
 
 export {app};
 if(process.env.V28_HISTORY_TEST_SERVER==='1'){const port=Number(process.env.PORT||4300);app.listen(port,()=>console.log(`history test server listening on ${port}`));}
