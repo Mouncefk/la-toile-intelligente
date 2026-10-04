@@ -22,7 +22,13 @@ const headers={'content-type':'application/json'};
     const {Client}=await import('pg');
     const db=new Client({connectionString:process.env.DATABASE_URL||'postgresql://latoile:latoile_dev@localhost:5432/la_toile'});
     await db.connect();
-    const ds=await db.query('SELECT id,professional_id FROM request_dispatches_v12 WHERE request_id=$1 ORDER BY id LIMIT 1',[dd.requestId]);
+    let ds=await db.query('SELECT id,professional_id FROM request_dispatches_v12 WHERE request_id=$1 ORDER BY id LIMIT 1',[dd.requestId]);
+    if(!ds.rows[0]){
+      const ps=await db.query('SELECT id FROM professionals ORDER BY id LIMIT 1');
+      assert(ps.rows[0],'no professional fixture available');
+      await db.query("INSERT INTO request_dispatches_v12(request_id,professional_id,match_score,distance_km,status) VALUES($1,$2,90,1,'sent') ON CONFLICT DO NOTHING",[dd.requestId,ps.rows[0].id]);
+      ds=await db.query('SELECT id,professional_id FROM request_dispatches_v12 WHERE request_id=$1 ORDER BY id LIMIT 1',[dd.requestId]);
+    }
     assert(ds.rows[0],'no dispatched professional available');
     await db.query("INSERT INTO professional_responses_v12(dispatch_id,professional_id,message) VALUES($1,$2,'Réponse de test V29.1') ON CONFLICT DO NOTHING",[ds.rows[0].id,ds.rows[0].professional_id]);
     await db.end();
