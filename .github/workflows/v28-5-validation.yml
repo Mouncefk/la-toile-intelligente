@@ -1,0 +1,26 @@
+name: V28.5 Validation
+
+on:
+  push:
+    branches:
+      - v28-5-travel-history
+  pull_request:
+    branches:
+      - v28-4-intelligent-search
+      - v28-5-travel-history
+
+jobs:
+  history-context:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+      - run: npm install
+      - run: npm run test:v28-5:history-context
+      - run: npm run test:v28-5:recommendation-bridge
+      - run: npm run test:v28-5:v21-adapter
+      - run: node --check server/index.js
+      - run: node --check server/history-recommendation-v28-5.js
+      - run: node --check server/recommendation-bridge-v28-5.js

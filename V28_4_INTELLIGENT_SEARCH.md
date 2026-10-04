@@ -334,3 +334,22 @@ Preferred tone:
 
 The AI may explain consequences and trade-offs, but must not frame the choice as an error or require the traveler to follow the recommendation.
 
+
+
+## V28.5 — Historique de voyage comme signal de personnalisation
+
+L’historique de voyage peut être pris en compte lorsqu’il existe, mais il reste un **signal souple** : il éclaire la personnalisation sans définir le voyageur ni ses préférences actuelles.
+
+### Règle de formulation
+
+La Toile doit rester factuelle et neutre. Formulation de référence :
+
+> « Parmi vos précédentes expériences de voyage, certaines étaient balnéaires. Souhaitez-vous retrouver ce type d’expérience ou découvrir autre chose cette fois-ci ? »
+
+Ne jamais transformer automatiquement une observation historique en préférence actuelle. Une expérience passée, une recherche passée ou un comportement passé ne constitue pas à lui seul une préférence déclarée.
+
+### Principe produit
+
+**L’historique éclaire la conversation, mais ne définit jamais le voyageur.**
+
+Le voyageur peut choisir de ne pas utiliser son historique pour la personnalisation. Les données sensibles de « Ma santé » restent séparées et ne doivent pas être utilisées comme simple signal de recommandation.

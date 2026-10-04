@@ -10,7 +10,12 @@
     "test:v27": "node --check server/orchestrator-v27.js && node --check server/index-v27.js && node --check scripts/test-v27-contract.mjs",
     "test:v27:db": "node scripts/test-v27-db.mjs",
     "test:v27:integration": "node scripts/test-v27-integration-db.mjs",
-    "test:v27:api": "node scripts/test-v27-api.mjs"
+    "test:v27:api": "node scripts/test-v27-api.mjs",
+    "test:v28-5:history": "node scripts/test-v28-5-history.mjs",
+    "test:v28-5:history-context": "node scripts/test-v28-5-history-context.mjs",
+    "test:v28-5:recommendation-bridge": "node scripts/test-v28-5-recommendation-bridge.mjs",
+    "test:v28-5:v21-adapter": "node scripts/test-v28-5-v21-adapter.mjs",
+    "test:v28-5:v21-history-recommend": "node scripts/test-v28-5-v21-history-recommend.mjs"
   },
   "dependencies": {
     "@vitejs/plugin-react": "latest",
