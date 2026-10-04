@@ -18,7 +18,8 @@
     "test:v28-5:v21-history-recommend": "node scripts/test-v28-5-v21-history-recommend.mjs",
     "test:v28-7:feedback": "node scripts/test-v28-7-feedback.mjs",
     "test:v28-7:e2e": "node scripts/test-v28-7-e2e.mjs",
-    "test:v28-8:professional-opportunity": "node scripts/test-v28-8-professional-opportunity.mjs"
+    "test:v28-8:professional-opportunity": "node scripts/test-v28-8-professional-opportunity.mjs",
+    "test:v28-8:opportunity-dispatch": "node scripts/test-v28-8-opportunity-dispatch.mjs"
   },
   "dependencies": {
     "@vitejs/plugin-react": "latest",
