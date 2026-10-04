@@ -18,6 +18,16 @@ jobs:
         with:
           node-version: 20
       - run: npm install
+      - name: Start PostgreSQL/PostGIS
+        run: docker compose up -d db
+      - name: Wait for database
+        run: |
+          for i in {1..30}; do
+            docker compose exec -T db pg_isready -U latoile -d la_toile && exit 0
+            sleep 2
+          done
+          docker compose logs db
+          exit 1
       - run: npm run test:v28-5:history-context
       - run: npm run test:v28-5:recommendation-bridge
       - run: npm run test:v28-5:v21-adapter
