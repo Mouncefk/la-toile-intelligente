@@ -417,5 +417,38 @@ app.get('/api/travelers/v28-5/history',async(req,res)=>{
  }catch(e){res.status(500).json({error:e.message})}
 });
 
+ 
+// V29 — anonymous-by-default professional view + explicit identity reveal
+app.get('/api/professionals/v29/requests/:publicRequestId',async(req,res)=>{
+ try{
+  const publicId=String(req.params.publicRequestId||'').trim();
+  if(!/^LTREQ-[0-9]+$/.test(publicId))return res.status(400).json({error:'public_request_id_invalid'});
+  const requestId=Number(publicId.slice(6));
+  const q=await pool.query("SELECT r.id,r.country_id,r.intent,r.status,o.service_needs,o.location,o.scope FROM traveler_requests_v12 r JOIN ai_recommendation_opportunities_v28_8 o ON o.request_id=r.id WHERE r.id=$1",[requestId]);
+  if(!q.rows[0])return res.status(404).json({error:'public_request_not_found'});
+  const x=q.rows[0],location=x.location&&typeof x.location==='object'?x.location:{},safeLocation={};
+  for(const k of ['countryIso3','region','city','zone'])if(location[k]!=null)safeLocation[k]=location[k];
+  res.json({version:'29',publicRequestId:publicId,requestId:x.id,status:x.status,serviceNeeds:x.service_needs,location:safeLocation,scope:x.scope,intent:{activity:x.intent?.activity||null,travelerProfile:x.intent?.travelerProfile||null,dates:x.intent?.dates||null,pace:x.intent?.pace||null,safety:Boolean(x.intent?.safety)},privacy:{anonymous:true,identityRevealed:false,healthExcluded:true,contactDetailsExcluded:true},principle:'anonymous_by_default'});
+ }catch(e){res.status(500).json({error:e.message})}
+});
+
+app.post('/api/ai/v21/recommendations/:recommendationId/reveal',async(req,res)=>{
+ const client=await pool.connect();
+ try{
+  const recommendationId=Number(req.params.recommendationId),travelerId=Number(req.body?.travelerId),professionalId=req.body?.professionalId==null?null:Number(req.body.professionalId);
+  if(!Number.isInteger(recommendationId)||recommendationId<=0)return res.status(400).json({error:'recommendationId_required'});
+  if(!Number.isInteger(travelerId)||travelerId<=0)return res.status(400).json({error:'travelerId_required'});
+  if(req.body?.confirm!==true)return res.status(400).json({error:'explicit_confirmation_required'});
+  const rec=await client.query("SELECT r.id,s.actor_id,o.request_id FROM ai_recommendations_v21 r JOIN ai_recommendation_sessions_v21 s ON s.id=r.session_id JOIN ai_recommendation_opportunities_v28_8 o ON o.recommendation_id=r.id WHERE r.id=$1",[recommendationId]);
+  if(!rec.rows[0])return res.status(404).json({error:'recommendation_not_found'});
+  if(Number(rec.rows[0].actor_id)!==travelerId)return res.status(403).json({error:'traveler_not_owner'});
+  const requestId=Number(rec.rows[0].request_id);
+  const shareFields=Array.isArray(req.body?.sharedFields)?req.body.sharedFields.filter(x=>['name','email','phone'].includes(String(x))):[];
+  const q=await client.query("INSERT INTO traveler_professional_handoffs_v29(recommendation_id,request_id,traveler_id,professional_id,identity_revealed,shared_fields) VALUES($1,$2,$3,$4,true,$5::jsonb) RETURNING id,status,shared_fields,created_at",[recommendationId,requestId,travelerId,professionalId,JSON.stringify(shareFields)]);
+  await client.query("INSERT INTO privacy_audit_events_v23(actor_type,actor_id,action,data_domain,object_type,object_id,result,metadata) VALUES ('traveler',$1,'identity_reveal','traveler_identity','recommendation',$2,'allowed',$3::jsonb)",[travelerId,recommendationId,JSON.stringify({professionalId,requestId,sharedFields:shareFields})]);
+  res.status(201).json({version:'29',handoff:q.rows[0],identityRevealed:true,sharedFields:shareFields,healthExcluded:true,principle:'explicit_consent_only'});
+ }catch(e){res.status(500).json({error:e.message})}finally{client.release()}
+});
+
 export {app};
 if(process.env.V28_HISTORY_TEST_SERVER==='1'){const port=Number(process.env.PORT||4300);app.listen(port,()=>console.log(`history test server listening on ${port}`));}
