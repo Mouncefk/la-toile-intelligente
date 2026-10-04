@@ -291,3 +291,6 @@ app.get('/api/travelers/v28-5/history',async(req,res)=>{
   res.json({travelerId:id,healthExcluded:true,vaultItems:items.rows,trips:trips.rows});
  }catch(e){res.status(500).json({error:e.message})}
 });
+
+export {app};
+if(process.env.V28_HISTORY_TEST_SERVER==='1'){const port=Number(process.env.PORT||4300);app.listen(port,()=>console.log(`history test server listening on ${port}`));}
