@@ -1,30 +1,34 @@
-import assert from 'node:assert/strict';
-import fs from 'node:fs';
-import os from 'node:os';
-import path from 'node:path';
-import {spawn} from 'node:child_process';
-import {once} from 'node:events';
-
-const port=4392;
-const dir=fs.mkdtempSync(path.join(os.tmpdir(),'latoile-v29-2-'));
-const env={...process.env,V28_HISTORY_TEST_SERVER:'1',PORT:String(port),V29_FILE_STORAGE_DIR:dir};
-const server=spawn(process.execPath,['server/index.js'],{env,stdio:'pipe'});
-let log='';
-server.stdout.on('data',d=>{log+=d.toString()});
-server.stderr.on('data',d=>{log+=d.toString()});
-const base='http://127.0.0.1:'+port;
-async function wait(){
-  for(let i=0;i<40;i++){try{const r=await fetch(base+'/api/countries');if(r.ok)return;}catch{} await new Promise(r=>setTimeout(r,250));}
-  throw new Error('server_not_ready '+log);
-}
-async function j(url,opts={}){const r=await fetch(base+url,opts);let body=null;try{body=await r.json()}catch{};return {status:r.status,body};}
-try{
-  await wait();
-  const bad=await j('/api/v29/conversations/999999/files',{method:'POST',body:new URLSearchParams({actorType:'traveler',actorId:'1'})});
-  assert.equal(bad.status,400);
-  console.log('V29.2 file exchange contract: PASS');
-}finally{
-  server.kill('SIGTERM');
-  await once(server,'close').catch(()=>{});
-  fs.rmSync(dir,{recursive:true,force:true});
-}
+const assert=(c,m)=>{if(!c)throw new Error(m)};
+const base=process.env.TEST_BASE_URL||'http://localhost:4300';
+const headers={'content-type':'application/json'};
+(async()=>{
+ const travelerId=Number(process.env.TEST_TRAVELER_ID||1);
+ const rr=await fetch(base+'/api/ai/v21-history/recommend',{method:'POST',headers,body:JSON.stringify({travelerId,intent:{activity:'Artisanat'}})});
+ const rd=await rr.json(); assert(rr.ok&&rd.sessionId,'recommend failed');
+ const lr=await fetch(base+'/api/ai/v21/sessions/'+rd.sessionId+'/recommendations'); const ld=await lr.json();
+ assert(lr.ok&&ld.recommendations?.length,'recommendation missing');
+ const recommendationId=ld.recommendations[0].id;
+ const op=await fetch(base+'/api/ai/v21/recommendations/'+recommendationId+'/opportunity',{method:'POST',headers,body:JSON.stringify({travelerId,serviceNeeds:[{type:'artisanat',role:'artisan'}],location:{countryIso3:'MAR'},scope:'national'})});
+ assert(op.ok,'opportunity failed');
+ const dp=await fetch(base+'/api/ai/v21/recommendations/'+recommendationId+'/opportunity/dispatch',{method:'POST',headers,body:JSON.stringify({travelerId,rawText:'Recherche artisanat',radiusKm:100})});
+ const dd=await dp.json(); assert(dp.status===201,'dispatch failed '+JSON.stringify(dd));
+ const rp=await fetch(base+'/api/ai/v21/recommendations/'+recommendationId+'/professional-responses?travelerId='+travelerId); const rpd=await rp.json();
+ assert(rp.ok&&rpd.responses?.length,'no professional response');
+ const professionalId=Number(rpd.responses[0].professionalId);
+ const cr=await fetch(base+'/api/v29/conversations',{method:'POST',headers,body:JSON.stringify({recommendationId,travelerId,professionalId})}); const cd=await cr.json();
+ assert(cr.status===201&&cd.thread?.id,'thread failed'); const tid=cd.thread.id;
+ const form=new FormData(); form.append('actorType','traveler'); form.append('actorId',String(travelerId)); form.append('file',new Blob(['La Toile private attachment test'],{type:'text/plain'}),'test-la-toile.txt');
+ const up=await fetch(base+'/api/v29/conversations/'+tid+'/files',{method:'POST',body:form}); const ud=await up.json();
+ assert(up.status===201&&ud.file?.id,'upload failed '+JSON.stringify(ud));
+ assert(ud.privacy?.threadOnly===true&&ud.privacy?.healthExcluded===true,'file privacy flags missing');
+ const list=await fetch(base+'/api/v29/conversations/'+tid+'/files?actorType=traveler&actorId='+travelerId); const ld2=await list.json();
+ assert(list.ok&&ld2.files?.some(x=>x.id===ud.file.id),'file listing failed');
+ const dl=await fetch(base+'/api/v29/conversations/'+tid+'/files/'+ud.file.id+'?actorType=traveler&actorId='+travelerId); const text=await dl.text();
+ assert(dl.ok&&text.includes('La Toile private attachment test'),'download failed');
+ const other=await fetch(base+'/api/v29/conversations/'+tid+'/files/'+ud.file.id+'?actorType=traveler&actorId=2');
+ assert(other.status===403,'unauthorized traveler downloaded file');
+ const badForm=new FormData(); badForm.append('actorType','traveler'); badForm.append('actorId',String(travelerId)); badForm.append('file',new Blob(['x'],{type:'application/x-msdownload'}),'bad.exe');
+ const bad=await fetch(base+'/api/v29/conversations/'+tid+'/files',{method:'POST',body:badForm});
+ assert(bad.status===400,'disallowed file type accepted');
+ console.log('V29.2 private in-platform file exchange E2E checks passed.');
+})().catch(e=>{console.error(e);process.exit(1)});
