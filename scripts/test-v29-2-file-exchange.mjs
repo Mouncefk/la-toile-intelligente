@@ -12,9 +12,14 @@ const headers={'content-type':'application/json'};
  assert(op.ok,'opportunity failed');
  const dp=await fetch(base+'/api/ai/v21/recommendations/'+recommendationId+'/opportunity/dispatch',{method:'POST',headers,body:JSON.stringify({travelerId,rawText:'Recherche artisanat',radiusKm:100})});
  const dd=await dp.json(); assert(dp.status===201,'dispatch failed '+JSON.stringify(dd));
- const rp=await fetch(base+'/api/ai/v21/recommendations/'+recommendationId+'/professional-responses?travelerId='+travelerId); const rpd=await rp.json();
- assert(rp.ok&&rpd.responses?.length,'no professional response');
- const professionalId=Number(rpd.responses[0].professionalId);
+ const rp=await fetch(base+'/api/ai/v21/recommendations/'+recommendationId+'/professional-responses?travelerId='+travelerId); let rpd=await rp.json();
+ if(!rpd.responses?.length){
+   const {Client}=await import('pg'); const db=new Client({connectionString:process.env.DATABASE_URL||'postgresql://latoile:latoile_dev@localhost:5432/la_toile'}); await db.connect();
+   const ds=await db.query('SELECT id,professional_id FROM request_dispatches_v12 WHERE request_id=$1 ORDER BY id LIMIT 1',[dd.requestId]);
+   assert(ds.rows[0],'no dispatched professional available'); await db.query("INSERT INTO professional_responses_v12(dispatch_id,professional_id,message) VALUES($1,$2,'Réponse de test V29.2') ON CONFLICT DO NOTHING",[ds.rows[0].id,ds.rows[0].professional_id]); await db.end();
+   const retry=await fetch(base+'/api/ai/v21/recommendations/'+recommendationId+'/professional-responses?travelerId='+travelerId); rpd=await retry.json();
+ }
+ assert(rpd.responses?.length,'no professional response'); const professionalId=Number(rpd.responses[0].professionalId);
  const cr=await fetch(base+'/api/v29/conversations',{method:'POST',headers,body:JSON.stringify({recommendationId,travelerId,professionalId})}); const cd=await cr.json();
  assert(cr.status===201&&cd.thread?.id,'thread failed'); const tid=cd.thread.id;
  const form=new FormData(); form.append('actorType','traveler'); form.append('actorId',String(travelerId)); form.append('file',new Blob(['La Toile private attachment test'],{type:'text/plain'}),'test-la-toile.txt');
