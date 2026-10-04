@@ -67,6 +67,16 @@ export function registerV29CommunicationRoutes({app,pool}){
     }catch(e){res.status(500).json({error:e.message})}
   });
 
+
+  app.get('/api/v29/professionals/:professionalId/conversations',async(req,res)=>{
+    try{
+      const professionalId=Number(req.params.professionalId);
+      if(!Number.isInteger(professionalId)||professionalId<=0)return res.status(400).json({error:'professionalId_required'});
+      const q=await pool.query("SELECT t.id,t.recommendation_id,t.request_id,t.traveler_id,t.professional_id,t.status,t.created_at,t.updated_at,COUNT(m.id)::int AS message_count FROM traveler_professional_threads_v29 t LEFT JOIN traveler_professional_messages_v29 m ON m.thread_id=t.id WHERE t.professional_id=$1 GROUP BY t.id ORDER BY t.updated_at DESC",[professionalId]);
+      res.json({version:'29.1',professionalId,conversations:q.rows,privacy:{travelerIdentityMasked:true,healthExcluded:true,contactDetailsExcluded:true},principle:'communicate_on_la_toile'});
+    }catch(e){res.status(500).json({error:e.message})}
+  });
+
   app.post('/api/v29/conversations/:threadId/read',async(req,res)=>{
     try{
       const threadId=Number(req.params.threadId),actorType=String(req.body?.actorType||''),actorId=Number(req.body?.actorId);
