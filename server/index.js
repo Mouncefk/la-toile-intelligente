@@ -330,6 +330,42 @@ app.post('/api/ai/v21/recommendations/:recommendationId/opportunity',async(req,r
  }catch(e){res.status(500).json({error:e.message})}
 });
 
+// V28.9 — professional responses and traveler comparison
+app.get('/api/ai/v21/recommendations/:recommendationId/professional-responses',async(req,res)=>{
+ try{
+  const recommendationId=Number(req.params.recommendationId),travelerId=Number(req.query.travelerId);
+  if(!Number.isInteger(recommendationId)||recommendationId<=0)return res.status(400).json({error:'recommendationId_required'});
+  if(!Number.isInteger(travelerId)||travelerId<=0)return res.status(400).json({error:'travelerId_required'});
+  const rec=await pool.query("SELECT r.id,s.actor_id,o.request_id FROM ai_recommendations_v21 r JOIN ai_recommendation_sessions_v21 s ON s.id=r.session_id LEFT JOIN ai_recommendation_opportunities_v28_8 o ON o.recommendation_id=r.id WHERE r.id=$1",[recommendationId]);
+  if(!rec.rows[0])return res.status(404).json({error:'recommendation_not_found'});
+  if(Number(rec.rows[0].actor_id)!==travelerId)return res.status(403).json({error:'traveler_not_owner'});
+  if(!rec.rows[0].request_id)return res.json({version:'28.9',recommendationId,responses:[],comparison:null,principle:'traveler_decides'});
+  const q=await pool.query("SELECT r.id AS response_id,r.professional_id,p.name AS professional_name,d.match_score,d.distance_km,r.availability_status,r.proposed_start,r.proposed_end,r.message,r.conditions,r.created_at FROM professional_responses_v12 r JOIN request_dispatches_v12 d ON d.id=r.dispatch_id JOIN professionals p ON p.id=r.professional_id WHERE d.request_id=$1 ORDER BY d.match_score DESC,r.created_at DESC",[rec.rows[0].request_id]);
+  const responses=q.rows.map(x=>({responseId:x.response_id,professionalId:x.professional_id,professionalName:x.professional_name,matchScore:x.match_score,distanceKm:x.distance_km,availabilityStatus:x.availability_status,proposedStart:x.proposed_start,proposedEnd:x.proposed_end,message:x.message,conditions:x.conditions,createdAt:x.created_at}));
+  res.json({version:'28.9',recommendationId,requestId:Number(rec.rows[0].request_id),responses,comparison:{sortedBy:'matchScore',priceDisplayed:false},principle:'traveler_decides'});
+ }catch(e){res.status(500).json({error:e.message})}
+});
+
+app.post('/api/ai/v21/recommendations/:recommendationId/compare',async(req,res)=>{
+ try{
+  const recommendationId=Number(req.params.recommendationId),travelerId=Number(req.body?.travelerId);
+  const responseIds=Array.isArray(req.body?.responseIds)?req.body.responseIds.map(Number).filter(Number.isInteger):[];
+  if(!Number.isInteger(recommendationId)||recommendationId<=0)return res.status(400).json({error:'recommendationId_required'});
+  if(!Number.isInteger(travelerId)||travelerId<=0)return res.status(400).json({error:'travelerId_required'});
+  if(!responseIds.length)return res.status(400).json({error:'responseIds_required'});
+  const rec=await pool.query("SELECT r.id,s.actor_id,o.request_id FROM ai_recommendations_v21 r JOIN ai_recommendation_sessions_v21 s ON s.id=r.session_id LEFT JOIN ai_recommendation_opportunities_v28_8 o ON o.recommendation_id=r.id WHERE r.id=$1",[recommendationId]);
+  if(!rec.rows[0])return res.status(404).json({error:'recommendation_not_found'});
+  if(Number(rec.rows[0].actor_id)!==travelerId)return res.status(403).json({error:'traveler_not_owner'});
+  if(!rec.rows[0].request_id)return res.status(409).json({error:'request_not_dispatched'});
+  const q=await pool.query("SELECT r.id FROM professional_responses_v12 r JOIN request_dispatches_v12 d ON d.id=r.dispatch_id WHERE d.request_id=$1 AND r.id=ANY($2::bigint[])",[rec.rows[0].request_id,responseIds]);
+  if(q.rowCount!==responseIds.length)return res.status(400).json({error:'response_not_in_request'});
+  const selectedResponseId=req.body.selectedResponseId==null?null:Number(req.body.selectedResponseId);
+  if(selectedResponseId!==null&&!responseIds.includes(selectedResponseId))return res.status(400).json({error:'selected_response_not_in_comparison'});
+  const comparison=await pool.query("INSERT INTO response_comparisons_v12(request_id,traveler_id,selected_response_id,compared_response_ids) VALUES($1,$2,$3,$4) RETURNING id,request_id,traveler_id,selected_response_id,compared_response_ids,created_at",[rec.rows[0].request_id,travelerId,selectedResponseId,responseIds]);
+  res.status(201).json({version:'28.9',recommendationId,comparison:comparison.rows[0],travelerDecides:true,priceDisplayed:false,principle:'traveler_decides'});
+ }catch(e){res.status(500).json({error:e.message})}
+});
+
 // V28.7 — read and decide on persisted recommendations
 app.get('/api/ai/v21/sessions/:sessionId/recommendations',async(req,res)=>{
  try{
