@@ -40,6 +40,8 @@ jobs:
         run: npm run test:v28-8:professional-opportunity
       - name: Run V28.8 opportunity to dispatch E2E
         run: npm run test:v28-8:opportunity-dispatch
+      - name: Run V28.9 professional responses and comparison E2E
+        run: npm run test:v28-9:professional-responses
       - run: node --check server/index.js
       - run: node --check server/history-recommendation-v28-5.js
       - run: node --check server/recommendation-bridge-v28-5.js
