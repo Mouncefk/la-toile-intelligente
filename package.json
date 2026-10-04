@@ -30,7 +30,8 @@
     "react": "latest",
     "react-dom": "latest",
     "express": "latest",
-    "pg": "latest"
+    "pg": "latest",
+    "multer": "latest"
   },
   "devDependencies": {}
 }
