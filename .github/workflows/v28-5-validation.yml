@@ -42,6 +42,8 @@ jobs:
         run: npm run test:v28-8:opportunity-dispatch
       - name: Run V28.9 professional responses and comparison E2E
         run: npm run test:v28-9:professional-responses
+      - name: Run V29.1 native communication E2E
+        run: npm run test:v29-1:communication
       - run: node --check server/index.js
       - run: node --check server/history-recommendation-v28-5.js
       - run: node --check server/recommendation-bridge-v28-5.js
