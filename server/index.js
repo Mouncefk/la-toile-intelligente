@@ -284,6 +284,31 @@ app.post('/api/ai/v21-history/recommend',async(req,res)=>{
  }catch(e){res.status(500).json({error:e.message})}
 });
 
+// V28.7 — read and decide on persisted recommendations
+app.get('/api/ai/v21/sessions/:sessionId/recommendations',async(req,res)=>{
+ try{
+  const sessionId=Number(req.params.sessionId);
+  if(!Number.isInteger(sessionId)||sessionId<=0)return res.status(400).json({error:'sessionId_required'});
+  const q=await pool.query("SELECT id,recommendation_type,title,explanation,evidence,confidence,alternatives,action_url,status,created_at FROM ai_recommendations_v21 WHERE session_id=$1 ORDER BY created_at ASC",[sessionId]);
+  res.json({version:'28.7',sessionId,recommendations:q.rows,principle:'assist_not_decide'});
+ }catch(e){res.status(500).json({error:e.message})}
+});
+
+app.post('/api/ai/v21/recommendations/:recommendationId/decision',async(req,res)=>{
+ try{
+  const recommendationId=Number(req.params.recommendationId);
+  const travelerId=req.body?.travelerId==null?null:Number(req.body.travelerId);
+  const decision=String(req.body?.decision||'').trim().toLowerCase();
+  if(!Number.isInteger(recommendationId)||recommendationId<=0)return res.status(400).json({error:'recommendationId_required'});
+  if(!['accepted','rejected','saved','ignored'].includes(decision))return res.status(400).json({error:'decision_invalid'});
+  const q=await pool.query("SELECT r.id,s.actor_id FROM ai_recommendations_v21 r JOIN ai_recommendation_sessions_v21 s ON s.id=r.session_id WHERE r.id=$1",[recommendationId]);
+  if(!q.rows[0])return res.status(404).json({error:'recommendation_not_found'});
+  if(travelerId!=null && Number(q.rows[0].actor_id)!==travelerId)return res.status(403).json({error:'traveler_not_owner'});
+  const u=await pool.query("UPDATE ai_recommendations_v21 SET status=$1 WHERE id=$2 RETURNING id,status",[decision,recommendationId]);
+  res.json({version:'28.7',recommendationId,status:u.rows[0].status,principle:'traveler_decides'});
+ }catch(e){res.status(500).json({error:e.message})}
+});
+
 // V28.7 — recommendation feedback persistence
 app.post('/api/ai/v21/recommendations/:recommendationId/feedback',async(req,res)=>{
  try{
