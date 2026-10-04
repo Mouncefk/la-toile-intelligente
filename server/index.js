@@ -284,6 +284,25 @@ app.post('/api/ai/v21-history/recommend',async(req,res)=>{
  }catch(e){res.status(500).json({error:e.message})}
 });
 
+// V28.8 — recommendation → professional opportunity bridge
+app.post('/api/ai/v21/recommendations/:recommendationId/opportunity',async(req,res)=>{
+ try{
+  const recommendationId=Number(req.params.recommendationId);
+  const travelerId=Number(req.body?.travelerId);
+  if(!Number.isInteger(recommendationId)||recommendationId<=0)return res.status(400).json({error:'recommendationId_required'});
+  if(!Number.isInteger(travelerId)||travelerId<=0)return res.status(400).json({error:'travelerId_required'});
+  const rec=await pool.query("SELECT r.id,s.actor_id,r.title,r.explanation FROM ai_recommendations_v21 r JOIN ai_recommendation_sessions_v21 s ON s.id=r.session_id WHERE r.id=$1",[recommendationId]);
+  if(!rec.rows[0])return res.status(404).json({error:'recommendation_not_found'});
+  if(Number(rec.rows[0].actor_id)!==travelerId)return res.status(403).json({error:'traveler_not_owner'});
+  const serviceNeeds=Array.isArray(req.body?.serviceNeeds)?req.body.serviceNeeds:[];
+  const location=req.body?.location&&typeof req.body.location==='object'?req.body.location:{};
+  const scope=String(req.body?.scope||'local').trim().toLowerCase();
+  if(!['local','regional','national','international','global'].includes(scope))return res.status(400).json({error:'scope_invalid'});
+  const q=await pool.query("INSERT INTO ai_recommendation_opportunities_v28_8 (recommendation_id,traveler_id,service_needs,location,scope) VALUES ($1,$2,$3::jsonb,$4::jsonb,$5) ON CONFLICT(recommendation_id) DO UPDATE SET service_needs=EXCLUDED.service_needs,location=EXCLUDED.location,scope=EXCLUDED.scope,updated_at=now() RETURNING *",[recommendationId,travelerId,JSON.stringify(serviceNeeds),JSON.stringify(location),scope]);
+  res.status(201).json({version:'28.8',opportunity:q.rows[0],professionalPrinciple:'qualified_demand_first',travelerDecides:true});
+ }catch(e){res.status(500).json({error:e.message})}
+});
+
 // V28.7 — read and decide on persisted recommendations
 app.get('/api/ai/v21/sessions/:sessionId/recommendations',async(req,res)=>{
  try{
