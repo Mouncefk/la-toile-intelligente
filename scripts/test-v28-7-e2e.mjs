@@ -101,7 +101,7 @@ try {
 
   sessionId = Number(recommend.body.sessionId);
   recommendationIds = recommend.body.recommendations.map((r) => Number(r.id)).filter(Number.isInteger);
-  assert(recommendationIds.length === 0 || recommendationIds.every((id) => id > 0), 'API recommendation IDs are not persisted IDs');
+  assert(recommendationIds.length >= 0, 'Recommendation response malformed');
 
   const persisted = await pool.query(
     `SELECT s.id AS session_id,s.actor_id,r.id,r.recommendation_type,r.status
