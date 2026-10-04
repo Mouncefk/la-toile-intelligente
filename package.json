@@ -11,7 +11,8 @@
     "test:v27:db": "node scripts/test-v27-db.mjs",
     "test:v27:integration": "node scripts/test-v27-integration-db.mjs",
     "test:v27:api": "node scripts/test-v27-api.mjs",
-    "test:v28-5:history": "node scripts/test-v28-5-history.mjs"
+    "test:v28-5:history": "node scripts/test-v28-5-history.mjs",
+    "test:v28-5:history-context": "node scripts/test-v28-5-history-context.mjs"
   },
   "dependencies": {
     "@vitejs/plugin-react": "latest",
