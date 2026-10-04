@@ -271,7 +271,7 @@ app.post('/api/ai/v21-history/recommend',async(req,res)=>{
   const id=Number(req.body?.travelerId);
   if(!Number.isInteger(id)||id<=0)return res.status(400).json({error:'travelerId_required'});
   const items=await pool.query("SELECT item_type,title,summary,country_iso3,metadata,created_at,updated_at FROM traveler_vault_items_v14 WHERE traveler_id=$1 AND item_type IN ('trip','memory','request','response','reservation') ORDER BY updated_at DESC",[id]);
-  const trips=await pool.query("SELECT trip_id,title,country_iso3,status,start_date,end_date,metadata FROM traveler_journey_v15 WHERE traveler_id=$1 ORDER BY start_date NULLS LAST,updated_at DESC",[id]);
+  const trips=await pool.query("SELECT id AS trip_id,title,country_iso3,status,start_date,end_date,metadata FROM traveler_trips_v15 WHERE traveler_id=$1 ORDER BY start_date NULLS LAST,updated_at DESC",[id]);
   const {buildRecommendationContext}=await import('./recommendation-bridge-v28-5.js');
   const context=buildRecommendationContext({intent:req.body.intent||{},historyItems:items.rows,trips:trips.rows,seasonal:req.body.seasonal||null});
   const recommendations=context.travelHistory.signals.length>0
