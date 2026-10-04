@@ -275,9 +275,12 @@ app.post('/api/ai/v21-history/recommend',async(req,res)=>{
   const {buildRecommendationContext}=await import('./recommendation-bridge-v28-5.js');
   const context=buildRecommendationContext({intent:req.body.intent||{},historyItems:items.rows,trips:trips.rows,seasonal:req.body.seasonal||null});
   const recommendations=context.travelHistory.signals.length>0
-   ? [{id:'continuity',title:'Retrouver une expérience déjà rencontrée',type:'continuity'},{id:'discovery',title:'Découvrir autre chose',type:'discovery'}]
-   : [{id:'discovery',title:'Explorer de nouvelles possibilités',type:'discovery'}];
-  res.json({version:'28.5',travelerId:id,context,recommendations,principle:'assist_not_decide'});
+   ? [{id:'continuity',title:'Retrouver une expérience déjà rencontrée',type:'continuity',explanation:'Une possibilité de continuité issue de votre historique.',evidence:{history:true}},{id:'discovery',title:'Découvrir autre chose',type:'discovery',explanation:'Une possibilité différente de vos expériences précédentes.',evidence:{history:true}}]
+   : [{id:'discovery',title:'Explorer de nouvelles possibilités',type:'discovery',explanation:'Explorer sans imposer une préférence issue de l’historique.',evidence:{history:false}}];
+  const sessionResult=await pool.query("INSERT INTO ai_recommendation_sessions_v21 (actor_type,actor_id,context) VALUES ('traveler',$1,$2::jsonb) RETURNING id",[id,JSON.stringify(context)]);
+  const sessionId=sessionResult.rows[0].id;
+  for(const r of recommendations){await pool.query("INSERT INTO ai_recommendations_v21 (session_id,recommendation_type,title,explanation,evidence,confidence,alternatives) VALUES ($1,$2,$3,$4,$5::jsonb,$6,$7::jsonb)",[sessionId,r.type,r.title,r.explanation,JSON.stringify(r.evidence),r.confidence??null,JSON.stringify(r.alternatives||[])])}
+  res.json({version:'28.7',travelerId:id,sessionId,context,recommendations,principle:'assist_not_decide'});
  }catch(e){res.status(500).json({error:e.message})}
 });
 
