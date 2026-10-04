@@ -24,6 +24,7 @@ jobs:
       - run: V28_HISTORY_TEST_SERVER=1 PORT=4300 node server/index.js > /tmp/latoile-test-server.log 2>&1 &
       - run: node -e "setTimeout(()=>{},1000)"
       - run: npm run test:v28-5:v21-history-recommend
+      - run: npm run test:v28-7:feedback
       - run: node --check server/index.js
       - run: node --check server/history-recommendation-v28-5.js
       - run: node --check server/recommendation-bridge-v28-5.js
