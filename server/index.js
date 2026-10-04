@@ -285,6 +285,33 @@ app.post('/api/ai/v21-history/recommend',async(req,res)=>{
 });
 
 // V28.8 — recommendation → professional opportunity bridge
+// V28.8 — opportunity → qualified professional request → dispatch
+app.post('/api/ai/v21/recommendations/:recommendationId/opportunity/dispatch',async(req,res)=>{
+ const client=await pool.connect();
+ try{
+  const recommendationId=Number(req.params.recommendationId),travelerId=Number(req.body?.travelerId);
+  if(!Number.isInteger(recommendationId)||recommendationId<=0)return res.status(400).json({error:'recommendationId_required'});
+  if(!Number.isInteger(travelerId)||travelerId<=0)return res.status(400).json({error:'travelerId_required'});
+  const rec=await client.query("SELECT r.id,r.title,r.explanation,r.evidence,s.actor_id FROM ai_recommendations_v21 r JOIN ai_recommendation_sessions_v21 s ON s.id=r.session_id WHERE r.id=$1",[recommendationId]);
+  if(!rec.rows[0])return res.status(404).json({error:'recommendation_not_found'});
+  if(Number(rec.rows[0].actor_id)!==travelerId)return res.status(403).json({error:'traveler_not_owner'});
+  const existing=await client.query("SELECT * FROM ai_recommendation_opportunities_v28_8 WHERE recommendation_id=$1",[recommendationId]);
+  if(!existing.rows[0])return res.status(409).json({error:'opportunity_required_first'});
+  const opportunity=existing.rows[0];
+  const intent={...(req.body?.intent||{}),recommendationTitle:rec.rows[0].title,recommendationExplanation:rec.rows[0].explanation,serviceNeeds:opportunity.service_needs,location:opportunity.location,scope:opportunity.scope};
+  const countryId=req.body?.countryId==null?null:Number(req.body.countryId);
+  const rawText=String(req.body?.rawText||rec.rows[0].title).trim();
+  const request=await client.query("INSERT INTO traveler_requests_v12(country_id,traveler_id,raw_text,intent,status) VALUES($1,$2,$3,$4,'qualified') RETURNING id",[countryId,travelerId,rawText,intent]);
+  const requestId=request.rows[0].id;
+  const radiusKm=Number(req.body?.radiusKm||100);
+  const dispatched=await client.query("SELECT dispatch_request_v12($1,$2) AS dispatched",[requestId,radiusKm]);
+  await client.query("UPDATE ai_recommendation_opportunities_v28_8 SET request_id=$1,status='dispatched',updated_at=now() WHERE id=$2",[requestId,opportunity.id]);
+  await client.query("UPDATE ai_recommendations_v21 SET status='handed_off' WHERE id=$1",[recommendationId]);
+  res.status(201).json({version:'28.8',recommendationId,travelerId,requestId,dispatched:Number(dispatched.rows[0].dispatched),status:'dispatched',principle:'qualified_demand_first',travelerDecides:true});
+ }catch(e){res.status(500).json({error:e.message})}finally{client.release()}
+});
+
+
 app.post('/api/ai/v21/recommendations/:recommendationId/opportunity',async(req,res)=>{
  try{
   const recommendationId=Number(req.params.recommendationId);
