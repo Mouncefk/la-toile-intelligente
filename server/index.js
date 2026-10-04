@@ -284,6 +284,21 @@ app.post('/api/ai/v21-history/recommend',async(req,res)=>{
  }catch(e){res.status(500).json({error:e.message})}
 });
 
+// V28.7 — recommendation feedback persistence
+app.post('/api/ai/v21/recommendations/:recommendationId/feedback',async(req,res)=>{
+ try{
+  const recommendationId=Number(req.params.recommendationId);
+  const actorId=req.body?.travelerId==null?null:Number(req.body.travelerId);
+  const feedback=String(req.body?.feedback||'').trim();
+  if(!Number.isInteger(recommendationId)||recommendationId<=0)return res.status(400).json({error:'recommendationId_required'});
+  if(!feedback)return res.status(400).json({error:'feedback_required'});
+  const rec=await pool.query("SELECT id,session_id FROM ai_recommendations_v21 WHERE id=$1",[recommendationId]);
+  if(!rec.rows[0])return res.status(404).json({error:'recommendation_not_found'});
+  const q=await pool.query("INSERT INTO ai_feedback_v21 (recommendation_id,actor_type,actor_id,feedback,reason) VALUES ($1,'traveler',$2,$3,$4) RETURNING id,created_at",[recommendationId,actorId,feedback,req.body?.reason?String(req.body.reason).trim():null]);
+  res.status(201).json({version:'28.7',recommendationId,feedbackId:q.rows[0].id,status:'recorded',principle:'assist_not_decide'});
+ }catch(e){res.status(500).json({error:e.message})}
+});
+
 // V28.5 — historical context for recommendations; health excluded
 app.get('/api/travelers/v28-5/history',async(req,res)=>{
  try{
