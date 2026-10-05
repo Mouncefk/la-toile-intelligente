@@ -23,7 +23,8 @@
     "test:v28-9:professional-responses": "node scripts/test-v28-9-professional-responses.mjs",
     "test:v29:privacy": "node scripts/test-v29-privacy-gateway.mjs",
     "test:v29-1:communication": "node scripts/test-v29-1-communication.mjs",
-    "test:v29-2:file-exchange": "node scripts/test-v29-2-file-exchange.mjs"
+    "test:v29-2:file-exchange": "node scripts/test-v29-2-file-exchange.mjs",
+    "test:v29-9:directory": "node scripts/test-v29-9-professional-directory.mjs"
   },
   "dependencies": {
     "@vitejs/plugin-react": "latest",
