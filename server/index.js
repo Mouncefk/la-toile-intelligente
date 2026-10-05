@@ -75,6 +75,62 @@ app.post('/api/matching/save',async(req,res)=>{
 
 
 
+app.get('/api/professionals/v29/directory',async(req,res)=>{
+ const countryIso3=req.query.countryIso3?String(req.query.countryIso3).toUpperCase():null;
+ const lat=req.query.lat!==undefined?Number(req.query.lat):null;
+ const lon=req.query.lon!==undefined?Number(req.query.lon):null;
+ const radiusKm=req.query.radiusKm!==undefined?Number(req.query.radiusKm):100;
+ const q=req.query.q?.trim()||null;
+ const service=req.query.service?.trim()||null;
+ if((lat!==null&&!Number.isFinite(lat))||(lon!==null&&!Number.isFinite(lon)))return res.status(400).json({error:'lat_lon_invalid'});
+ if((lat===null)!==(lon===null))return res.status(400).json({error:'lat_lon_pair_required'});
+ if(!Number.isFinite(radiusKm)||radiusKm<=0||radiusKm>1000)return res.status(400).json({error:'radiusKm_invalid'});
+ try{
+  const sql=`SELECT p.id AS professional_id,
+    COALESCE(pp.display_name,p.name) AS display_name,
+    pp.headline,pp.website,pp.address,pp.languages,pp.specialties,
+    pp.availability_status,pp.accepting_requests,
+    COALESCE(v.verification_level,'unverified') AS verification_level,
+    COALESCE((SELECT string_agg(DISTINCT ps.label, ', ' ORDER BY ps.label) FROM professional_services_v11 ps WHERE ps.professional_id=p.id AND ps.active=true),'Professionnel') AS service_labels,
+    CASE WHEN $2::double precision IS NULL THEN NULL ELSE ST_Distance(p.geom::geography,ST_SetSRID(ST_MakePoint($3,$2),4326)::geography)/1000.0 END AS distance_km
+   FROM professionals p
+   LEFT JOIN professional_profiles_v13 pp ON pp.professional_id=p.id
+   LEFT JOIN verification_profiles_v22 v ON v.actor_type='professional' AND v.actor_id=p.id
+   WHERE p.geom IS NOT NULL
+     AND ($1::text IS NULL OR EXISTS(
+       SELECT 1 FROM countries c
+       WHERE upper(c.iso3)=upper($1) AND c.geom IS NOT NULL AND ST_Intersects(c.geom,p.geom)
+     ))
+     AND ($2::double precision IS NULL OR ST_DWithin(
+       p.geom::geography,
+       ST_SetSRID(ST_MakePoint($3,$2),4326)::geography,
+       $4*1000
+     ))
+     AND ($5::text IS NULL OR p.name ILIKE '%'||$5||'%' OR pp.display_name ILIKE '%'||$5||'%' OR pp.headline ILIKE '%'||$5||'%' OR EXISTS(
+       SELECT 1 FROM professional_services_v11 psq
+       WHERE psq.professional_id=p.id AND psq.active=true AND psq.label ILIKE '%'||$5||'%'
+     ))
+     AND ($6::text IS NULL OR EXISTS(
+       SELECT 1 FROM professional_services_v11 pss
+       WHERE pss.professional_id=p.id AND pss.active=true AND pss.label ILIKE '%'||$6||'%'
+     ))
+   ORDER BY distance_km NULLS LAST,display_name ASC
+   LIMIT 100`;
+  const params=[countryIso3,lat,lon,radiusKm,q,service];
+  const result=await pool.query(sql,params);
+  res.json({
+   scope:lat===null?'country':radiusKm<=25?'local':radiusKm<=150?'regional':'national',
+   countryIso3,
+   radiusKm:lat===null?null:radiusKm,
+   query:q,
+   service,
+   count:result.rowCount,
+   professionals:result.rows,
+   principle:'open_directory_plus_intelligent_matching'
+  });
+ }catch(e){res.status(500).json({error:e.message})}
+});
+
 app.get('/api/professionals/v13/:professionalId/inbox',async(req,res)=>{
  try{const q=await pool.query(`SELECT * FROM professional_inbox_v13 WHERE professional_id=$1 ORDER BY match_score DESC,sent_at DESC`,[req.params.professionalId]);res.json({professionalId:Number(req.params.professionalId),count:q.rowCount,requests:q.rows})}catch(e){res.status(500).json({error:e.message})}
 });
