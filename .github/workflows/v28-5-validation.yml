@@ -4,6 +4,7 @@ on:
   push:
     branches:
       - v28-5-travel-history
+      - v28-7-v21-recommendation-persistence
   pull_request:
     branches:
       - v28-4-intelligent-search
