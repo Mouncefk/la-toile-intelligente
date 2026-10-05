@@ -386,8 +386,16 @@ app.post('/api/ai/v21/recommendations/:recommendationId/decision',async(req,res)
   const q=await pool.query("SELECT r.id,s.actor_id FROM ai_recommendations_v21 r JOIN ai_recommendation_sessions_v21 s ON s.id=r.session_id WHERE r.id=$1",[recommendationId]);
   if(!q.rows[0])return res.status(404).json({error:'recommendation_not_found'});
   if(travelerId!=null && Number(q.rows[0].actor_id)!==travelerId)return res.status(403).json({error:'traveler_not_owner'});
-  const u=await pool.query("UPDATE ai_recommendations_v21 SET status=$1 WHERE id=$2 RETURNING id,status",[decision,recommendationId]);
-  res.json({version:'28.7',recommendationId,status:u.rows[0].status,principle:'traveler_decides'});
+  let selectedResponseId=req.body?.selectedResponseId==null?null:Number(req.body.selectedResponseId);
+  let selectedProfessionalId=null;
+  if(selectedResponseId!=null){
+   if(!Number.isInteger(selectedResponseId)||selectedResponseId<=0)return res.status(400).json({error:'selectedResponseId_invalid'});
+   const rq=await pool.query("SELECT pr.id,pr.professional_id,d.request_id FROM professional_responses_v12 pr JOIN request_dispatches_v12 d ON d.id=pr.dispatch_id JOIN ai_recommendation_opportunities_v28_8 o ON o.request_id=d.request_id WHERE pr.id=$1 AND o.recommendation_id=$2",[selectedResponseId,recommendationId]);
+   if(!rq.rows[0])return res.status(400).json({error:'selected_response_not_in_recommendation'});
+   selectedProfessionalId=Number(rq.rows[0].professional_id);
+  }
+  const u=await pool.query("UPDATE ai_recommendations_v21 SET status=$1,evidence=evidence || $2::jsonb WHERE id=$3 RETURNING id,status,evidence",[decision,JSON.stringify(selectedResponseId?{travelerDecision:{selectedResponseId,selectedProfessionalId,recordedAt:new Date().toISOString()}}:{}),recommendationId]);
+  res.json({version:'29.8',recommendationId,status:u.rows[0].status,selectedResponseId,selectedProfessionalId,principle:'traveler_decides'});
  }catch(e){res.status(500).json({error:e.message})}
 });
 
