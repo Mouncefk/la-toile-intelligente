@@ -420,3 +420,18 @@ CREATE TABLE IF NOT EXISTS v30_b2b_geo_membership (
  node_key TEXT NOT NULL REFERENCES v30_geography_nodes(node_key) ON DELETE CASCADE,
  PRIMARY KEY(scope_key,node_key)
 );
+
+
+CREATE TABLE IF NOT EXISTS v30_graph_events (
+  id BIGSERIAL PRIMARY KEY,
+  entity_type TEXT NOT NULL,
+  entity_id BIGINT,
+  territory_key TEXT,
+  event_type TEXT NOT NULL,
+  payload JSONB NOT NULL DEFAULT '{}'::jsonb,
+  created_at TIMESTAMPTZ NOT NULL DEFAULT now()
+);
+CREATE INDEX IF NOT EXISTS idx_v30_graph_events_territory_created
+  ON v30_graph_events(territory_key, created_at DESC);
+CREATE INDEX IF NOT EXISTS idx_v30_graph_events_entity_created
+  ON v30_graph_events(entity_type, entity_id, created_at DESC);
