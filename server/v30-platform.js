@@ -604,7 +604,8 @@ v30Router.get('/session/:id/recommendation-history', async (req,res) => {
   const now=Date.now();
   const history=q.rows.map(row=>{
     const ageHours=(now-new Date(row.created_at).getTime())/3600000;
-    return {...row, freshness:ageHours<=6?'current':ageHours<=24?'recent':'stale',recalculateRequired:ageHours>24};
+    const invalidated=Array.isArray(row.reasons) ? row.reasons.some(item => item && typeof item === 'object' && item.invalidated === true) : Boolean(row.reasons?.invalidated);
+    return {...row, invalidated, freshness:ageHours<=6?'current':ageHours<=24?'recent':'stale',recalculateRequired:invalidated || ageHours>24};
   });
   res.json({sessionId:Number(req.params.id),history,policy:{currentHours:6,recentHours:24,staleAfterHours:24}});
 });
