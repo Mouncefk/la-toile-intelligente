@@ -484,6 +484,20 @@ v30Router.get('/session/:id/solutions', async (req, res) => {
   });
 });
 
+v30Router.get('/session/:id/recommendation-history', async (req,res) => {
+  const q=await safeQuery(res,
+    'SELECT id,solution_id,score,reasons,created_at FROM v30_matches WHERE session_id=$1 ORDER BY created_at DESC,score DESC',
+    [req.params.id]
+  );
+  if(!q) return;
+  const now=Date.now();
+  const history=q.rows.map(row=>{
+    const ageHours=(now-new Date(row.created_at).getTime())/3600000;
+    return {...row, freshness:ageHours<=6?'current':ageHours<=24?'recent':'stale',recalculateRequired:ageHours>24};
+  });
+  res.json({sessionId:Number(req.params.id),history,policy:{currentHours:6,recentHours:24,staleAfterHours:24}});
+});
+
 v30Router.get('/session/:id/compare', async (req, res) => {
   const session = await safeQuery(res, 'SELECT * FROM v30_traveler_sessions WHERE id=$1', [req.params.id]);
   if (!session) return;
