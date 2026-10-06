@@ -285,6 +285,18 @@ CREATE TABLE IF NOT EXISTS v30_solution_time_constraints (
 );
 CREATE INDEX IF NOT EXISTS idx_v30_solution_time_constraints_solution ON v30_solution_time_constraints(solution_id,active);
 
+-- V30.46 — proposal composition
+CREATE TABLE IF NOT EXISTS v30_stay_proposal_templates (
+ id BIGSERIAL PRIMARY KEY,
+ territory_key TEXT NOT NULL REFERENCES v30_territories(territory_key) ON DELETE CASCADE,
+ name_fr TEXT NOT NULL,
+ proposal_type TEXT NOT NULL DEFAULT 'composed_stay',
+ active BOOLEAN NOT NULL DEFAULT true,
+ metadata JSONB NOT NULL DEFAULT '{}'::jsonb
+);
+CREATE INDEX IF NOT EXISTS idx_v30_stay_proposal_templates_territory ON v30_stay_proposal_templates(territory_key,active);
+
+
 CREATE INDEX IF NOT EXISTS idx_v30_health_territory ON v30_health_safety_points(territory_key,service_type);
 INSERT INTO v30_territories(country_iso3,territory_key,name_fr,region_type,latitude,longitude,climate_zone,hemisphere,tourism_tags) VALUES
 ('MAR','MAR','Maroc','country',31.7917,-7.0926,'Mediterranean / Arid / Mountain','north',ARRAY['culture','heritage','artisanat','desert','balneaire','montagne','gastronomie','senior','family']),
