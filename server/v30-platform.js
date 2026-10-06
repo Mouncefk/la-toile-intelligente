@@ -161,6 +161,30 @@ v30Router.get('/territories/:countryIso3', async (req, res) => {
   if (q) res.json({ countryIso3: req.params.countryIso3.toUpperCase(), territories: q.rows });
 });
 
+v30Router.get('/territory/:territoryKey/activity', async (req,res) => {
+  const key = String(req.params.territoryKey).toUpperCase();
+  try {
+    const t = await pool.query('SELECT territory_key,name_fr,country_iso3,climate_zone,hemisphere,latitude,longitude FROM v30_territories WHERE territory_key=$1 AND active=true',[key]);
+    if(!t.rows[0]) return res.status(404).json({error:'territory_not_found'});
+    const events = await pool.query(
+      'SELECT tourism_tag,climate_key,month,COALESCE(SUM(aggregate_value),0)::numeric aggregate_value FROM v30_institutional_events WHERE territory_key=$1 GROUP BY tourism_tag,climate_key,month ORDER BY aggregate_value DESC',
+      [key]
+    );
+    const pros = await pool.query(
+      'SELECT COUNT(*)::int professional_count,COUNT(*) FILTER(WHERE verified)::int verified_count FROM v30_pro_profiles WHERE territory_key=$1',
+      [key]
+    );
+    res.json({
+      territory:t.rows[0],
+      tourismSignals:events.rows,
+      professionalActivity:pros.rows[0],
+      confidentiality:{individualTravelersExcluded:true,privateVaultExcluded:true,healthProfilesExcluded:true}
+    });
+  } catch(e) {
+    res.status(500).json({error:e.message});
+  }
+});
+
 v30Router.get('/territory/:territoryKey', async (req, res) => {
   const key = req.params.territoryKey.toUpperCase();
   const territory = await safeQuery(res, 'SELECT * FROM v30_territories WHERE territory_key=$1', [key]);
