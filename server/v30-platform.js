@@ -613,21 +613,21 @@ v30Router.get('/session/:id/compare', async (req, res) => {
   const session = await safeQuery(res, 'SELECT * FROM v30_traveler_sessions WHERE id=$1', [req.params.id]);
   if (!session) return;
   if (!session.rows[0]) return res.status(404).json({ error: 'session_not_found' });
-  const selected = String(req.query.ids || '').split(',').map(Number).filter(Number.isInteger);
+  const sessionId = Number(req.params.id);\n  if (!Number.isInteger(sessionId) || sessionId < 1) return res.status(400).json({ error: 'invalid_session_id' });\n  const selected = String(req.query.ids || '').split(',').map(Number).filter(Number.isInteger);
   const limit = selected.length ? 20 : 5;
   const sql = selected.length
     ? 'SELECT * FROM v30_matches WHERE session_id=$1 AND solution_id=ANY($2::bigint[]) ORDER BY score DESC'
     : 'SELECT * FROM v30_matches WHERE session_id=$1 ORDER BY score DESC LIMIT $2';
-  const params = selected.length ? [req.params.id, selected] : [req.params.id, limit];
+  const params = selected.length ? [sessionId, selected] : [sessionId, limit];
   const matches = await safeQuery(res, sql, params);
   if (!matches) return;
   const ids = matches.rows.map(x => x.solution_id);
-  if (!ids.length) return res.json({ sessionId: Number(req.params.id), comparisons: [], selectionRequired: true });
+  if (!ids.length) return res.json({ sessionId, comparisons: [], selectionRequired: true });
   const solutions = await safeQuery(res, 'SELECT * FROM v30_solutions WHERE id=ANY($1::bigint[])', [ids]);
   if (!solutions) return;
   const byId = new Map(solutions.rows.map(x => [Number(x.id), x]));
   const comparisons = matches.rows.map(m => ({ ...m, solution: byId.get(Number(m.solution_id)) || null }));
-  res.json({ sessionId: Number(req.params.id), comparisons, selectionRequired: true, maxSelections: 3, next: 'vault' });
+  res.json({ sessionId, comparisons, selectionRequired: true, maxSelections: 3, next: 'vault' });
 });
 
 v30Router.post('/session/:id/compare/select', async (req, res) => {
