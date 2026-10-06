@@ -142,7 +142,11 @@ v30VaultRouter.post('/trip-draft/:id/optimize', async (req,res) => {
     const draft=d.rows[0];
     const experiences=Array.isArray(draft.experiences)?draft.experiences:[];
     const health=Array.isArray(draft.health_safety)?draft.health_safety:[];
-    const constraints={budgetLevel,pace,durationDays,accessibilityNeeds,climatePriority,safetyPriority};
+    const profile=await pool.query('SELECT traveler_type,age_group,mobility_level,party_type,party_size,budget_level,pace,accessibility_needs,preferences,constraints FROM v30_traveler_profiles WHERE session_id=$1',[draft.session_id]);
+    const traveler=profile.rows[0]||{};
+    const effectiveBudget=traveler.budget_level||budgetLevel||null;
+    const effectiveAccessibility=Array.isArray(traveler.accessibility_needs)&&traveler.accessibility_needs.length?traveler.accessibility_needs:accessibilityNeeds;
+    const constraints={budgetLevel:effectiveBudget,pace:traveler.pace||pace,durationDays:durationDays||traveler.duration_days||null,accessibilityNeeds:effectiveAccessibility,climatePriority,safetyPriority};
     const completeness={
       transport:Boolean(draft.transport && Object.keys(draft.transport).length),
       accommodation:Boolean(draft.accommodation && Object.keys(draft.accommodation).length),
@@ -150,7 +154,13 @@ v30VaultRouter.post('/trip-draft/:id/optimize', async (req,res) => {
       healthSafety:health.length>0
     };
     const hardMissing=Object.entries(completeness).filter(([,v])=>!v).map(([k])=>k);
+    const compatibilityWarnings=[];
+    if(effectiveAccessibility.length && !draft.transport?.accessibility && !draft.accommodation?.accessibility) compatibilityWarnings.push('Accessibilité non confirmée sur transport et hébergement');
+    if(effectiveBudget && !draft.notes?.budgetConfirmed) compatibilityWarnings.push('Budget global non confirmé');
+    if(traveler.traveler_type && !draft.notes?.audienceConfirmed) compatibilityWarnings.push('Adéquation du public non confirmée');
     let score=Math.round(Object.values(completeness).filter(Boolean).length/4*100);
+    score-=compatibilityWarnings.length*5;
+    score=Math.max(0,score);
     const dates=draft.notes?.dates||{};
     let dateOptimization=null;
     if(dates.startDate && draft.territory_key){
@@ -182,7 +192,7 @@ v30VaultRouter.post('/trip-draft/:id/optimize', async (req,res) => {
         if(candidates[0]?.favorable) score=Math.min(100,score+5);
       }
     }
-    const optimization={score,completeness,hardMissing,constraints,dateOptimization,optimizedAt:new Date().toISOString()};
+    const optimization={score,completeness,hardMissing,compatibilityWarnings,constraints,dateOptimization,travelerContext:{travelerType:traveler.traveler_type||null,budgetLevel:effectiveBudget,accessibilityNeeds:effectiveAccessibility},optimizedAt:new Date().toISOString()};
     const q=await pool.query('UPDATE v30_trip_drafts SET notes=jsonb_set(COALESCE(notes,\'{}\'::jsonb),\'{optimization}\',$1::jsonb,true),status=CASE WHEN $2>=75 THEN \'ready\' ELSE status END,updated_at=now() WHERE id=$3 RETURNING *',
       [JSON.stringify(optimization),score,req.params.id]);
     res.json({draft:q.rows[0],optimization,travelerDecides:true});
