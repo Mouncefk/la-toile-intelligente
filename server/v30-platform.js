@@ -516,6 +516,14 @@ v30Router.post('/graph/propagate', async (req,res) => {
           'UPDATE v30_matches SET reasons=COALESCE(reasons,\'{}\'::jsonb) || $1::jsonb WHERE solution_id=$2 RETURNING id,solution_id',
           [JSON.stringify({invalidated:true,invalidationReason:event?.event_type||'entity_change',invalidationAt:new Date().toISOString()}),eid]
         );
+    if (q.rowCount) {
+      for (const row of q.rows) {
+        await pool.query(
+          'INSERT INTO v30_recalculation_queue(session_id,solution_id,territory_key,reason,priority) VALUES($1,$2,$3,$4,$5)',
+          [row.session_id || null,row.solution_id || null,tk,event?.event_type || 'graph_change',et === 'weather' || et === 'safety' ? 90 : 70]
+        );
+      }
+    }
     res.json({propagated:true,eventId:event?.id||eventId||null,scope:{territoryKey:tk,entityType:et,entityId:eid},invalidatedCount:q.rowCount,recalculationRequired:q.rowCount>0});
   }catch(e){res.status(500).json({error:e.message});}
 });
