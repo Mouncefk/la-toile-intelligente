@@ -53,7 +53,7 @@ RETURNS INTEGER LANGUAGE plpgsql AS $$
 DECLARE n INTEGER;
 BEGIN
   INSERT INTO request_dispatches_v12(request_id, professional_id, match_score, distance_km)
-  SELECT p_request_id, m.professional_id, m.match_score, m.distance_km
+  SELECT p_request_id, m.professional_id, m.score, m.distance_km
   FROM traveler_match_results_v11 m
   WHERE m.request_id = p_request_id
   ON CONFLICT (request_id, professional_id) DO NOTHING;

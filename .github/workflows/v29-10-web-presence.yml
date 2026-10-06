@@ -1,0 +1,34 @@
+name: V29.10 Web Presence Validation
+
+on:
+  push:
+    branches:
+      - v29-10-official-web-presence
+  pull_request:
+    branches:
+      - main
+
+jobs:
+  validate:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+      - run: npm install
+      - name: Start PostgreSQL/PostGIS
+        run: docker compose up -d db
+      - name: Wait for database
+        run: |
+          for i in {1..30}; do
+            docker compose exec -T db pg_isready -U latoile -d la_toile && exit 0
+            sleep 2
+          done
+          docker compose logs db
+          exit 1
+      - name: Apply V29.10 schema
+        run: docker compose exec -T db psql -U latoile -d la_toile -f /dev/stdin < database/seed/28_v29_10_official_web_presence.sql
+      - run: node --check server/index.js
+      - run: node --check server/v29-10-web-presence.js
+      - run: npm run test:v29-10:web-presence

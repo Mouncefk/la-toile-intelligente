@@ -1,0 +1,22 @@
+services:
+  db:
+    image: postgis/postgis:16-3.4
+    container_name: latoile-db-v27
+    restart: unless-stopped
+    environment:
+      POSTGRES_DB: la_toile
+      POSTGRES_USER: latoile
+      POSTGRES_PASSWORD: latoile_dev
+    ports:
+      - "5432:5432"
+    volumes:
+      - latoile_pgdata_v27:/var/lib/postgresql/data
+      - ./database/seed:/docker-entrypoint-initdb.d:ro
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U latoile -d la_toile"]
+      interval: 5s
+      timeout: 5s
+      retries: 20
+
+volumes:
+  latoile_pgdata_v27:
