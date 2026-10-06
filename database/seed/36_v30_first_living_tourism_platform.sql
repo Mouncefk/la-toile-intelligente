@@ -493,6 +493,12 @@ CREATE TABLE IF NOT EXISTS v30_pro_opportunity_signals (
  metadata JSONB NOT NULL DEFAULT '{}'::jsonb,
  created_at TIMESTAMPTZ NOT NULL DEFAULT now()
 );
+
+INSERT INTO v30_pro_opportunity_signals(territory_key,source_pro_id,target_pro_id,signal_type,title,rationale,suggested_action,score,metadata)
+SELECT 'MARRAKECH',a.id,b.id,'complementary_offer','Artisanat + patrimoine : complémentarité détectée','Les profils artisanat et guide partagent le même territoire et des spécialités complémentaires.','Proposer une mise en relation pour co-construire une expérience.',92,'{"pilot":true}'::jsonb
+FROM v30_pro_profiles a JOIN v30_pro_profiles b ON a.territory_key=b.territory_key AND a.id<>b.id
+WHERE a.name='Réseau artisanat Marrakech' AND b.name='Réseau guides Marrakech'
+AND NOT EXISTS (SELECT 1 FROM v30_pro_opportunity_signals s WHERE s.title='Artisanat + patrimoine : complémentarité détectée');
 CREATE INDEX IF NOT EXISTS idx_v30_pro_signals_territory ON v30_pro_opportunity_signals(territory_key,status,score DESC);
 
 ALTER TABLE v30_b2b_calls ADD COLUMN IF NOT EXISTS geographic_scope TEXT NOT NULL DEFAULT 'local' CHECK (geographic_scope IN ('local','regional','national','international','global'));
