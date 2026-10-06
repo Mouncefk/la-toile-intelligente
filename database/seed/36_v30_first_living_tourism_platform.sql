@@ -427,3 +427,14 @@ CREATE TABLE IF NOT EXISTS v30_b2b_call_matches (
  status TEXT NOT NULL DEFAULT 'suggested',
  UNIQUE(call_id,professional_id)
 );
+
+CREATE TABLE IF NOT EXISTS v30_b2b_call_events (
+ id BIGSERIAL PRIMARY KEY,
+ call_id BIGINT NOT NULL REFERENCES v30_b2b_calls(id) ON DELETE CASCADE,
+ actor_pro_id BIGINT REFERENCES v30_pro_profiles(id) ON DELETE SET NULL,
+ event_type TEXT NOT NULL CHECK (event_type IN ('published','updated','response_submitted','shortlisted','accepted','rejected','closed')),
+ response_id BIGINT REFERENCES v30_b2b_responses(id) ON DELETE SET NULL,
+ metadata JSONB NOT NULL DEFAULT '{}'::jsonb,
+ created_at TIMESTAMPTZ NOT NULL DEFAULT now()
+);
+CREATE INDEX IF NOT EXISTS idx_v30_b2b_events_call ON v30_b2b_call_events(call_id,created_at);
