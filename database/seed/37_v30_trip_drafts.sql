@@ -11,7 +11,8 @@ CREATE TABLE IF NOT EXISTS v30_trip_drafts (
  health_safety JSONB NOT NULL DEFAULT '[]'::jsonb,
  notes JSONB NOT NULL DEFAULT '{}'::jsonb,
  created_at TIMESTAMPTZ NOT NULL DEFAULT now(),
- updated_at TIMESTAMPTZ NOT NULL DEFAULT now()
+ updated_at TIMESTAMPTZ NOT NULL DEFAULT now(),
+ UNIQUE(session_id)
 );
 CREATE INDEX IF NOT EXISTS idx_v30_trip_drafts_session ON v30_trip_drafts(session_id,updated_at DESC);
 CREATE INDEX IF NOT EXISTS idx_v30_trip_drafts_traveler ON v30_trip_drafts(traveler_id,updated_at DESC);
