@@ -33,6 +33,9 @@ jobs:
           node-version: 24
       - name: Install dependencies
         run: npm install
+      - name: V30 server smoke syntax
+        run: node --check server/v30-vault.js && node --check server/v30-platform.js
+
       - name: V30 syntax check
         run: npm run check:v30
       - name: V30 production build
