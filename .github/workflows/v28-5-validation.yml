@@ -4,6 +4,7 @@ on:
   push:
     branches:
       - v28-5-travel-history
+      - v28-7-v21-recommendation-persistence
   pull_request:
     branches:
       - v28-4-intelligent-search
@@ -18,12 +19,34 @@ jobs:
         with:
           node-version: 20
       - run: npm install
+      - name: Start PostgreSQL/PostGIS
+        run: docker compose up -d db
+      - name: Wait for database
+        run: |
+          for i in {1..30}; do
+            docker compose exec -T db pg_isready -U latoile -d la_toile && exit 0
+            sleep 2
+          done
+          docker compose logs db
+          exit 1
       - run: npm run test:v28-5:history-context
       - run: npm run test:v28-5:recommendation-bridge
       - run: npm run test:v28-5:v21-adapter
       - run: V28_HISTORY_TEST_SERVER=1 PORT=4300 node server/index.js > /tmp/latoile-test-server.log 2>&1 &
       - run: node -e "setTimeout(()=>{},1000)"
       - run: npm run test:v28-5:v21-history-recommend
+      - run: npm run test:v28-7:feedback
+      - run: npm run test:v28-7:e2e
+      - name: Run V28.8 professional opportunity E2E
+        run: npm run test:v28-8:professional-opportunity
+      - name: Run V28.8 opportunity to dispatch E2E
+        run: npm run test:v28-8:opportunity-dispatch
+      - name: Run V28.9 professional responses and comparison E2E
+        run: npm run test:v28-9:professional-responses
+      - name: Run V29.1 native communication E2E
+        run: npm run test:v29-1:communication
+      - run: npm run test:v29-2:file-exchange
+      - run: npm run test:v29-9:directory
       - run: node --check server/index.js
       - run: node --check server/history-recommendation-v28-5.js
       - run: node --check server/recommendation-bridge-v28-5.js

@@ -1,0 +1,61 @@
+const base=process.env.TEST_BASE_URL||'http://localhost:4300';
+const assert=(c,m)=>{if(!c)throw new Error(m)};
+const headers={'content-type':'application/json'};
+(async()=>{
+  const travelerId=Number(process.env.TEST_TRAVELER_ID||1);
+  const otherTravelerId=Number(process.env.TEST_OTHER_TRAVELER_ID||2);
+  const rr=await fetch(base+'/api/ai/v21-history/recommend',{method:'POST',headers,body:JSON.stringify({travelerId,intent:{activity:'Artisanat'}})});
+  const rd=await rr.json();
+  assert(rr.ok&&rd.sessionId,'recommend failed: '+JSON.stringify(rd));
+  const lr=await fetch(base+'/api/ai/v21/sessions/'+rd.sessionId+'/recommendations');
+  const ld=await lr.json();
+  assert(lr.ok&&ld.recommendations?.length,'recommendation missing');
+  const recommendationId=ld.recommendations[0].id;
+  const op=await fetch(base+'/api/ai/v21/recommendations/'+recommendationId+'/opportunity',{method:'POST',headers,body:JSON.stringify({travelerId,serviceNeeds:[{type:'artisanat',role:'artisan'}],location:{countryIso3:'MAR'},scope:'national'})});
+  assert(op.ok,'opportunity failed');
+  const dp=await fetch(base+'/api/ai/v21/recommendations/'+recommendationId+'/opportunity/dispatch',{method:'POST',headers,body:JSON.stringify({travelerId,rawText:'Recherche artisanat',radiusKm:100})});
+  const dd=await dp.json();
+  assert(dp.status===201,'dispatch failed: '+JSON.stringify(dd));
+  const rp=await fetch(base+'/api/ai/v21/recommendations/'+recommendationId+'/professional-responses?travelerId='+travelerId);
+  let rpd=await rp.json();
+  if(!rpd.responses?.length){
+    const {Client}=await import('pg');
+    const db=new Client({connectionString:process.env.DATABASE_URL||'postgresql://latoile:latoile_dev@localhost:5432/la_toile'});
+    await db.connect();
+    let ds=await db.query('SELECT id,professional_id FROM request_dispatches_v12 WHERE request_id=$1 ORDER BY id LIMIT 1',[dd.requestId]);
+    if(!ds.rows[0]){
+      const ps=await db.query('SELECT id FROM professionals ORDER BY id LIMIT 1');
+      assert(ps.rows[0],'no professional fixture available');
+      await db.query("INSERT INTO request_dispatches_v12(request_id,professional_id,match_score,distance_km,status) VALUES($1,$2,90,1,'sent') ON CONFLICT DO NOTHING",[dd.requestId,ps.rows[0].id]);
+      ds=await db.query('SELECT id,professional_id FROM request_dispatches_v12 WHERE request_id=$1 ORDER BY id LIMIT 1',[dd.requestId]);
+    }
+    assert(ds.rows[0],'no dispatched professional available');
+    await db.query("INSERT INTO professional_responses_v12(dispatch_id,professional_id,message) VALUES($1,$2,'Réponse de test V29.1') ON CONFLICT DO NOTHING",[ds.rows[0].id,ds.rows[0].professional_id]);
+    await db.end();
+    const retry=await fetch(base+'/api/ai/v21/recommendations/'+recommendationId+'/professional-responses?travelerId='+travelerId);
+    rpd=await retry.json();
+  }
+  assert(rpd.responses?.length,'no professional response available for communication test');
+  const professionalId=Number(rpd.responses[0].professionalId);
+  const create=await fetch(base+'/api/v29/conversations',{method:'POST',headers,body:JSON.stringify({recommendationId,travelerId,professionalId,message:'Bonjour, pouvez-vous préciser votre disponibilité ?'})});
+  const cd=await create.json();
+  assert(create.status===201&&cd.thread?.id,'thread creation failed: '+JSON.stringify(cd));
+  assert(cd.privacy?.anonymousByDefault===true&&cd.privacy?.contactDetailsExcluded===true,'privacy flags missing');
+  const tid=cd.thread.id;
+  const tr=await fetch(base+'/api/v29/conversations/'+tid+'?actorType=traveler&actorId='+travelerId);
+  const td=await tr.json();
+  assert(tr.ok&&td.messages?.length===1,'traveler thread read failed');
+  assert(td.thread?.identity?.travelerLabel==='Voyageur','traveler identity not masked');
+  assert(!JSON.stringify(td).match(/@|\\+?[0-9][0-9 -]{6,}/),'possible direct contact data leaked');
+  const pr=await fetch(base+'/api/v29/conversations/'+tid+'/messages',{method:'POST',headers,body:JSON.stringify({actorType:'professional',actorId:professionalId,body:'Oui, nous pouvons échanger ici sur les disponibilités.'})});
+  const pd=await pr.json();
+  assert(pr.status===201&&pd.message?.sender_type==='professional','professional reply failed');
+  const tr2=await fetch(base+'/api/v29/conversations/'+tid+'?actorType=traveler&actorId='+travelerId);
+  const td2=await tr2.json();
+  assert(td2.messages?.length===2,'traveler did not receive reply');
+  const read=await fetch(base+'/api/v29/conversations/'+tid+'/read',{method:'POST',headers,body:JSON.stringify({actorType:'traveler',actorId:travelerId})});
+  assert(read.ok,'read failed');
+  const other=await fetch(base+'/api/v29/conversations/'+tid+'?actorType=traveler&actorId='+otherTravelerId);
+  assert(other.status===403,'other traveler accessed thread');
+  console.log('V29.1 native traveler-professional communication E2E checks passed.');
+})().catch(e=>{console.error(e);process.exit(1)});
