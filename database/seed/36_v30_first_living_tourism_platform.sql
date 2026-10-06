@@ -498,3 +498,14 @@ INSERT INTO v30_b2b_geo_scopes(scope_key,scope_type,name_fr,description) VALUES
 ('INTERNATIONAL','international','International','Plusieurs pays ciblés par l’émetteur.'),
 ('GLOBAL','global','Mondial','Ouverture mondiale du réseau professionnel.')
 ON CONFLICT(scope_key) DO NOTHING;
+
+CREATE TABLE IF NOT EXISTS v30_b2b_geo_membership (
+ scope_key TEXT NOT NULL REFERENCES v30_b2b_geo_scopes(scope_key) ON DELETE CASCADE,
+ node_key TEXT NOT NULL REFERENCES v30_geography_nodes(node_key) ON DELETE CASCADE,
+ PRIMARY KEY(scope_key,node_key)
+);
+INSERT INTO v30_b2b_geo_membership(scope_key,node_key) VALUES
+('GLOBAL','WORLD'),('GLOBAL','HEMISPHERE_NORTH'),('GLOBAL','HEMISPHERE_SOUTH'),('GLOBAL','HEMISPHERE_EQUATORIAL'),
+('NATIONAL','COUNTRY_MAR'),('NATIONAL','COUNTRY_FRA'),
+('REGIONAL','COUNTRY_MAR'),('REGIONAL','COUNTRY_FRA')
+ON CONFLICT DO NOTHING;
