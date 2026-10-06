@@ -447,8 +447,15 @@ v30Router.get('/session/:id/solutions', async (req, res) => {
     } else {
       reasons.push('Conditions météo actuelles non disponibles — aucune inférence');
     }
-    score = Math.max(0, Math.min(100, score));
-    return { ...solution, compatibilityScore: score, matchReasons: reasons };
+    let qualityScore = 40;
+    if (solution.active) qualityScore += 15;
+    if (solution.public_contact && Object.keys(solution.public_contact).length) qualityScore += 15;
+    if (Number.isFinite(Number(solution.latitude)) && Number.isFinite(Number(solution.longitude))) qualityScore += 15;
+    if (solution.provider_name) qualityScore += 5;
+    const rankingScore = Math.round((score * 0.85) + (qualityScore * 0.15));
+    reasons.push('Qualité des données: ' + qualityScore + '/100');
+    score = Math.max(0, Math.min(100, rankingScore));
+    return { ...solution, compatibilityScore: score, dataQualityScore: qualityScore, matchReasons: reasons };
   }).sort((a,b) => b.compatibilityScore-a.compatibilityScore || a.title.localeCompare(b.title));
 
   for (const solution of scored) {
