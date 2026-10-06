@@ -455,7 +455,18 @@ v30Router.get('/session/:id/solutions', async (req, res) => {
     const rankingScore = Math.round((score * 0.85) + (qualityScore * 0.15));
     reasons.push('Qualité des données: ' + qualityScore + '/100');
     score = Math.max(0, Math.min(100, rankingScore));
-    return { ...solution, compatibilityScore: score, dataQualityScore: qualityScore, matchReasons: reasons };
+    return {
+      ...solution,
+      compatibilityScore: score,
+      dataQualityScore: qualityScore,
+      matchReasons: reasons,
+      rankingMeta: {
+        computedAt: new Date().toISOString(),
+        scoringVersion: 'v30.2',
+        evidenceFactors: ['active','public_contact','geolocation','provider_identity'],
+        weatherSourceStatus: observed.status
+      }
+    };
   }).sort((a,b) => b.compatibilityScore-a.compatibilityScore || a.title.localeCompare(b.title));
 
   for (const solution of scored) {
