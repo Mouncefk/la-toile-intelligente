@@ -383,6 +383,20 @@ INSERT INTO v30_pro_profiles(country_iso3,territory_key,name,pro_type,specialtie
 ('FRA','BRETAGNE','Réseau littoral Bretagne','experience',ARRAY['balneaire','nature','culture'],ARRAY['family','senior'],ARRAY['BRETAGNE'],true,'{"pilot":true}'::jsonb)
 ON CONFLICT DO NOTHING;
 
+CREATE TABLE IF NOT EXISTS v30_pro_opportunities (
+ id BIGSERIAL PRIMARY KEY,
+ source_pro_id BIGINT NOT NULL REFERENCES v30_pro_profiles(id) ON DELETE CASCADE,
+ territory_key TEXT REFERENCES v30_territories(territory_key) ON DELETE SET NULL,
+ opportunity_type TEXT NOT NULL,
+ title TEXT NOT NULL,
+ description TEXT,
+ specialties TEXT[] NOT NULL DEFAULT '{}',
+ audiences TEXT[] NOT NULL DEFAULT '{}',
+ status TEXT NOT NULL DEFAULT 'open' CHECK(status IN ('open','closed','draft')),
+ metadata JSONB NOT NULL DEFAULT '{}'::jsonb,
+ created_at TIMESTAMPTZ NOT NULL DEFAULT now()
+);
+
 INSERT INTO v30_pro_opportunities(source_pro_id,territory_key,opportunity_type,title,description,specialties,audiences,metadata)
 SELECT p.id,'MARRAKECH','co_creation','Créer une expérience artisanat + patrimoine','Associer découverte des savoir-faire, médiation culturelle et expérience territoriale.',ARRAY['artisanat','culture','heritage'],ARRAY['senior','family'],'{"pilot":true}'::jsonb FROM v30_pro_profiles p WHERE p.name='Réseau artisanat Marrakech'
 AND NOT EXISTS (SELECT 1 FROM v30_pro_opportunities o WHERE o.title='Créer une expérience artisanat + patrimoine');
