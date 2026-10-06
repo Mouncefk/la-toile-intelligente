@@ -324,12 +324,35 @@ v30Router.post('/vault', async (req, res) => {
 
 v30Router.get('/pro/opportunity-signals', async (req, res) => {
   const params = [];
-  let sql = 'SELECT s.*,sp.name source_name,tp.name target_name FROM v30_pro_opportunity_signals s LEFT JOIN v30_pro_profiles sp ON sp.id=s.source_pro_id LEFT JOIN v30_pro_profiles tp ON tp.id=s.target_pro_id WHERE s.status=\\'suggested\\'';
-  if (req.query.territoryKey) { params.push(req.query.territoryKey); sql += ' AND s.territory_key=
- + params.length; }
-  sql += ' ORDER BY s.score DESC,s.created_at DESC LIMIT 20';
-  const q = await safeQuery(res, sql, params);
-  if (q) res.json({ signals: q.rows });
+  const where = ["s.status='suggested'"];
+  if (req.query.territoryKey) { params.push(String(req.query.territoryKey).toUpperCase()); where.push('s.territory_key=$' + params.length); }
+  const q = await safeQuery(res,
+    'SELECT s.*,sp.name source_name,tp.name target_name FROM v30_pro_opportunity_signals s LEFT JOIN v30_pro_profiles sp ON sp.id=s.source_pro_id LEFT JOIN v30_pro_profiles tp ON tp.id=s.target_pro_id WHERE ' + where.join(' AND ') + ' ORDER BY s.score DESC,s.created_at DESC LIMIT 20',
+    params);
+  if (q) res.json({ signals:q.rows });
+});
+
+v30Router.get('/pro/matches/:proId', async (req,res) => {
+  const pro=await safeQuery(res,'SELECT * FROM v30_pro_profiles WHERE id=$1 AND active=true',[req.params.proId]);
+  if(!pro) return;
+  if(!pro.rows[0]) return res.status(404).json({error:'professional_not_found'});
+  const p=pro.rows[0];
+  const q=await safeQuery(res,
+    `SELECT o.*,sp.name source_name,
+      GREATEST(0,
+        40
+        + CASE WHEN o.territory_key=p.territory_key THEN 25 ELSE 0 END
+        + CASE WHEN o.specialties && p.specialties THEN 20 ELSE 0 END
+        + CASE WHEN o.audiences && p.audiences THEN 10 ELSE 0 END
+        + CASE WHEN o.geographic_scope='global' THEN 5 ELSE 0 END
+      ) AS match_score
+     FROM v30_pro_opportunities o
+     JOIN v30_pro_profiles sp ON sp.id=o.source_pro_id
+     WHERE o.status='open' AND o.source_pro_id<>p.id
+       AND (o.territory_key=p.territory_key OR o.specialties && p.specialties OR o.audiences && p.audiences)
+     ORDER BY match_score DESC,o.created_at DESC LIMIT 50`,
+    [req.params.proId]);
+  if(q) res.json({professional:p,matches:q.rows});
 });
 
 v30Router.get('/health', (_req, res) => res.json({ ok: true, version: '30.2', router: 'v30-platform' }));
