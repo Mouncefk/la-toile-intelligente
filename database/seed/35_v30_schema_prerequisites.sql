@@ -450,3 +450,7 @@ CREATE TABLE IF NOT EXISTS v30_recalculation_queue (
 );
 CREATE INDEX IF NOT EXISTS idx_v30_recalc_pending
   ON v30_recalculation_queue(status, priority DESC, created_at);
+
+
+CREATE INDEX IF NOT EXISTS idx_v30_recalc_dedupe
+  ON v30_recalculation_queue(session_id, solution_id, reason, status);
