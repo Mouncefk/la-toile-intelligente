@@ -103,6 +103,37 @@ v30VaultRouter.post('/trip-draft/:id/compose', async (req, res) => {
   } catch(e) { res.status(500).json({ error:e.message }); }
 });
 
+v30VaultRouter.put('/trip-draft/:id/dates', async (req,res) => {
+  const { startDate=null, endDate=null, flexibleDays=0, durationDays=null } = req.body || {};
+  try {
+    if (startDate && endDate && new Date(endDate) < new Date(startDate)) return res.status(400).json({error:'endDate_before_startDate'});
+    const q=await pool.query(
+      'UPDATE v30_trip_drafts SET notes=jsonb_set(COALESCE(notes,\'{}\'::jsonb),\'{dates}\',$1::jsonb,true),updated_at=now() WHERE id=$2 RETURNING *',
+      [JSON.stringify({startDate,endDate,flexibleDays:Math.max(0,Number(flexibleDays)||0),durationDays:durationDays?Number(durationDays):null}),req.params.id]
+    );
+    if(!q.rows[0]) return res.status(404).json({error:'trip_draft_not_found'});
+    res.json({draft:q.rows[0],dates:q.rows[0].notes?.dates||null});
+  } catch(e){res.status(500).json({error:e.message});}
+});
+
+v30VaultRouter.get('/trip-draft/:id/date-windows', async (req,res) => {
+  try {
+    const q=await pool.query('SELECT * FROM v30_trip_drafts WHERE id=$1',[req.params.id]);
+    if(!q.rows[0]) return res.status(404).json({error:'trip_draft_not_found'});
+    const dates=q.rows[0].notes?.dates||{};
+    const start=dates.startDate?new Date(dates.startDate):null;
+    const flexibility=Math.min(30,Math.max(0,Number(dates.flexibleDays)||0));
+    const windows=[];
+    if(start && !Number.isNaN(start.getTime())){
+      for(let d=-flexibility;d<=flexibility;d++){
+        const x=new Date(start); x.setUTCDate(x.getUTCDate()+d);
+        windows.push({startDate:x.toISOString().slice(0,10),offsetDays:d});
+      }
+    }
+    res.json({draftId:Number(req.params.id),dates,windows});
+  }catch(e){res.status(500).json({error:e.message});}
+});
+
 v30VaultRouter.post('/trip-draft/:id/optimize', async (req,res) => {
   const { budgetLevel=null, pace=null, durationDays=null, accessibilityNeeds=[], climatePriority=true, safetyPriority=true } = req.body || {};
   try {
