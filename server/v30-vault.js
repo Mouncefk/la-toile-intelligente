@@ -103,6 +103,29 @@ v30VaultRouter.post('/trip-draft/:id/compose', async (req, res) => {
   } catch(e) { res.status(500).json({ error:e.message }); }
 });
 
+v30VaultRouter.post('/trip-draft/:id/optimize', async (req,res) => {
+  const { budgetLevel=null, pace=null, durationDays=null, accessibilityNeeds=[], climatePriority=true, safetyPriority=true } = req.body || {};
+  try {
+    const d=await pool.query('SELECT * FROM v30_trip_drafts WHERE id=$1',[req.params.id]);
+    if(!d.rows[0]) return res.status(404).json({error:'trip_draft_not_found'});
+    const draft=d.rows[0];
+    const experiences=Array.isArray(draft.experiences)?draft.experiences:[];
+    const health=Array.isArray(draft.health_safety)?draft.health_safety:[];
+    const constraints={budgetLevel,pace,durationDays,accessibilityNeeds,climatePriority,safetyPriority};
+    const completeness={
+      transport:Boolean(draft.transport && Object.keys(draft.transport).length),
+      accommodation:Boolean(draft.accommodation && Object.keys(draft.accommodation).length),
+      experiences:experiences.length>0,
+      healthSafety:health.length>0
+    };
+    const hardMissing=Object.entries(completeness).filter(([,v])=>!v).map(([k])=>k);
+    const score=Math.round(Object.values(completeness).filter(Boolean).length/4*100);
+    const q=await pool.query('UPDATE v30_trip_drafts SET notes=jsonb_set(COALESCE(notes,\'{}\'::jsonb),\'{optimization}\',$1::jsonb,true),status=CASE WHEN $2>=75 THEN \'ready\' ELSE status END,updated_at=now() WHERE id=$3 RETURNING *',
+      [JSON.stringify({score,completeness,hardMissing,constraints,optimizedAt:new Date().toISOString()}),score,req.params.id]);
+    res.json({draft:q.rows[0],optimization:{score,completeness,hardMissing,constraints},travelerDecides:true});
+  } catch(e){res.status(500).json({error:e.message});}
+});
+
 v30VaultRouter.get('/trip-draft/:id/summary', async (req,res) => {
   try {
     const q=await pool.query('SELECT id,title,territory_key,status,transport,accommodation,experiences,health_safety,notes,updated_at FROM v30_trip_drafts WHERE id=$1',[req.params.id]);
