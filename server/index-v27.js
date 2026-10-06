@@ -1,9 +1,11 @@
 import express from 'express';
+import { v27Router } from './orchestrator-v27.js';
 import pg from 'pg';
 const {Pool}=pg;
 const app=express();
 const pool=new Pool({connectionString:process.env.DATABASE_URL||'postgresql://latoile:latoile_dev@localhost:5432/la_toile'});
 app.use(express.json());
+app.use('/api/experience/v27', v27Router);
 
 function understand(rawText){
  const t=rawText.toLowerCase();
@@ -28,7 +30,7 @@ function scoreCandidate(row,intent){
  return {score:Math.max(0,Math.min(100,score)),reasons};
 }
 
-app.get('/api/health',(req,res)=>res.json({ok:true,version:'17.0.0',engine:'intent+matching+responses+professional-space+traveler-vault+journey+reservations+pro-network+b2b-rfq+institutional-dashboard'}));
+app.get('/api/health',(req,res)=>res.json({ok:true,version:'27.0.0',engine:'experience-orchestrator-v27+intent+matching+responses+professional-space+traveler-vault+journey+reservations+pro-network+b2b-rfq+institutional-dashboard'}));
 
 app.get('/api/institutions/v17/:institutionId/dashboard',async(req,res)=>{
  try{
@@ -74,79 +76,6 @@ app.post('/api/matching/save',async(req,res)=>{
 
 
 
-
-app.get('/api/professionals/v29/directory',async(req,res)=>{
- const countryIso3=req.query.countryIso3?String(req.query.countryIso3).toUpperCase():null;
- const lat=req.query.lat!==undefined?Number(req.query.lat):null;
- const lon=req.query.lon!==undefined?Number(req.query.lon):null;
- const radiusKm=req.query.radiusKm!==undefined?Number(req.query.radiusKm):100;
- const q=req.query.q?.trim()||null;
- const service=req.query.service?.trim()||null;
- if((lat!==null&&!Number.isFinite(lat))||(lon!==null&&!Number.isFinite(lon)))return res.status(400).json({error:'lat_lon_invalid'});
- if((lat===null)!==(lon===null))return res.status(400).json({error:'lat_lon_pair_required'});
- if(!Number.isFinite(radiusKm)||radiusKm<=0||radiusKm>1000)return res.status(400).json({error:'radiusKm_invalid'});
- try{
-  const sql=`SELECT p.id AS professional_id,
-    COALESCE(pp.display_name,p.name) AS display_name,
-    pp.headline,pp.website,pp.address,pp.languages,pp.specialties,
-    pp.availability_status,pp.accepting_requests,
-    COALESCE(v.verification_level,'unverified') AS verification_level,
-    COALESCE((SELECT string_agg(DISTINCT ps.label, ', ' ORDER BY ps.label) FROM professional_services_v11 ps WHERE ps.professional_id=p.id AND ps.active=true),'Professionnel') AS service_labels,
-    CASE WHEN $2::double precision IS NULL THEN NULL ELSE ST_Distance(p.geom::geography,ST_SetSRID(ST_MakePoint($3,$2),4326)::geography)/1000.0 END AS distance_km
-   FROM professionals p
-   LEFT JOIN professional_profiles_v13 pp ON pp.professional_id=p.id
-   LEFT JOIN verification_profiles_v22 v ON v.actor_type='professional' AND v.actor_id=p.id
-   WHERE p.geom IS NOT NULL
-     AND ($1::text IS NULL OR EXISTS(
-       SELECT 1 FROM countries c
-       WHERE upper(c.iso3)=upper($1) AND c.geom IS NOT NULL AND ST_Intersects(c.geom,p.geom)
-     ))
-     AND ($2::double precision IS NULL OR ST_DWithin(
-       p.geom::geography,
-       ST_SetSRID(ST_MakePoint($3,$2),4326)::geography,
-       $4*1000
-     ))
-     AND ($5::text IS NULL OR p.name ILIKE '%'||$5||'%' OR pp.display_name ILIKE '%'||$5||'%' OR pp.headline ILIKE '%'||$5||'%' OR EXISTS(
-       SELECT 1 FROM professional_services_v11 psq
-       WHERE psq.professional_id=p.id AND psq.active=true AND psq.label ILIKE '%'||$5||'%'
-     ))
-     AND ($6::text IS NULL OR EXISTS(
-       SELECT 1 FROM professional_services_v11 pss
-       WHERE pss.professional_id=p.id AND pss.active=true AND pss.label ILIKE '%'||$6||'%'
-     ))
-   ORDER BY distance_km NULLS LAST,display_name ASC
-   LIMIT 100`;
-  const params=[countryIso3,lat,lon,radiusKm,q,service];
-  const result=await pool.query(sql,params);
-  res.json({
-   scope:lat===null?'country':radiusKm<=25?'local':radiusKm<=150?'regional':'national',
-   countryIso3,
-   radiusKm:lat===null?null:radiusKm,
-   query:q,
-   service,
-   count:result.rowCount,
-   professionals:result.rows,
-   principle:'open_directory_plus_intelligent_matching'
-  });
- }catch(e){res.status(500).json({error:e.message})}
-});
-
-app.get('/api/professionals/v29/:professionalId/profile',async(req,res)=>{
- try{
-  const q=await pool.query(`SELECT p.id AS professional_id,
-    COALESCE(pp.display_name,p.name) AS display_name,pp.headline,pp.website,pp.email,pp.phone,pp.address,
-    pp.languages,pp.specialties,pp.service_area_km,pp.accepting_requests,pp.availability_status,
-    COALESCE(v.verification_level,'unverified') AS verification_level,
-    COALESCE((SELECT json_agg(json_build_object('key',ps.service_key,'label',ps.label) ORDER BY ps.label)
-      FROM professional_services_v11 ps WHERE ps.professional_id=p.id AND ps.active=true),'[]'::json) AS services
-   FROM professionals p
-   LEFT JOIN professional_profiles_v13 pp ON pp.professional_id=p.id
-   LEFT JOIN verification_profiles_v22 v ON v.actor_type='professional' AND v.actor_id=p.id
-   WHERE p.id=$1 AND p.geom IS NOT NULL`,[req.params.professionalId]);
-  if(!q.rows[0])return res.status(404).json({error:'professional_not_found'});
-  res.json({...q.rows[0],principle:'public_professional_profile_traveler_identity_not_shared'});
- }catch(e){res.status(500).json({error:e.message})}
-});
 
 app.get('/api/professionals/v13/:professionalId/inbox',async(req,res)=>{
  try{const q=await pool.query(`SELECT * FROM professional_inbox_v13 WHERE professional_id=$1 ORDER BY match_score DESC,sent_at DESC`,[req.params.professionalId]);res.json({professionalId:Number(req.params.professionalId),count:q.rowCount,requests:q.rows})}catch(e){res.status(500).json({error:e.message})}
@@ -302,7 +231,7 @@ app.get('/api/pro-network/v16/:professionalId/rfqs', async (req,res)=>{try{const
 app.post('/api/pro-network/v16/rfqs/:rfqId/responses', async (req,res)=>{const {professionalId,message,amount=null,currencyCode=null,availabilityStart=null,availabilityEnd=null}=req.body;if(!professionalId||!message?.trim())return res.status(400).json({error:'professionalId_message_required'});try{const q=await pool.query(`INSERT INTO b2b_rfq_responses_v16(rfq_id,professional_id,message,amount,currency_code,availability_start,availability_end) SELECT $1,$2,$3,$4,$5,$6,$7 WHERE EXISTS(SELECT 1 FROM b2b_rfq_recipients_v16 WHERE rfq_id=$1 AND professional_id=$2) RETURNING *`,[req.params.rfqId,professionalId,message,amount,currencyCode,availabilityStart,availabilityEnd]);if(!q.rows[0])return res.status(403).json({error:'not_invited'});await pool.query(`UPDATE b2b_rfq_recipients_v16 SET status='responded' WHERE rfq_id=$1 AND professional_id=$2`,[req.params.rfqId,professionalId]);res.status(201).json(q.rows[0])}catch(e){res.status(500).json({error:e.message})}});
 app.get('/api/pro-network/v16/rfqs/:rfqId/responses', async (req,res)=>{try{const q=await pool.query(`SELECT r.*,p.name AS professional_name FROM b2b_rfq_responses_v16 r JOIN professionals p ON p.id=r.professional_id WHERE r.rfq_id=$1 ORDER BY r.created_at DESC`,[req.params.rfqId]);res.json({responses:q.rows})}catch(e){res.status(500).json({error:e.message})}});
 
-app.listen(process.env.PORT||4300,()=>console.log('La Toile V16 API listening'));
+app.listen(process.env.PORT||4300,()=>console.log('La Toile V27 API listening'));
 
 // V14 — Traveler Vault / personal travel space
 app.get('/api/travelers/v14/:travelerId/vault', async (req,res)=>{
@@ -336,205 +265,3 @@ app.patch('/api/travelers/v14/:travelerId/health/privacy', async (req,res)=>{
  try { const q=await pool.query(`UPDATE traveler_health_v14 SET share_in_emergency=$1,updated_at=now() WHERE traveler_id=$2 RETURNING traveler_id,share_in_emergency,updated_at`,[req.body.shareInEmergency,req.params.travelerId]); res.json(q.rows[0]||{travelerId:Number(req.params.travelerId),shareInEmergency:req.body.shareInEmergency}); }
  catch(e){res.status(500).json({error:e.message})}
 });
-
-
-// V28.5 — recommendation bridge with travel history; health excluded
-app.post('/api/ai/v21-history/recommend',async(req,res)=>{
- try{
-  const id=Number(req.body?.travelerId);
-  if(!Number.isInteger(id)||id<=0)return res.status(400).json({error:'travelerId_required'});
-  const items=await pool.query("SELECT item_type,title,summary,country_iso3,metadata,created_at,updated_at FROM traveler_vault_items_v14 WHERE traveler_id=$1 AND item_type IN ('trip','memory','request','response','reservation') ORDER BY updated_at DESC",[id]);
-  const trips=await pool.query("SELECT id AS trip_id,title,country_iso3,status,start_date,end_date,metadata FROM traveler_trips_v15 WHERE traveler_id=$1 ORDER BY start_date NULLS LAST,updated_at DESC",[id]);
-  const {buildRecommendationContext}=await import('./recommendation-bridge-v28-5.js');
-  const context=buildRecommendationContext({intent:req.body.intent||{},historyItems:items.rows,trips:trips.rows,seasonal:req.body.seasonal||null});
-  const recommendations=context.travelHistory.signals.length>0
-   ? [{id:'continuity',title:'Retrouver une expérience déjà rencontrée',type:'continuity',explanation:'Une possibilité de continuité issue de votre historique.',evidence:{history:true}},{id:'discovery',title:'Découvrir autre chose',type:'discovery',explanation:'Une possibilité différente de vos expériences précédentes.',evidence:{history:true}}]
-   : [{id:'discovery',title:'Explorer de nouvelles possibilités',type:'discovery',explanation:'Explorer sans imposer une préférence issue de l’historique.',evidence:{history:false}}];
-  const sessionResult=await pool.query("INSERT INTO ai_recommendation_sessions_v21 (actor_type,actor_id,context) VALUES ('traveler',$1,$2::jsonb) RETURNING id",[id,JSON.stringify(context)]);
-  const sessionId=sessionResult.rows[0].id;
-  for(const r of recommendations){await pool.query("INSERT INTO ai_recommendations_v21 (session_id,recommendation_type,title,explanation,evidence,confidence,alternatives) VALUES ($1,$2,$3,$4,$5::jsonb,$6,$7::jsonb)",[sessionId,r.type,r.title,r.explanation,JSON.stringify(r.evidence),r.confidence??null,JSON.stringify(r.alternatives||[])])}
-  res.json({version:'28.7',travelerId:id,sessionId,context,recommendations,principle:'assist_not_decide'});
- }catch(e){res.status(500).json({error:e.message})}
-});
-
-// V28.8 — recommendation → professional opportunity bridge
-// V28.8 — opportunity → qualified professional request → dispatch
-app.post('/api/ai/v21/recommendations/:recommendationId/opportunity/dispatch',async(req,res)=>{
- const client=await pool.connect();
- try{
-  const recommendationId=Number(req.params.recommendationId),travelerId=Number(req.body?.travelerId);
-  if(!Number.isInteger(recommendationId)||recommendationId<=0)return res.status(400).json({error:'recommendationId_required'});
-  if(!Number.isInteger(travelerId)||travelerId<=0)return res.status(400).json({error:'travelerId_required'});
-  const rec=await client.query("SELECT r.id,r.title,r.explanation,r.evidence,s.actor_id FROM ai_recommendations_v21 r JOIN ai_recommendation_sessions_v21 s ON s.id=r.session_id WHERE r.id=$1",[recommendationId]);
-  if(!rec.rows[0])return res.status(404).json({error:'recommendation_not_found'});
-  if(Number(rec.rows[0].actor_id)!==travelerId)return res.status(403).json({error:'traveler_not_owner'});
-  const existing=await client.query("SELECT * FROM ai_recommendation_opportunities_v28_8 WHERE recommendation_id=$1",[recommendationId]);
-  if(!existing.rows[0])return res.status(409).json({error:'opportunity_required_first'});
-  const opportunity=existing.rows[0];
-  const intent={...(req.body?.intent||{}),recommendationTitle:rec.rows[0].title,recommendationExplanation:rec.rows[0].explanation,serviceNeeds:opportunity.service_needs,location:opportunity.location,scope:opportunity.scope};
-  const countryId=req.body?.countryId==null?null:Number(req.body.countryId);
-  const rawText=String(req.body?.rawText||rec.rows[0].title).trim();
-  const request=await client.query("INSERT INTO traveler_requests_v12(country_id,traveler_id,raw_text,intent,status) VALUES($1,$2,$3,$4,'qualified') RETURNING id",[countryId,travelerId,rawText,intent]);
-  const requestId=request.rows[0].id;
-  const radiusKm=Number(req.body?.radiusKm||100);
-  const dispatched=await client.query("SELECT dispatch_request_v12($1,$2) AS dispatched",[requestId,radiusKm]);
-  await client.query("UPDATE ai_recommendation_opportunities_v28_8 SET request_id=$1,status='dispatched',updated_at=now() WHERE id=$2",[requestId,opportunity.id]);
-  await client.query("UPDATE ai_recommendations_v21 SET status='handed_off' WHERE id=$1",[recommendationId]);
-  res.status(201).json({version:'28.8',recommendationId,travelerId,requestId,dispatched:Number(dispatched.rows[0].dispatched),status:'dispatched',principle:'qualified_demand_first',travelerDecides:true});
- }catch(e){res.status(500).json({error:e.message})}finally{client.release()}
-});
-
-
-app.post('/api/ai/v21/recommendations/:recommendationId/opportunity',async(req,res)=>{
- try{
-  const recommendationId=Number(req.params.recommendationId);
-  const travelerId=Number(req.body?.travelerId);
-  if(!Number.isInteger(recommendationId)||recommendationId<=0)return res.status(400).json({error:'recommendationId_required'});
-  if(!Number.isInteger(travelerId)||travelerId<=0)return res.status(400).json({error:'travelerId_required'});
-  const rec=await pool.query("SELECT r.id,s.actor_id,r.title,r.explanation FROM ai_recommendations_v21 r JOIN ai_recommendation_sessions_v21 s ON s.id=r.session_id WHERE r.id=$1",[recommendationId]);
-  if(!rec.rows[0])return res.status(404).json({error:'recommendation_not_found'});
-  if(Number(rec.rows[0].actor_id)!==travelerId)return res.status(403).json({error:'traveler_not_owner'});
-  const serviceNeeds=Array.isArray(req.body?.serviceNeeds)?req.body.serviceNeeds:[];
-  const location=req.body?.location&&typeof req.body.location==='object'?req.body.location:{};
-  const scope=String(req.body?.scope||'local').trim().toLowerCase();
-  if(!['local','regional','national','international','global'].includes(scope))return res.status(400).json({error:'scope_invalid'});
-  const q=await pool.query("INSERT INTO ai_recommendation_opportunities_v28_8 (recommendation_id,traveler_id,service_needs,location,scope) VALUES ($1,$2,$3::jsonb,$4::jsonb,$5) ON CONFLICT(recommendation_id) DO UPDATE SET service_needs=EXCLUDED.service_needs,location=EXCLUDED.location,scope=EXCLUDED.scope,updated_at=now() RETURNING *",[recommendationId,travelerId,JSON.stringify(serviceNeeds),JSON.stringify(location),scope]);
-  res.status(201).json({version:'28.8',opportunity:q.rows[0],professionalPrinciple:'qualified_demand_first',travelerDecides:true});
- }catch(e){res.status(500).json({error:e.message})}
-});
-
-// V28.9 — professional responses and traveler comparison
-app.get('/api/ai/v21/recommendations/:recommendationId/professional-responses',async(req,res)=>{
- try{
-  const recommendationId=Number(req.params.recommendationId),travelerId=Number(req.query.travelerId);
-  if(!Number.isInteger(recommendationId)||recommendationId<=0)return res.status(400).json({error:'recommendationId_required'});
-  if(!Number.isInteger(travelerId)||travelerId<=0)return res.status(400).json({error:'travelerId_required'});
-  const rec=await pool.query("SELECT r.id,s.actor_id,o.request_id FROM ai_recommendations_v21 r JOIN ai_recommendation_sessions_v21 s ON s.id=r.session_id LEFT JOIN ai_recommendation_opportunities_v28_8 o ON o.recommendation_id=r.id WHERE r.id=$1",[recommendationId]);
-  if(!rec.rows[0])return res.status(404).json({error:'recommendation_not_found'});
-  if(Number(rec.rows[0].actor_id)!==travelerId)return res.status(403).json({error:'traveler_not_owner'});
-  if(!rec.rows[0].request_id)return res.json({version:'28.9',recommendationId,responses:[],comparison:null,principle:'traveler_decides'});
-  const q=await pool.query("SELECT r.id AS response_id,r.professional_id,p.name AS professional_name,d.match_score,d.distance_km,r.availability_status,r.proposed_start,r.proposed_end,r.message,r.conditions,r.created_at FROM professional_responses_v12 r JOIN request_dispatches_v12 d ON d.id=r.dispatch_id JOIN professionals p ON p.id=r.professional_id WHERE d.request_id=$1 ORDER BY d.match_score DESC,r.created_at DESC",[rec.rows[0].request_id]);
-  const responses=q.rows.map(x=>({responseId:x.response_id,professionalId:x.professional_id,professionalName:x.professional_name,matchScore:x.match_score,distanceKm:x.distance_km,availabilityStatus:x.availability_status,proposedStart:x.proposed_start,proposedEnd:x.proposed_end,message:x.message,conditions:x.conditions,createdAt:x.created_at}));
-  res.json({version:'28.9',recommendationId,requestId:Number(rec.rows[0].request_id),responses,comparison:{sortedBy:'matchScore',priceDisplayed:false},principle:'traveler_decides'});
- }catch(e){res.status(500).json({error:e.message})}
-});
-
-app.post('/api/ai/v21/recommendations/:recommendationId/compare',async(req,res)=>{
- try{
-  const recommendationId=Number(req.params.recommendationId),travelerId=Number(req.body?.travelerId);
-  const responseIds=Array.isArray(req.body?.responseIds)?req.body.responseIds.map(Number).filter(Number.isInteger):[];
-  if(!Number.isInteger(recommendationId)||recommendationId<=0)return res.status(400).json({error:'recommendationId_required'});
-  if(!Number.isInteger(travelerId)||travelerId<=0)return res.status(400).json({error:'travelerId_required'});
-  if(!responseIds.length)return res.status(400).json({error:'responseIds_required'});
-  const rec=await pool.query("SELECT r.id,s.actor_id,o.request_id FROM ai_recommendations_v21 r JOIN ai_recommendation_sessions_v21 s ON s.id=r.session_id LEFT JOIN ai_recommendation_opportunities_v28_8 o ON o.recommendation_id=r.id WHERE r.id=$1",[recommendationId]);
-  if(!rec.rows[0])return res.status(404).json({error:'recommendation_not_found'});
-  if(Number(rec.rows[0].actor_id)!==travelerId)return res.status(403).json({error:'traveler_not_owner'});
-  if(!rec.rows[0].request_id)return res.status(409).json({error:'request_not_dispatched'});
-  const q=await pool.query("SELECT r.id FROM professional_responses_v12 r JOIN request_dispatches_v12 d ON d.id=r.dispatch_id WHERE d.request_id=$1 AND r.id=ANY($2::bigint[])",[rec.rows[0].request_id,responseIds]);
-  if(q.rowCount!==responseIds.length)return res.status(400).json({error:'response_not_in_request'});
-  const selectedResponseId=req.body.selectedResponseId==null?null:Number(req.body.selectedResponseId);
-  if(selectedResponseId!==null&&!responseIds.includes(selectedResponseId))return res.status(400).json({error:'selected_response_not_in_comparison'});
-  const comparison=await pool.query("INSERT INTO response_comparisons_v12(request_id,traveler_id,selected_response_id,compared_response_ids) VALUES($1,$2,$3,$4) RETURNING id,request_id,traveler_id,selected_response_id,compared_response_ids,created_at",[rec.rows[0].request_id,travelerId,selectedResponseId,responseIds]);
-  res.status(201).json({version:'28.9',recommendationId,comparison:comparison.rows[0],travelerDecides:true,priceDisplayed:false,principle:'traveler_decides'});
- }catch(e){res.status(500).json({error:e.message})}
-});
-
-// V28.7 — read and decide on persisted recommendations
-app.get('/api/ai/v21/sessions/:sessionId/recommendations',async(req,res)=>{
- try{
-  const sessionId=Number(req.params.sessionId);
-  if(!Number.isInteger(sessionId)||sessionId<=0)return res.status(400).json({error:'sessionId_required'});
-  const q=await pool.query("SELECT id,recommendation_type,title,explanation,evidence,confidence,alternatives,action_url,status,created_at FROM ai_recommendations_v21 WHERE session_id=$1 ORDER BY created_at ASC",[sessionId]);
-  res.json({version:'28.7',sessionId,recommendations:q.rows,principle:'assist_not_decide'});
- }catch(e){res.status(500).json({error:e.message})}
-});
-
-app.post('/api/ai/v21/recommendations/:recommendationId/decision',async(req,res)=>{
- try{
-  const recommendationId=Number(req.params.recommendationId);
-  const travelerId=req.body?.travelerId==null?null:Number(req.body.travelerId);
-  const decision=String(req.body?.decision||'').trim().toLowerCase();
-  if(!Number.isInteger(recommendationId)||recommendationId<=0)return res.status(400).json({error:'recommendationId_required'});
-  if(!['accepted','rejected','saved','ignored'].includes(decision))return res.status(400).json({error:'decision_invalid'});
-  const q=await pool.query("SELECT r.id,s.actor_id FROM ai_recommendations_v21 r JOIN ai_recommendation_sessions_v21 s ON s.id=r.session_id WHERE r.id=$1",[recommendationId]);
-  if(!q.rows[0])return res.status(404).json({error:'recommendation_not_found'});
-  if(travelerId!=null && Number(q.rows[0].actor_id)!==travelerId)return res.status(403).json({error:'traveler_not_owner'});
-  let selectedResponseId=req.body?.selectedResponseId==null?null:Number(req.body.selectedResponseId);
-  let selectedProfessionalId=null;
-  if(selectedResponseId!=null){
-   if(!Number.isInteger(selectedResponseId)||selectedResponseId<=0)return res.status(400).json({error:'selectedResponseId_invalid'});
-   const rq=await pool.query("SELECT pr.id,pr.professional_id,d.request_id FROM professional_responses_v12 pr JOIN request_dispatches_v12 d ON d.id=pr.dispatch_id JOIN ai_recommendation_opportunities_v28_8 o ON o.request_id=d.request_id WHERE pr.id=$1 AND o.recommendation_id=$2",[selectedResponseId,recommendationId]);
-   if(!rq.rows[0])return res.status(400).json({error:'selected_response_not_in_recommendation'});
-   selectedProfessionalId=Number(rq.rows[0].professional_id);
-  }
-  const u=await pool.query("UPDATE ai_recommendations_v21 SET status=$1,evidence=evidence || $2::jsonb WHERE id=$3 RETURNING id,status,evidence",[decision,JSON.stringify(selectedResponseId?{travelerDecision:{selectedResponseId,selectedProfessionalId,recordedAt:new Date().toISOString()}}:{}),recommendationId]);
-  res.json({version:'29.8',recommendationId,status:u.rows[0].status,selectedResponseId,selectedProfessionalId,principle:'traveler_decides'});
- }catch(e){res.status(500).json({error:e.message})}
-});
-
-// V28.7 — recommendation feedback persistence
-app.post('/api/ai/v21/recommendations/:recommendationId/feedback',async(req,res)=>{
- try{
-  const recommendationId=Number(req.params.recommendationId);
-  const actorId=req.body?.travelerId==null?null:Number(req.body.travelerId);
-  const feedback=String(req.body?.feedback||'').trim();
-  if(!Number.isInteger(recommendationId)||recommendationId<=0)return res.status(400).json({error:'recommendationId_required'});
-  if(!feedback)return res.status(400).json({error:'feedback_required'});
-  const rec=await pool.query("SELECT id,session_id FROM ai_recommendations_v21 WHERE id=$1",[recommendationId]);
-  if(!rec.rows[0])return res.status(404).json({error:'recommendation_not_found'});
-  const q=await pool.query("INSERT INTO ai_feedback_v21 (recommendation_id,actor_type,actor_id,feedback,reason) VALUES ($1,'traveler',$2,$3,$4) RETURNING id,created_at",[recommendationId,actorId,feedback,req.body?.reason?String(req.body.reason).trim():null]);
-  res.status(201).json({version:'28.7',recommendationId,feedbackId:q.rows[0].id,status:'recorded',principle:'assist_not_decide'});
- }catch(e){res.status(500).json({error:e.message})}
-});
-
-// V28.5 — historical context for recommendations; health excluded
-app.get('/api/travelers/v28-5/history',async(req,res)=>{
- try{
-  const id=Number(req.query.travelerId);
-  if(!Number.isInteger(id)||id<=0)return res.status(400).json({error:'travelerId_required'});
-  const items=await pool.query("SELECT item_type,title,summary,country_iso3,metadata,created_at,updated_at FROM traveler_vault_items_v14 WHERE traveler_id=$1 AND item_type IN ('trip','memory','request','response','reservation') ORDER BY updated_at DESC",[id]);
-  const trips=await pool.query("SELECT trip_id,title,country_iso3,status,start_date,end_date,metadata FROM traveler_journey_v15 WHERE traveler_id=$1 ORDER BY start_date NULLS LAST,updated_at DESC",[id]);
-  res.json({travelerId:id,healthExcluded:true,vaultItems:items.rows,trips:trips.rows});
- }catch(e){res.status(500).json({error:e.message})}
-});
-
- 
-// V29 — anonymous-by-default professional view + explicit identity reveal
-app.get('/api/professionals/v29/requests/:publicRequestId',async(req,res)=>{
- try{
-  const publicId=String(req.params.publicRequestId||'').trim();
-  if(!/^LTREQ-[0-9]+$/.test(publicId))return res.status(400).json({error:'public_request_id_invalid'});
-  const requestId=Number(publicId.slice(6));
-  const q=await pool.query("SELECT r.id,r.country_id,r.intent,r.status,o.service_needs,o.location,o.scope FROM traveler_requests_v12 r JOIN ai_recommendation_opportunities_v28_8 o ON o.request_id=r.id WHERE r.id=$1",[requestId]);
-  if(!q.rows[0])return res.status(404).json({error:'public_request_not_found'});
-  const x=q.rows[0],location=x.location&&typeof x.location==='object'?x.location:{},safeLocation={};
-  for(const k of ['countryIso3','region','city','zone'])if(location[k]!=null)safeLocation[k]=location[k];
-  res.json({version:'29',publicRequestId:publicId,requestId:x.id,status:x.status,serviceNeeds:x.service_needs,location:safeLocation,scope:x.scope,intent:{activity:x.intent?.activity||null,travelerProfile:x.intent?.travelerProfile||null,dates:x.intent?.dates||null,pace:x.intent?.pace||null,safety:Boolean(x.intent?.safety)},privacy:{anonymous:true,identityRevealed:false,healthExcluded:true,contactDetailsExcluded:true},principle:'anonymous_by_default'});
- }catch(e){res.status(500).json({error:e.message})}
-});
-
-app.post('/api/ai/v21/recommendations/:recommendationId/reveal',async(req,res)=>{
- const client=await pool.connect();
- try{
-  const recommendationId=Number(req.params.recommendationId),travelerId=Number(req.body?.travelerId),professionalId=req.body?.professionalId==null?null:Number(req.body.professionalId);
-  if(!Number.isInteger(recommendationId)||recommendationId<=0)return res.status(400).json({error:'recommendationId_required'});
-  if(!Number.isInteger(travelerId)||travelerId<=0)return res.status(400).json({error:'travelerId_required'});
-  if(req.body?.confirm!==true)return res.status(400).json({error:'explicit_confirmation_required'});
-  const rec=await client.query("SELECT r.id,s.actor_id,o.request_id FROM ai_recommendations_v21 r JOIN ai_recommendation_sessions_v21 s ON s.id=r.session_id JOIN ai_recommendation_opportunities_v28_8 o ON o.recommendation_id=r.id WHERE r.id=$1",[recommendationId]);
-  if(!rec.rows[0])return res.status(404).json({error:'recommendation_not_found'});
-  if(Number(rec.rows[0].actor_id)!==travelerId)return res.status(403).json({error:'traveler_not_owner'});
-  const requestId=Number(rec.rows[0].request_id);
-  const shareFields=Array.isArray(req.body?.sharedFields)?req.body.sharedFields.filter(x=>['name','email','phone'].includes(String(x))):[];
-  const q=await client.query("INSERT INTO traveler_professional_handoffs_v29(recommendation_id,request_id,traveler_id,professional_id,identity_revealed,shared_fields) VALUES($1,$2,$3,$4,true,$5::jsonb) RETURNING id,status,shared_fields,created_at",[recommendationId,requestId,travelerId,professionalId,JSON.stringify(shareFields)]);
-  await client.query("INSERT INTO privacy_audit_events_v23(actor_type,actor_id,action,data_domain,object_type,object_id,result,metadata) VALUES ('traveler',$1,'identity_reveal','traveler_identity','recommendation',$2,'allowed',$3::jsonb)",[travelerId,recommendationId,JSON.stringify({professionalId,requestId,sharedFields:shareFields})]);
-  res.status(201).json({version:'29',handoff:q.rows[0],identityRevealed:true,sharedFields:shareFields,healthExcluded:true,principle:'explicit_consent_only'});
- }catch(e){res.status(500).json({error:e.message})}finally{client.release()}
-});
-
-import { registerV29CommunicationRoutes } from './v29-communication.js';
-import { registerV29FileRoutes } from './v29-files.js';
-registerV29CommunicationRoutes({app,pool});
-registerV29FileRoutes({app,pool});
-
-export {app};
-if(process.env.V28_HISTORY_TEST_SERVER==='1'){const port=Number(process.env.PORT||4300);app.listen(port,()=>console.log(`history test server listening on ${port}`));}

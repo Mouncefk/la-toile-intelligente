@@ -1,0 +1,45 @@
+name: V29.12 Temporal Graph Validation
+
+on:
+  push:
+    branches:
+      - v29-11-living-tourism-graph
+  pull_request:
+    branches:
+      - main
+      - v29-11-living-tourism-graph
+
+jobs:
+  temporal-graph:
+    runs-on: ubuntu-latest
+    services:
+      postgres:
+        image: postgis/postgis:16-3.4
+        env:
+          POSTGRES_USER: connect
+          POSTGRES_PASSWORD: connect
+          POSTGRES_DB: latOile
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd="pg_isready -U connect -d latOile"
+          --health-interval=10s
+          --health-timeout=5s
+          --health-retries=10
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 24
+          cache: npm
+      - run: npm ci
+      - name: Apply V29.12 schema
+        env:
+          PGPASSWORD: connect
+        run: psql -h localhost -U connect -d latOile -v ON_ERROR_STOP=1 -f database/seed/29_v29_12_temporal_graph.sql
+      - name: Syntax check
+        run: node --check scripts/test-v29-12-temporal-graph.mjs
+      - name: Temporal graph contract
+        env:
+          DATABASE_URL: postgresql://connect:connect@localhost:5432/latOile
+        run: npm run test:v29-12:temporal-graph
