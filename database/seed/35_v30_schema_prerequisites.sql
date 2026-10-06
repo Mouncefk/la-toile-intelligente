@@ -435,3 +435,18 @@ CREATE INDEX IF NOT EXISTS idx_v30_graph_events_territory_created
   ON v30_graph_events(territory_key, created_at DESC);
 CREATE INDEX IF NOT EXISTS idx_v30_graph_events_entity_created
   ON v30_graph_events(entity_type, entity_id, created_at DESC);
+
+
+CREATE TABLE IF NOT EXISTS v30_recalculation_queue (
+  id BIGSERIAL PRIMARY KEY,
+  session_id BIGINT,
+  solution_id BIGINT,
+  territory_key TEXT,
+  reason TEXT NOT NULL,
+  priority INTEGER NOT NULL DEFAULT 50,
+  status TEXT NOT NULL DEFAULT 'pending',
+  created_at TIMESTAMPTZ NOT NULL DEFAULT now(),
+  processed_at TIMESTAMPTZ
+);
+CREATE INDEX IF NOT EXISTS idx_v30_recalc_pending
+  ON v30_recalculation_queue(status, priority DESC, created_at);
