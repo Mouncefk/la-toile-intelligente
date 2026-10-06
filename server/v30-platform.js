@@ -154,7 +154,7 @@ v30Router.post('/session/:id/profile', async (req, res) => {
   const allowed = ['traveler_type','age_group','mobility_level','party_type','party_size','children_ages','budget_level','pace','duration_days','accessibility_needs','preferences','constraints'];
   const values = allowed.map(key => req.body[key] ?? null);
   const q = await safeQuery(res,
-    'INSERT INTO v30_traveler_profiles(session_id,traveler_type,age_group,mobility_level,party_type,party_size,children_ages,budget_level,pace,duration_days,accessibility_needs,preferences,constraints) VALUES($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13) ON CONFLICT(session_id) DO UPDATE SET updated_at=now() RETURNING *',
+    'INSERT INTO v30_traveler_profiles(session_id,traveler_type,age_group,mobility_level,party_type,party_size,children_ages,budget_level,pace,duration_days,accessibility_needs,preferences,constraints) VALUES($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13) ON CONFLICT(session_id) DO UPDATE SET traveler_type=EXCLUDED.traveler_type,age_group=EXCLUDED.age_group,mobility_level=EXCLUDED.mobility_level,party_type=EXCLUDED.party_type,party_size=EXCLUDED.party_size,children_ages=EXCLUDED.children_ages,budget_level=EXCLUDED.budget_level,pace=EXCLUDED.pace,duration_days=EXCLUDED.duration_days,accessibility_needs=EXCLUDED.accessibility_needs,preferences=EXCLUDED.preferences,constraints=EXCLUDED.constraints,updated_at=now() RETURNING *',
     [req.params.id, ...values]);
   if (q) res.status(201).json({ profile: q.rows[0] });
 });
@@ -225,6 +225,13 @@ v30Router.get('/session/:id/solutions', async (req, res) => {
     score = Math.max(0, Math.min(100, score));
     return { ...solution, compatibilityScore: score, matchReasons: reasons };
   }).sort((a,b) => b.compatibilityScore-a.compatibilityScore || a.title.localeCompare(b.title));
+
+  for (const solution of scored) {
+    await pool.query(
+      'INSERT INTO v30_matches(session_id,solution_id,score,reasons) VALUES($1,$2,$3,$4) ON CONFLICT(session_id,solution_id) DO UPDATE SET score=EXCLUDED.score,reasons=EXCLUDED.reasons,created_at=now()',
+      [req.params.id, solution.id, solution.compatibilityScore, JSON.stringify(solution.matchReasons)]
+    );
+  }
 
   res.json({
     solutions: scored,
