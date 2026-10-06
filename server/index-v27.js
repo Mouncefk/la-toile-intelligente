@@ -1,6 +1,7 @@
 import express from 'express';
 import { v27Router } from './orchestrator-v27.js';
 import { v30Router } from './v30-platform.js';
+import { v30VaultRouter } from './v30-vault.js';
 import pg from 'pg';
 const {Pool}=pg;
 const app=express();
@@ -8,6 +9,7 @@ const pool=new Pool({connectionString:process.env.DATABASE_URL||'postgresql://la
 app.use(express.json());
 app.use('/api/experience/v27', v27Router);
 app.use('/api/platform/v30', v30Router);
+app.use('/api/platform/v30', v30VaultRouter);
 
 function understand(rawText){
  const t=rawText.toLowerCase();
