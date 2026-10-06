@@ -1,4 +1,28 @@
 -- V30.1 — First Living Tourism Platform
+CREATE TABLE IF NOT EXISTS v30_tourism_climate_rules (
+ tourism_tag TEXT NOT NULL,
+ climate_key TEXT NOT NULL,
+ hemisphere TEXT NOT NULL,
+ preferred_months INT[] NOT NULL DEFAULT '{}',
+ weight NUMERIC(5,2) NOT NULL DEFAULT 1,
+ rationale_fr TEXT NOT NULL,
+ PRIMARY KEY(tourism_tag,climate_key,hemisphere)
+);
+INSERT INTO v30_tourism_climate_rules(tourism_tag,climate_key,hemisphere,preferred_months,weight,rationale_fr) VALUES
+('balneaire','mediterranean','north',ARRAY[5,6,7,8,9],1.00,'Le climat méditerranéen est particulièrement favorable aux activités littorales pendant la belle saison.'),
+('balneaire','oceanic','north',ARRAY[6,7,8],0.90,'La saison estivale est généralement la plus adaptée au littoral océanique.'),
+('montagne','mountain','north',ARRAY[6,7,8,12,1,2],1.00,'Les activités de montagne dépendent fortement de la saison et de l’altitude.'),
+('desert','arid','north',ARRAY[3,4,5,10,11,12,1,2],1.00,'Les périodes tempérées sont généralement plus confortables pour l’exploration désertique.'),
+('culture','mediterranean','north',ARRAY[1,2,3,4,5,9,10,11,12],0.90,'Le patrimoine culturel est souvent plus confortable hors des fortes chaleurs estivales.'),
+('culture','oceanic','north',ARRAY[1,2,3,4,5,6,9,10,11,12],0.90,'Le patrimoine culturel reste accessible sur une large partie de l’année.'),
+('artisanat','mediterranean','north',ARRAY[1,2,3,4,5,9,10,11,12],0.90,'Les savoir-faire et ateliers peuvent être recherchés toute l’année, avec un confort accru hors forte chaleur.'),
+('gastronomie','mediterranean','north',ARRAY[1,2,3,4,5,9,10,11,12],0.95,'La gastronomie est valorisée par les saisons de produits et les périodes de découverte culturelle.'),
+('senior','mediterranean','north',ARRAY[3,4,5,9,10,11],0.95,'Les périodes tempérées peuvent favoriser un séjour plus confortable pour les seniors.'),
+('family','oceanic','north',ARRAY[6,7,8],0.95,'La période estivale facilite de nombreuses activités familiales littorales et de plein air.'),
+('nature','mountain','north',ARRAY[5,6,7,8,9],0.95,'Les conditions de nature et de randonnée sont fortement saisonnières en montagne.'),
+('echanges_culturels','oceanic','north',ARRAY[3,4,5,6,7,8,9,10],0.90,'Les échanges culturels bénéficient d’une programmation étendue sur l’année.'),
+('colonies_vacances','oceanic','north',ARRAY[6,7,8],1.00,'Les colonies de vacances sont particulièrement liées aux périodes de vacances scolaires estivales.')
+ON CONFLICT DO NOTHING;
 CREATE TABLE IF NOT EXISTS v30_climate_seasons (
  climate_key TEXT NOT NULL,
  hemisphere TEXT NOT NULL CHECK(hemisphere IN ('north','south','equatorial')),
