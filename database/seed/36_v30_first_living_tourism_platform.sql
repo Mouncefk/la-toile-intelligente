@@ -459,3 +459,19 @@ CREATE TABLE IF NOT EXISTS v30_pro_collaboration_summary (
  strengths TEXT[] NOT NULL DEFAULT '{}',
  PRIMARY KEY(source_pro_id,target_pro_id)
 );
+
+CREATE TABLE IF NOT EXISTS v30_pro_opportunity_signals (
+ id BIGSERIAL PRIMARY KEY,
+ territory_key TEXT REFERENCES v30_territories(territory_key) ON DELETE SET NULL,
+ source_pro_id BIGINT REFERENCES v30_pro_profiles(id) ON DELETE CASCADE,
+ target_pro_id BIGINT REFERENCES v30_pro_profiles(id) ON DELETE CASCADE,
+ signal_type TEXT NOT NULL CHECK (signal_type IN ('complementary_offer','unserved_need','cross_border','repeat_pattern','emerging_cluster')),
+ title TEXT NOT NULL,
+ rationale TEXT NOT NULL,
+ suggested_action TEXT NOT NULL,
+ score NUMERIC(8,2) NOT NULL DEFAULT 0,
+ status TEXT NOT NULL DEFAULT 'suggested' CHECK (status IN ('suggested','reviewed','accepted','dismissed')),
+ metadata JSONB NOT NULL DEFAULT '{}'::jsonb,
+ created_at TIMESTAMPTZ NOT NULL DEFAULT now()
+);
+CREATE INDEX IF NOT EXISTS idx_v30_pro_signals_territory ON v30_pro_opportunity_signals(territory_key,status,score DESC);
