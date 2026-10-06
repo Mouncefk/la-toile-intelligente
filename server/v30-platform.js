@@ -484,6 +484,17 @@ v30Router.get('/session/:id/solutions', async (req, res) => {
   });
 });
 
+v30Router.post('/session/:id/recommendations/invalidate', async (req,res) => {
+  const { reason='data_changed', scope='all', solutionIds=[] } = req.body || {};
+  try {
+    const ids=Array.isArray(solutionIds)?solutionIds.map(Number).filter(Number.isInteger):[];
+    const q=scope==='solutions' && ids.length
+      ? await pool.query('UPDATE v30_matches SET reasons=COALESCE(reasons,\'{}\'::jsonb) || $1::jsonb WHERE session_id=$2 AND solution_id=ANY($3::bigint[]) RETURNING id,solution_id,score,created_at',[JSON.stringify({invalidated:true,invalidationReason:reason,invalidationAt:new Date().toISOString()}),req.params.id,ids])
+      : await pool.query('UPDATE v30_matches SET reasons=COALESCE(reasons,\'{}\'::jsonb) || $1::jsonb WHERE session_id=$2 RETURNING id,solution_id,score,created_at',[JSON.stringify({invalidated:true,invalidationReason:reason,invalidationAt:new Date().toISOString()}),req.params.id]);
+    res.json({sessionId:Number(req.params.id),invalidatedCount:q.rowCount,reason,scope,recalculateRequired:true,matches:q.rows});
+  } catch(e){res.status(500).json({error:e.message});}
+});
+
 v30Router.get('/session/:id/recommendation-history', async (req,res) => {
   const q=await safeQuery(res,
     'SELECT id,solution_id,score,reasons,created_at FROM v30_matches WHERE session_id=$1 ORDER BY created_at DESC,score DESC',
