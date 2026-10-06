@@ -585,3 +585,16 @@ CREATE TABLE IF NOT EXISTS v30_travel_search_results (
 );
 CREATE INDEX IF NOT EXISTS idx_v30_travel_search_requests_traveler ON v30_travel_search_requests(traveler_id,created_at DESC);
 CREATE INDEX IF NOT EXISTS idx_v30_travel_search_results_request ON v30_travel_search_results(request_id,price_amount);
+
+CREATE TABLE IF NOT EXISTS v30_travel_constraints (
+ id BIGSERIAL PRIMARY KEY,
+ traveler_id TEXT,
+ session_id BIGINT REFERENCES v30_traveler_sessions(id) ON DELETE SET NULL,
+ constraint_type TEXT NOT NULL,
+ source_type TEXT NOT NULL DEFAULT 'traveler_selected',
+ source_id BIGINT,
+ value JSONB NOT NULL DEFAULT '{}'::jsonb,
+ active BOOLEAN NOT NULL DEFAULT true,
+ created_at TIMESTAMPTZ NOT NULL DEFAULT now()
+);
+CREATE INDEX IF NOT EXISTS idx_v30_travel_constraints_session ON v30_travel_constraints(session_id,active);
