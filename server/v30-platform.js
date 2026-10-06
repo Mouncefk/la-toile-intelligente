@@ -234,6 +234,40 @@ v30Router.get('/session/:id/solutions', async (req, res) => {
   });
 });
 
+v30Router.get('/session/:id/compare', async (req, res) => {
+  const session = await safeQuery(res, 'SELECT * FROM v30_traveler_sessions WHERE id=$1', [req.params.id]);
+  if (!session) return;
+  if (!session.rows[0]) return res.status(404).json({ error: 'session_not_found' });
+  const selected = String(req.query.ids || '').split(',').map(Number).filter(Number.isInteger);
+  const limit = selected.length ? 20 : 5;
+  const sql = selected.length
+    ? 'SELECT * FROM v30_matches WHERE session_id=$1 AND solution_id=ANY($2::bigint[]) ORDER BY score DESC'
+    : 'SELECT * FROM v30_matches WHERE session_id=$1 ORDER BY score DESC LIMIT $2';
+  const params = selected.length ? [req.params.id, selected] : [req.params.id, limit];
+  const matches = await safeQuery(res, sql, params);
+  if (!matches) return;
+  const ids = matches.rows.map(x => x.solution_id);
+  if (!ids.length) return res.json({ sessionId: Number(req.params.id), comparisons: [], selectionRequired: true });
+  const solutions = await safeQuery(res, 'SELECT * FROM v30_solutions WHERE id=ANY($1::bigint[])', [ids]);
+  if (!solutions) return;
+  const byId = new Map(solutions.rows.map(x => [Number(x.id), x]));
+  const comparisons = matches.rows.map(m => ({ ...m, solution: byId.get(Number(m.solution_id)) || null }));
+  res.json({ sessionId: Number(req.params.id), comparisons, selectionRequired: true, maxSelections: 3, next: 'vault' });
+});
+
+v30Router.post('/session/:id/compare/select', async (req, res) => {
+  const solutionIds = Array.isArray(req.body.solutionIds) ? req.body.solutionIds.map(Number).filter(Number.isInteger) : [];
+  if (!solutionIds.length || solutionIds.length > 3) return res.status(400).json({ error: 'solutionIds_1_to_3_required' });
+  const valid = await safeQuery(res, 'SELECT id,title,territory_key FROM v30_solutions WHERE id=ANY($1::bigint[]) AND active=true', [solutionIds]);
+  if (!valid) return;
+  if (valid.rows.length !== solutionIds.length) return res.status(400).json({ error: 'solution_not_found' });
+  const vault = await safeQuery(res,
+    'INSERT INTO v30_vault_items(traveler_id,session_id,item_type,title,payload) VALUES((SELECT traveler_id FROM v30_traveler_sessions WHERE id=$1),$1,\'favorite\',$2,$3) RETURNING *',
+    [req.params.id, 'Choix de voyage', JSON.stringify({ solutionIds, solutions: valid.rows })]);
+  if (!vault) return;
+  res.status(201).json({ selected: valid.rows, vaultItem: vault.rows[0], private: true, next: 'vault' });
+});
+
 v30Router.get('/pro/network', async (req, res) => {
   const { countryIso3, territoryKey, specialty, proType } = req.query;
   const where = ['active=true'];
