@@ -509,7 +509,7 @@ v30Router.post('/graph/propagate', async (req,res) => {
     if(!tk && !eid) return res.status(400).json({error:'event_or_scope_required'});
     const q=tk
       ? await pool.query(
-          'UPDATE v30_matches m SET reasons=COALESCE(m.reasons,\'{}\'::jsonb) || $1::jsonb WHERE m.session_id IN (SELECT id FROM v30_traveler_sessions WHERE territory_key=$2) RETURNING m.id,m.solution_id',
+          'UPDATE v30_matches m SET reasons=COALESCE(m.reasons,\'{}\'::jsonb) || $1::jsonb WHERE m.session_id IN (SELECT id FROM v30_traveler_sessions WHERE territory_key=$2) RETURNING m.id,m.session_id,m.solution_id',
           [JSON.stringify({invalidated:true,invalidationReason:event?.event_type||'graph_change',invalidationAt:new Date().toISOString()}),tk]
         )
       : await pool.query(
