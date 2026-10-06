@@ -1,4 +1,15 @@
 -- V30.1 — First Living Tourism Platform
+CREATE TABLE IF NOT EXISTS v30_conditions_context (
+ territory_key TEXT PRIMARY KEY REFERENCES v30_territories(territory_key) ON DELETE CASCADE,
+ observed_at TIMESTAMPTZ NOT NULL DEFAULT now(),
+ temperature_c NUMERIC(5,2),
+ precipitation_probability NUMERIC(5,2),
+ wind_kmh NUMERIC(6,2),
+ condition_code TEXT,
+ source TEXT NOT NULL DEFAULT 'pending',
+ status TEXT NOT NULL DEFAULT 'not_available' CHECK(status IN ('not_available','available','stale')),
+ metadata JSONB NOT NULL DEFAULT '{}'::jsonb
+);
 CREATE TABLE IF NOT EXISTS v30_tourism_climate_rules (
  tourism_tag TEXT NOT NULL,
  climate_key TEXT NOT NULL,
