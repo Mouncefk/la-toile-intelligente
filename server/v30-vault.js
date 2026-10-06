@@ -161,14 +161,24 @@ v30VaultRouter.post('/trip-draft/:id/optimize', async (req,res) => {
         const rule=await pool.query('SELECT preferred_months,weight FROM v30_tourism_climate_rules WHERE tourism_tag=$1 AND climate_key=$2 AND hemisphere=$3 LIMIT 1',
           [String(draft.notes?.tourismTag||draft.notes?.tag||'culture').toLowerCase(),String(territory.rows[0].climate_zone||'').toLowerCase(),territory.rows[0].hemisphere]);
         const preferred=rule.rows[0]?.preferred_months||[];
+        const profile=await pool.query('SELECT traveler_type,age_group,mobility_level,party_type,party_size,budget_level,pace,accessibility_needs,preferences,constraints FROM v30_traveler_profiles WHERE session_id=$1',[draft.session_id]);
+        const traveler=profile.rows[0]||{};
+        const senior=String(traveler.traveler_type||'').toLowerCase().includes('senior') || String(traveler.age_group||'').toLowerCase().includes('senior');
+        const family=String(traveler.party_type||'').toLowerCase().includes('family') || Number(traveler.party_size||0)>=3 && Array.isArray(traveler.children_ages) && traveler.children_ages.length>0;
+        const mobility=Array.isArray(traveler.accessibility_needs)&&traveler.accessibility_needs.length>0;
         const candidates=[];
         for(let offset=-flex;offset<=flex;offset++){
           const date=new Date(base); date.setUTCDate(date.getUTCDate()+offset);
           const month=date.getUTCMonth()+1;
-          candidates.push({date:date.toISOString().slice(0,10),offsetDays:offset,score:preferred.length?(preferred.includes(month)?100:60):50,favorable:preferred.includes(month)});
+          let windowScore=preferred.length?(preferred.includes(month)?100:60):50;
+          const reasons=[];
+          if(senior && [6,7,8].includes(month)){windowScore-=10;reasons.push('Période potentiellement chaude pour un profil senior');}
+          if(family && [6,7,8].includes(month)){windowScore+=3;reasons.push('Période compatible avec les vacances familiales');}
+          if(mobility && [6,7,8].includes(month)===false){reasons.push('Accessibilité à vérifier selon les conditions locales');}
+          candidates.push({date:date.toISOString().slice(0,10),offsetDays:offset,score:windowScore,favorable:preferred.includes(month),reasons});
         }
         candidates.sort((a,b)=>b.score-a.score||Math.abs(a.offsetDays)-Math.abs(b.offsetDays));
-        dateOptimization={requestedDate:dates.startDate,flexibleDays:flex,recommended:candidates[0]||null,candidates};
+        dateOptimization={requestedDate:dates.startDate,flexibleDays:flex,recommended:candidates[0]||null,candidates,travelerContext:{senior,family,mobility,budgetLevel:traveler.budget_level||budgetLevel||null}};
         if(candidates[0]?.favorable) score=Math.min(100,score+5);
       }
     }
