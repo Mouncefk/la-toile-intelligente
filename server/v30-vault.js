@@ -79,6 +79,52 @@ v30VaultRouter.patch('/trip-draft/:id', async (req, res) => {
   }
 });
 
+v30VaultRouter.post('/trip-draft/:id/compose', async (req, res) => {
+  const { solutionIds = [], transport = null, accommodation = null, healthSafety = null, notes = null } = req.body || {};
+  if (!Array.isArray(solutionIds) || solutionIds.length > 3) return res.status(400).json({ error: 'solutionIds_max_3_required' });
+  try {
+    const current = await pool.query('SELECT * FROM v30_trip_drafts WHERE id=$1', [req.params.id]);
+    if (!current.rows[0]) return res.status(404).json({ error: 'trip_draft_not_found' });
+    const selected = solutionIds.length
+      ? await pool.query('SELECT id,title,description,solution_type,provider_name,territory_key,public_contact FROM v30_solutions WHERE id=ANY($1::bigint[]) AND active=true', [solutionIds])
+      : { rows: [] };
+    const q = await pool.query(
+      `UPDATE v30_trip_drafts SET
+       experiences=CASE WHEN $1::jsonb='[]'::jsonb THEN experiences ELSE $1::jsonb END,
+       transport=COALESCE($2,transport),
+       accommodation=COALESCE($3,accommodation),
+       health_safety=COALESCE($4,health_safety),
+       notes=COALESCE($5,notes),
+       status='ready',updated_at=now()
+       WHERE id=$6 RETURNING *`,
+      [JSON.stringify(selected.rows), transport, accommodation, healthSafety, notes, req.params.id]
+    );
+    res.json({ draft:q.rows[0], selectedSolutions:selected.rows, proposalOnly:true, travelerDecides:true });
+  } catch(e) { res.status(500).json({ error:e.message }); }
+});
+
+v30VaultRouter.get('/trip-draft/:id/summary', async (req,res) => {
+  try {
+    const q=await pool.query('SELECT id,title,territory_key,status,transport,accommodation,experiences,health_safety,notes,updated_at FROM v30_trip_drafts WHERE id=$1',[req.params.id]);
+    if(!q.rows[0]) return res.status(404).json({error:'trip_draft_not_found'});
+    res.json({draft:q.rows[0],complete:Boolean(q.rows[0].transport && q.rows[0].accommodation && q.rows[0].experiences?.length),proposalOnly:true});
+  } catch(e){res.status(500).json({error:e.message});}
+});
+
+v30VaultRouter.put('/vault/health/:travelerId', async (req,res) => {
+  const { allergies=[], bloodType=null, importantTreatments=[], emergencyContacts=[], referenceDoctor={}, referenceEstablishment={} } = req.body || {};
+  try {
+    const q=await pool.query(
+      `INSERT INTO v30_health_profiles(traveler_id,allergies,blood_type,important_treatments,emergency_contacts,reference_doctor,reference_establishment)
+       VALUES($1,$2,$3,$4,$5,$6,$7)
+       ON CONFLICT(traveler_id) DO UPDATE SET allergies=EXCLUDED.allergies,blood_type=EXCLUDED.blood_type,important_treatments=EXCLUDED.important_treatments,emergency_contacts=EXCLUDED.emergency_contacts,reference_doctor=EXCLUDED.reference_doctor,reference_establishment=EXCLUDED.reference_establishment,updated_at=now()
+       RETURNING *`,
+      [req.params.travelerId,allergies,bloodType,importantTreatments,JSON.stringify(emergencyContacts),JSON.stringify(referenceDoctor),JSON.stringify(referenceEstablishment)]
+    );
+    res.json({health:q.rows[0],privacy:'private',professionalShareAllowed:false});
+  } catch(e){res.status(500).json({error:e.message});}
+});
+
 v30VaultRouter.get('/vault/session/:sessionId', async (req, res) => {
   try {
     const q = await pool.query(
