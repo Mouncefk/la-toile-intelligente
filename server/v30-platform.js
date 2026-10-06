@@ -386,7 +386,23 @@ v30Router.get('/session/:id/solutions', async (req, res) => {
     if (intent.activity && hay.includes(String(intent.activity).toLowerCase())) { score += 20; reasons.push('Intention compatible'); }
     if (intent.travelerProfile && hay.includes(String(intent.travelerProfile).toLowerCase())) { score += 12; reasons.push('Profil voyageur compatible'); }
     if (profile.party_type && hay.includes(String(profile.party_type).toLowerCase())) { score += 6; reasons.push('Composition du voyage compatible'); }
-    if (profile.accessibility_needs?.length && solution.audience?.some(a => profile.accessibility_needs.includes(a))) { score += 15; reasons.push('Accessibilité compatible'); }
+    if (profile.accessibility_needs?.length) {
+      const accessibilityMatch = profile.accessibility_needs.some(a => solution.audience?.some(sa => String(sa).toLowerCase() === String(a).toLowerCase()));
+      if (accessibilityMatch) { score += 15; reasons.push('Accessibilité compatible'); }
+      else { score -= 12; reasons.push('Accessibilité non confirmée pour cette offre'); }
+    }
+    if (profile.budget_level) {
+      const budgetText = hay;
+      const budget = String(profile.budget_level).toLowerCase();
+      if (budgetText.includes(budget) || (budget === 'economique' && /gratuit|local|low|budget/i.test(budgetText))) {
+        score += 8; reasons.push('Budget compatible');
+      } else {
+        score -= 3; reasons.push('Budget non confirmé');
+      }
+    }
+    if (profile.traveler_type && solution.audience?.some(a => String(a).toLowerCase().includes(String(profile.traveler_type).toLowerCase()))) {
+      score += 8; reasons.push('Public cible compatible');
+    }
     if (climateRule) {
       const inSeason = (climateRule.preferred_months || []).includes(month);
       score += inSeason ? 15 : -5;
