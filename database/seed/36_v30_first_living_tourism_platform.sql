@@ -524,3 +524,24 @@ INSERT INTO v30_transport_search_links(mode,name_fr,url_template,scope) VALUES
 ('air','Recherche de vols — Skyscanner','https://www.skyscanner.net/transport/flights/','global'),
 ('sea','Recherche de traversées maritimes','https://www.directferries.com/','global')
 ON CONFLICT DO NOTHING;
+
+CREATE TABLE IF NOT EXISTS v30_transport_options (
+ id BIGSERIAL PRIMARY KEY,
+ traveler_id TEXT,
+ session_id BIGINT REFERENCES v30_traveler_sessions(id) ON DELETE SET NULL,
+ mode TEXT NOT NULL CHECK (mode IN ('air','sea')),
+ source_name TEXT,
+ source_url TEXT,
+ origin TEXT NOT NULL,
+ destination TEXT NOT NULL,
+ departure_at TIMESTAMPTZ,
+ return_at TIMESTAMPTZ,
+ duration_minutes INTEGER,
+ price_amount NUMERIC(12,2),
+ currency TEXT,
+ reference_text TEXT,
+ payload JSONB NOT NULL DEFAULT '{}'::jsonb,
+ status TEXT NOT NULL DEFAULT 'candidate' CHECK (status IN ('candidate','selected','rejected')),
+ created_at TIMESTAMPTZ NOT NULL DEFAULT now()
+);
+CREATE INDEX IF NOT EXISTS idx_v30_transport_options_session ON v30_transport_options(session_id,created_at);
