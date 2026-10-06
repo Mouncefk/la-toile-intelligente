@@ -548,6 +548,13 @@ v30Router.get('/graph/changes', async (req,res) => {
   } catch(e){res.status(500).json({error:e.message});}
 });
 
+v30Router.get('/recalculation-queue', async (req,res) => {
+  const status=String(req.query.status||'pending');
+  const limit=Math.min(100,Math.max(1,Number(req.query.limit)||25));
+  const q=await safeQuery(res,'SELECT * FROM v30_recalculation_queue WHERE status=$1 ORDER BY priority DESC,created_at ASC LIMIT $2',[status,limit]);
+  if(q) res.json({status,items:q.rows});
+});
+
 v30Router.get('/session/:id/recommendation-history', async (req,res) => {
   const q=await safeQuery(res,
     'SELECT id,solution_id,score,reasons,created_at FROM v30_matches WHERE session_id=$1 ORDER BY created_at DESC,score DESC',
