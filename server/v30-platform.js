@@ -349,6 +349,9 @@ v30Router.get('/session/:id/solutions', async (req, res) => {
   const healthQ = await safeQuery(res, 'SELECT service_type,count(*)::int AS n FROM v30_health_safety_points WHERE territory_key=$1 AND active=true GROUP BY service_type', [key]);
   if (!healthQ) return;
   const safetyTypes = new Set(healthQ.rows.map(x => x.service_type));
+  const conditionsQ = await safeQuery(res, 'SELECT * FROM v30_conditions_context WHERE territory_key=$1', [key]);
+  if (!conditionsQ) return;
+  const observed = conditionsQ.rows[0] || { status: 'not_available' };
 
   const scored = solutionsQ.rows.map(solution => {
     let score = 50;
@@ -366,6 +369,16 @@ v30Router.get('/session/:id/solutions', async (req, res) => {
     }
     if (intent.safety && safetyTypes.size) { score += 8; reasons.push('Santé & Sécurité disponible'); }
     if (safetyTypes.has('medicine') && safetyTypes.has('pharmacy') && safetyTypes.has('security')) { score += 5; reasons.push('Couverture Santé & Sécurité complète'); }
+    if (observed.status === 'available') {
+      const outdoor = /montagne|balneaire|desert|nature|adventure|plein air/i.test(hay);
+      const precipitation = Number(observed.precipitation_probability);
+      const wind = Number(observed.wind_kmh);
+      if (outdoor && Number.isFinite(precipitation) && precipitation >= 70) { score -= 10; reasons.push('Conditions observées défavorables aux activités extérieures'); }
+      if (outdoor && Number.isFinite(wind) && wind >= 50) { score -= 8; reasons.push('Vent observé défavorable aux activités extérieures'); }
+      if (outdoor && Number.isFinite(precipitation) && precipitation < 30 && (!Number.isFinite(wind) || wind < 35)) { score += 5; reasons.push('Conditions observées favorables aux activités extérieures'); }
+    } else {
+      reasons.push('Conditions météo actuelles non disponibles — aucune inférence');
+    }
     score = Math.max(0, Math.min(100, score));
     return { ...solution, compatibilityScore: score, matchReasons: reasons };
   }).sort((a,b) => b.compatibilityScore-a.compatibilityScore || a.title.localeCompare(b.title));
@@ -379,7 +392,7 @@ v30Router.get('/session/:id/solutions', async (req, res) => {
 
   res.json({
     solutions: scored,
-    context: { territory, month, climate, hemisphere, climateRule },
+    context: { territory, month, climate, hemisphere, climateRule, observedConditions: observed },
     healthSafety: { available: safetyTypes.size > 0, serviceTypes: [...safetyTypes] },
     next: 'health_safety'
   });
