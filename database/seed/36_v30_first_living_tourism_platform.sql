@@ -475,3 +475,8 @@ CREATE TABLE IF NOT EXISTS v30_pro_opportunity_signals (
  created_at TIMESTAMPTZ NOT NULL DEFAULT now()
 );
 CREATE INDEX IF NOT EXISTS idx_v30_pro_signals_territory ON v30_pro_opportunity_signals(territory_key,status,score DESC);
+
+ALTER TABLE v30_b2b_calls ADD COLUMN IF NOT EXISTS geographic_scope TEXT NOT NULL DEFAULT 'local' CHECK (geographic_scope IN ('local','regional','national','international','global'));
+ALTER TABLE v30_b2b_calls ADD COLUMN IF NOT EXISTS target_regions TEXT[] NOT NULL DEFAULT '{}';
+ALTER TABLE v30_b2b_calls ADD COLUMN IF NOT EXISTS target_continents TEXT[] NOT NULL DEFAULT '{}';
+ALTER TABLE v30_b2b_calls ADD COLUMN IF NOT EXISTS target_territories TEXT[] NOT NULL DEFAULT '{}';
