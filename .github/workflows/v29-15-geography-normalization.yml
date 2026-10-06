@@ -1,0 +1,38 @@
+name: V29.15 Geography Normalization Validation
+
+on:
+  push:
+    branches: [v29-11-living-tourism-graph]
+  pull_request:
+    branches: [main, v29-11-living-tourism-graph]
+
+jobs:
+  normalize:
+    runs-on: ubuntu-latest
+    services:
+      postgres:
+        image: postgis/postgis:16-3.4
+        env:
+          POSTGRES_USER: connect
+          POSTGRES_PASSWORD: connect
+          POSTGRES_DB: latOile
+        ports: ["5432:5432"]
+        options: >-
+          --health-cmd="pg_isready -U connect -d latOile"
+          --health-interval=10s --health-timeout=5s --health-retries=10
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with: {node-version: 24, cache: npm}
+      - run: npm ci
+      - name: Apply graph schemas
+        env: {PGPASSWORD: connect}
+        run: |
+          psql -h localhost -U connect -d latOile -v ON_ERROR_STOP=1 -f database/seed/29_v29_12_temporal_graph.sql
+          psql -h localhost -U connect -d latOile -v ON_ERROR_STOP=1 -f database/seed/30_v29_13_global_geography_climate.sql
+          psql -h localhost -U connect -d latOile -v ON_ERROR_STOP=1 -f database/seed/31_v29_14_geography_sources.sql
+          psql -h localhost -U connect -d latOile -v ON_ERROR_STOP=1 -f database/seed/32_v29_15_geography_normalization.sql
+      - run: node --check scripts/test-v29-15-geography-normalization.mjs
+      - name: Contract test
+        env: {DATABASE_URL: postgresql://connect:connect@localhost:5432/latOile}
+        run: npm run test:v29-15:geography-normalization
