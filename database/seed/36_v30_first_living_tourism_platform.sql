@@ -1,4 +1,24 @@
 -- V30.1 — First Living Tourism Platform
+CREATE TABLE IF NOT EXISTS v30_health_profiles (
+ traveler_id BIGINT PRIMARY KEY,
+ allergies TEXT[] NOT NULL DEFAULT '{}',
+ blood_type TEXT,
+ important_treatments TEXT[] NOT NULL DEFAULT '{}',
+ emergency_contacts JSONB NOT NULL DEFAULT '[]'::jsonb,
+ reference_doctor JSONB NOT NULL DEFAULT '{}'::jsonb,
+ reference_establishment JSONB NOT NULL DEFAULT '{}'::jsonb,
+ updated_at TIMESTAMPTZ NOT NULL DEFAULT now()
+);
+CREATE TABLE IF NOT EXISTS v30_emergency_contacts (
+ id BIGSERIAL PRIMARY KEY,
+ traveler_id BIGINT NOT NULL,
+ label TEXT NOT NULL,
+ name TEXT NOT NULL,
+ phone TEXT,
+ relationship TEXT,
+ priority INT NOT NULL DEFAULT 1,
+ created_at TIMESTAMPTZ NOT NULL DEFAULT now()
+);
 CREATE TABLE IF NOT EXISTS v30_vault_access_policy (
  item_type TEXT PRIMARY KEY,
  visibility TEXT NOT NULL DEFAULT 'private' CHECK(visibility='private'),
