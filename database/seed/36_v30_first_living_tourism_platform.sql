@@ -509,3 +509,18 @@ INSERT INTO v30_b2b_geo_membership(scope_key,node_key) VALUES
 ('NATIONAL','COUNTRY_MAR'),('NATIONAL','COUNTRY_FRA'),
 ('REGIONAL','COUNTRY_MAR'),('REGIONAL','COUNTRY_FRA')
 ON CONFLICT DO NOTHING;
+
+CREATE TABLE IF NOT EXISTS v30_transport_search_links (
+ id BIGSERIAL PRIMARY KEY,
+ mode TEXT NOT NULL CHECK (mode IN ('air','sea')),
+ name_fr TEXT NOT NULL,
+ url_template TEXT NOT NULL,
+ scope TEXT NOT NULL DEFAULT 'global',
+ active BOOLEAN NOT NULL DEFAULT true,
+ metadata JSONB NOT NULL DEFAULT '{}'::jsonb
+);
+INSERT INTO v30_transport_search_links(mode,name_fr,url_template,scope) VALUES
+('air','Recherche de vols','https://www.google.com/travel/flights','global'),
+('air','Recherche de vols — Skyscanner','https://www.skyscanner.net/transport/flights/','global'),
+('sea','Recherche de traversées maritimes','https://www.directferries.com/','global')
+ON CONFLICT DO NOTHING;
