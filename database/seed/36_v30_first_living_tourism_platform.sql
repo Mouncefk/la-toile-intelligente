@@ -545,3 +545,43 @@ CREATE TABLE IF NOT EXISTS v30_transport_options (
  created_at TIMESTAMPTZ NOT NULL DEFAULT now()
 );
 CREATE INDEX IF NOT EXISTS idx_v30_transport_options_session ON v30_transport_options(session_id,created_at);
+
+CREATE TABLE IF NOT EXISTS v30_travel_search_requests (
+ id BIGSERIAL PRIMARY KEY,
+ traveler_id TEXT,
+ session_id BIGINT REFERENCES v30_traveler_sessions(id) ON DELETE SET NULL,
+ search_type TEXT NOT NULL CHECK (search_type IN ('air','sea','air_sea')),
+ mode TEXT NOT NULL CHECK (mode IN ('assisted','automatic')),
+ origin TEXT,
+ destination TEXT,
+ departure_at TIMESTAMPTZ,
+ return_at TIMESTAMPTZ,
+ travelers_count INTEGER,
+ constraints JSONB NOT NULL DEFAULT '{}'::jsonb,
+ status TEXT NOT NULL DEFAULT 'requested' CHECK (status IN ('requested','searching','results_ready','completed','cancelled')),
+ created_at TIMESTAMPTZ NOT NULL DEFAULT now(),
+ updated_at TIMESTAMPTZ NOT NULL DEFAULT now()
+);
+CREATE TABLE IF NOT EXISTS v30_travel_search_results (
+ id BIGSERIAL PRIMARY KEY,
+ request_id BIGINT NOT NULL REFERENCES v30_travel_search_requests(id) ON DELETE CASCADE,
+ source_name TEXT NOT NULL,
+ source_url TEXT,
+ result_type TEXT NOT NULL CHECK (result_type IN ('air','sea')),
+ origin TEXT,
+ destination TEXT,
+ departure_at TIMESTAMPTZ,
+ arrival_at TIMESTAMPTZ,
+ duration_minutes INTEGER,
+ price_amount NUMERIC(12,2),
+ currency TEXT,
+ carrier TEXT,
+ cabin TEXT,
+ baggage TEXT,
+ external_reference TEXT,
+ raw_payload JSONB NOT NULL DEFAULT '{}'::jsonb,
+ status TEXT NOT NULL DEFAULT 'candidate' CHECK (status IN ('candidate','selected','rejected')),
+ created_at TIMESTAMPTZ NOT NULL DEFAULT now()
+);
+CREATE INDEX IF NOT EXISTS idx_v30_travel_search_requests_traveler ON v30_travel_search_requests(traveler_id,created_at DESC);
+CREATE INDEX IF NOT EXISTS idx_v30_travel_search_results_request ON v30_travel_search_results(request_id,price_amount);
