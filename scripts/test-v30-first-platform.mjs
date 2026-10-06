@@ -36,6 +36,7 @@ import pg from 'pg'; const {Pool}=pg; const pool=new Pool({connectionString:proc
     if(!windows.windows.length||!solutions.solutions.length||!solutions.solutions[0].matchReasons) throw new Error('E2E matching failed');
     const compare=await request(`/session/${sid}/compare`);
     const ids=compare.comparisons.slice(0,2).map(x=>Number(x.solution_id));
+    if(!ids.length) throw new Error('E2E comparison returned no selectable solutions');
     const selected=await request(`/session/${sid}/compare/select`,{method:'POST',body:JSON.stringify({solutionIds:ids})});
     const vault=await request(`/vault/session/${sid}`);
     if(!selected.private||!vault.private||!vault.items.length) throw new Error('E2E vault failed');
