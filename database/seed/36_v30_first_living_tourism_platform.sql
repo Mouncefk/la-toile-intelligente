@@ -283,7 +283,7 @@ INSERT INTO v30_territories(country_iso3,territory_key,name_fr,region_type,latit
 ('MAR','OUARZAZATE','Ouarzazate','city',30.9335,-6.9370,'Arid / Mountain','north',ARRAY['desert','culture','heritage']),
 ('MAR','AGADIR','Agadir','city',30.4278,-9.5981,'Mediterranean / Coastal','north',ARRAY['balneaire','senior','family','nature']),
 ('MAR','ESSAOUIRA','Essaouira','city',31.5085,-9.7595,'Coastal','north',ARRAY['balneaire','artisanat','culture','surf']),
-('MAR','IFRANE','Ifrane','city',33.5228,-5.1100,'Mountain / Mediterranean','north',ARRAY['montagne','nature','family','senior']),
+('MAR','IFRANE','Ifrane','city',33.5228,-5.1100,'mountain','north',ARRAY['montagne','nature','family','senior']),
 ('MAR','CASABLANCA','Casablanca','city',33.5731,-7.5898,'Coastal / Mediterranean','north',ARRAY['culture','heritage','gastronomie','business','artisanat','family','senior']),
 ('MAR','TANGER','Tanger','city',35.7595,-5.8340,'Mediterranean / Coastal','north',ARRAY['balneaire','culture','heritage','artisanat','gastronomie','echanges_culturels','family','senior'])
 ON CONFLICT(territory_key) DO UPDATE SET name_fr=EXCLUDED.name_fr,latitude=EXCLUDED.latitude,longitude=EXCLUDED.longitude,climate_zone=EXCLUDED.climate_zone,tourism_tags=EXCLUDED.tourism_tags;
