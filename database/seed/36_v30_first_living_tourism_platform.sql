@@ -269,6 +269,22 @@ CREATE TABLE IF NOT EXISTS v30_vault_items (
 );
 CREATE INDEX IF NOT EXISTS idx_v30_territories_country ON v30_territories(country_iso3);
 CREATE INDEX IF NOT EXISTS idx_v30_solutions_territory ON v30_solutions(territory_key,solution_type);
+
+-- V30.45 — temporal solution constraints
+CREATE TABLE IF NOT EXISTS v30_solution_time_constraints (
+ id BIGSERIAL PRIMARY KEY,
+ solution_id BIGINT NOT NULL REFERENCES v30_solutions(id) ON DELETE CASCADE,
+ min_days INTEGER,
+ max_days INTEGER,
+ lead_time_hours INTEGER NOT NULL DEFAULT 0,
+ active BOOLEAN NOT NULL DEFAULT true,
+ metadata JSONB NOT NULL DEFAULT '{}'::jsonb,
+ CHECK (min_days IS NULL OR min_days > 0),
+ CHECK (max_days IS NULL OR max_days >= COALESCE(min_days,1)),
+ CHECK (lead_time_hours >= 0)
+);
+CREATE INDEX IF NOT EXISTS idx_v30_solution_time_constraints_solution ON v30_solution_time_constraints(solution_id,active);
+
 CREATE INDEX IF NOT EXISTS idx_v30_health_territory ON v30_health_safety_points(territory_key,service_type);
 INSERT INTO v30_territories(country_iso3,territory_key,name_fr,region_type,latitude,longitude,climate_zone,hemisphere,tourism_tags) VALUES
 ('MAR','MAR','Maroc','country',31.7917,-7.0926,'Mediterranean / Arid / Mountain','north',ARRAY['culture','heritage','artisanat','desert','balneaire','montagne','gastronomie','senior','family']),
