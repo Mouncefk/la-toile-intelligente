@@ -480,3 +480,21 @@ ALTER TABLE v30_b2b_calls ADD COLUMN IF NOT EXISTS geographic_scope TEXT NOT NUL
 ALTER TABLE v30_b2b_calls ADD COLUMN IF NOT EXISTS target_regions TEXT[] NOT NULL DEFAULT '{}';
 ALTER TABLE v30_b2b_calls ADD COLUMN IF NOT EXISTS target_continents TEXT[] NOT NULL DEFAULT '{}';
 ALTER TABLE v30_b2b_calls ADD COLUMN IF NOT EXISTS target_territories TEXT[] NOT NULL DEFAULT '{}';
+
+CREATE TABLE IF NOT EXISTS v30_b2b_geo_scopes (
+ id BIGSERIAL PRIMARY KEY,
+ scope_key TEXT UNIQUE NOT NULL,
+ scope_type TEXT NOT NULL CHECK (scope_type IN ('local','regional','national','international','global')),
+ name_fr TEXT NOT NULL,
+ country_iso3 TEXT,
+ region_keys TEXT[] NOT NULL DEFAULT '{}',
+ continent_keys TEXT[] NOT NULL DEFAULT '{}',
+ description TEXT
+);
+INSERT INTO v30_b2b_geo_scopes(scope_key,scope_type,name_fr,description) VALUES
+('LOCAL','local','Local','Même territoire ou zone de proximité.'),
+('REGIONAL','regional','Régional','Territoires appartenant à une même région géographique.'),
+('NATIONAL','national','National','Ensemble du territoire national.'),
+('INTERNATIONAL','international','International','Plusieurs pays ciblés par l’émetteur.'),
+('GLOBAL','global','Mondial','Ouverture mondiale du réseau professionnel.')
+ON CONFLICT(scope_key) DO NOTHING;
