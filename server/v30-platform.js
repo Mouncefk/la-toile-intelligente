@@ -197,4 +197,45 @@ v30Router.post('/vault', async (req, res) => {
   if (q) res.status(201).json({ item: q.rows[0], privacy: 'private' });
 });
 
+v30Router.post('/trip-draft', async (req, res) => {
+  const { sessionId, title, territoryKey = null, experiences = [], healthSafety = [], notes = {} } = req.body;
+  if (!sessionId || !title) return res.status(400).json({ error: 'sessionId_and_title_required' });
+  const q = await safeQuery(res,
+    'INSERT INTO v30_trip_drafts(session_id,title,territory_key,notes) VALUES($1,$2,$3,$4) ON CONFLICT(session_id) DO UPDATE SET title=EXCLUDED.title,territory_key=EXCLUDED.territory_key,notes=EXCLUDED.notes,updated_at=now() RETURNING *',
+    [sessionId,title,territoryKey,JSON.stringify({ ...notes, experiences, healthSafety })]);
+  if (q) res.status(201).json({ draft: q.rows[0] });
+});
+
+v30Router.get('/trip-draft/session/:sessionId', async (req, res) => {
+  const q = await safeQuery(res, 'SELECT * FROM v30_trip_drafts WHERE session_id=$1', [req.params.sessionId]);
+  if (q) res.json({ draft: q.rows[0] || null });
+});
+
+v30Router.patch('/trip-draft/:id', async (req, res) => {
+  const allowedStatus = ['preparation','ready','in_progress','completed'];
+  const status = req.body.status && allowedStatus.includes(req.body.status) ? req.body.status : null;
+  const transport = req.body.transport;
+  const q = await safeQuery(res,
+    'UPDATE v30_trip_drafts SET status=COALESCE($1,status),transport=COALESCE($2,transport),updated_at=now() WHERE id=$3 RETURNING *',
+    [status, transport === undefined ? null : JSON.stringify(transport), req.params.id]);
+  if (q && !q.rows[0]) return res.status(404).json({ error: 'trip_draft_not_found' });
+  if (q) res.json({ draft: q.rows[0] });
+});
+
+v30Router.get('/pro/opportunity-signals', async (req, res) => {
+  const params = [];
+  let sql = 'SELECT s.*,sp.name source_name,tp.name target_name FROM v30_pro_opportunity_signals s LEFT JOIN v30_pro_profiles sp ON sp.id=s.source_pro_id LEFT JOIN v30_pro_profiles tp ON tp.id=s.target_pro_id WHERE s.status=\\'suggested\\'';
+  if (req.query.territoryKey) { params.push(req.query.territoryKey); sql += ' AND s.territory_key=
+ + params.length; }
+  sql += ' ORDER BY s.score DESC,s.created_at DESC LIMIT 20';
+  const q = await safeQuery(res, sql, params);
+  if (q) res.json({ signals: q.rows });
+});
+
+v30Router.delete('/vault/:id', async (req, res) => {
+  const q = await safeQuery(res, 'DELETE FROM v30_vault_items WHERE id=$1 RETURNING id', [req.params.id]);
+  if (q && !q.rows[0]) return res.status(404).json({ error: 'vault_item_not_found' });
+  if (q) res.json({ deleted: true, id: q.rows[0].id, private: true });
+});
+
 v30Router.get('/health', (_req, res) => res.json({ ok: true, version: '30.2', router: 'v30-platform' }));
