@@ -554,7 +554,7 @@ v30Router.post('/recalculation-queue/claim', async (req,res) => {
     const q=await pool.query(
       `WITH picked AS (
         SELECT id FROM v30_recalculation_queue
-        WHERE status='pending'
+        WHERE status='pending' OR (status='processing' AND created_at < now() - interval '30 minutes')
         ORDER BY priority DESC,created_at ASC
         LIMIT $1
         FOR UPDATE SKIP LOCKED
