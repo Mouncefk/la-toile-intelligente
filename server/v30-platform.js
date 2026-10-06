@@ -615,7 +615,7 @@ v30Router.get('/session/:id/compare', async (req, res) => {
   if (!session.rows[0]) return res.status(404).json({ error: 'session_not_found' });
   const sessionId = Number(req.params.id);
   if (!Number.isInteger(sessionId) || sessionId < 1) return res.status(400).json({ error: 'invalid_session_id' });
-  const selected = String(req.query.ids || '').split(',').map(Number).filter(Number.isInteger);
+  const selected = String(req.query.ids || '').split(',').map(Number).filter(Number.isInteger).filter(id => id > 0);
   const limit = selected.length ? 20 : 5;
   const sql = selected.length
     ? 'SELECT * FROM v30_matches WHERE session_id=$1 AND solution_id=ANY($2::bigint[]) ORDER BY score DESC'
