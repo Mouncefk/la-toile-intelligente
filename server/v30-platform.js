@@ -476,12 +476,14 @@ v30Router.get('/session/:id/solutions', async (req, res) => {
   for (const solution of scored) {
     await pool.query(
       'INSERT INTO v30_matches(session_id,solution_id,score,reasons) VALUES($1,$2,$3,$4) ON CONFLICT(session_id,solution_id) DO UPDATE SET score=EXCLUDED.score,reasons=EXCLUDED.reasons,created_at=now()',
-      [req.params.id, solution.id, solution.compatibilityScore, JSON.stringify(solution.matchReasons)]
+      [Number(req.params.id), Number(solution.id), Number(solution.compatibilityScore), JSON.stringify(solution.matchReasons)]
     );
   }
+  const persisted = await pool.query('SELECT COUNT(*)::int AS count FROM v30_matches WHERE session_id=$1',[Number(req.params.id)]);
 
   res.json({
     solutions: scored,
+    persistedMatchCount: persisted.rows[0].count,
     context: { territory, month, climate, hemisphere, climateRule, observedConditions: observed },
     healthSafety: { available: safetyTypes.size > 0, serviceTypes: [...safetyTypes] },
     next: 'health_safety'
