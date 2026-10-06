@@ -495,6 +495,26 @@ v30Router.post('/session/:id/recommendations/invalidate', async (req,res) => {
   } catch(e){res.status(500).json({error:e.message});}
 });
 
+v30Router.post('/graph/change', async (req,res) => {
+  const { entityType, entityId=null, territoryKey=null, changeType, payload={} } = req.body || {};
+  if(!entityType||!changeType) return res.status(400).json({error:'entityType_and_changeType_required'});
+  try {
+    const q=await pool.query(
+      'INSERT INTO v30_graph_events(entity_type,entity_id,territory_key,event_type,payload) VALUES($1,$2,$3,$4,$5) RETURNING *',
+      [entityType,entityId,territoryKey,changeType,JSON.stringify(payload)]
+    );
+    res.status(201).json({event:q.rows[0],propagation:{recommendationsAffected:Boolean(territoryKey||entityId),recalculationRequired:true}});
+  } catch(e){res.status(500).json({error:e.message});}
+});
+
+v30Router.get('/graph/changes', async (req,res) => {
+  try {
+    const limit=Math.min(100,Math.max(1,Number(req.query.limit)||25));
+    const q=await pool.query('SELECT * FROM v30_graph_events ORDER BY created_at DESC LIMIT $1',[limit]);
+    res.json({events:q.rows});
+  } catch(e){res.status(500).json({error:e.message});}
+});
+
 v30Router.get('/session/:id/recommendation-history', async (req,res) => {
   const q=await safeQuery(res,
     'SELECT id,solution_id,score,reasons,created_at FROM v30_matches WHERE session_id=$1 ORDER BY created_at DESC,score DESC',
