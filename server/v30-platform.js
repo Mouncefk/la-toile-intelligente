@@ -60,6 +60,27 @@ v30Router.get('/globe/hierarchy', async (_req, res) => {
   if (q) res.json({ root: 'WORLD', nodes: q.rows });
 });
 
+v30Router.get('/institutional/dashboard', async (req,res) => {
+  const country = req.query.countryIso3 ? String(req.query.countryIso3).toUpperCase() : null;
+  const params = country ? [country] : [];
+  const where = country ? ' WHERE country_iso3=$1' : '';
+  try {
+    const q = await pool.query('SELECT country_iso3, COUNT(*)::int AS professional_count, COUNT(*) FILTER (WHERE verified)::int AS verified_count FROM v30_pro_profiles' + where + ' GROUP BY country_iso3', params);
+    res.json({
+      scope: { countryIso3: country },
+      confidentiality: {
+        travelerIdentitiesExcluded: true,
+        privateVaultExcluded: true,
+        healthProfilesExcluded: true,
+        individualSessionsExcluded: true
+      },
+      professionalActivity: q.rows
+    });
+  } catch (e) {
+    res.status(500).json({ error: e.message });
+  }
+});
+
 v30Router.get('/pilots', async (_req, res) => {
   const q = await safeQuery(res, 'SELECT * FROM v30_pilot_territories WHERE active=true ORDER BY country_iso3');
   if (q) res.json({ pilots: q.rows });
