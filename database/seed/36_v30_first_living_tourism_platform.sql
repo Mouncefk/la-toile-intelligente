@@ -1,5 +1,19 @@
 -- V30.1 — First Living Tourism Platform
 
+CREATE TABLE IF NOT EXISTS v30_pro_profiles (
+ id BIGSERIAL PRIMARY KEY,
+ country_iso3 TEXT NOT NULL,
+ territory_key TEXT REFERENCES v30_territories(territory_key) ON DELETE SET NULL,
+ name TEXT NOT NULL,
+ pro_type TEXT NOT NULL,
+ specialties TEXT[] NOT NULL DEFAULT '{}',
+ audiences TEXT[] NOT NULL DEFAULT '{}',
+ service_area TEXT[] NOT NULL DEFAULT '{}',
+ verified BOOLEAN NOT NULL DEFAULT false,
+ active BOOLEAN NOT NULL DEFAULT true,
+ metadata JSONB NOT NULL DEFAULT '{}'::jsonb
+);
+
 CREATE TABLE IF NOT EXISTS v30_pro_network_links (
  id BIGSERIAL PRIMARY KEY,
  source_pro_id BIGINT NOT NULL REFERENCES v30_pro_profiles(id) ON DELETE CASCADE,
