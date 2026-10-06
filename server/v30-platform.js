@@ -296,7 +296,11 @@ v30Router.post('/session', async (req, res) => {
 
 v30Router.post('/session/:id/profile', async (req, res) => {
   const allowed = ['traveler_type','age_group','mobility_level','party_type','party_size','children_ages','budget_level','pace','duration_days','accessibility_needs','preferences','constraints'];
-  const values = allowed.map(key => req.body[key] ?? null);
+  const arrayFields = new Set(['children_ages','accessibility_needs','preferences','constraints']);
+  const values = allowed.map(key => {
+    if (arrayFields.has(key)) return Array.isArray(req.body[key]) ? req.body[key] : [];
+    return req.body[key] ?? null;
+  });
   const q = await safeQuery(res,
     'INSERT INTO v30_traveler_profiles(session_id,traveler_type,age_group,mobility_level,party_type,party_size,children_ages,budget_level,pace,duration_days,accessibility_needs,preferences,constraints) VALUES($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13) ON CONFLICT(session_id) DO UPDATE SET traveler_type=EXCLUDED.traveler_type,age_group=EXCLUDED.age_group,mobility_level=EXCLUDED.mobility_level,party_type=EXCLUDED.party_type,party_size=EXCLUDED.party_size,children_ages=EXCLUDED.children_ages,budget_level=EXCLUDED.budget_level,pace=EXCLUDED.pace,duration_days=EXCLUDED.duration_days,accessibility_needs=EXCLUDED.accessibility_needs,preferences=EXCLUDED.preferences,constraints=EXCLUDED.constraints,updated_at=now() RETURNING *',
     [req.params.id, ...values]);
