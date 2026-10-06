@@ -213,6 +213,37 @@ v30Router.get('/conditions/:territoryKey', async (req, res) => {
   if (q) res.json({ territoryKey: key, conditions: q.rows[0] || { status: 'not_available' } });
 });
 
+v30Router.get('/territory/:territoryKey/environment', async (req,res) => {
+  const key = String(req.params.territoryKey).toUpperCase();
+  const month = Math.min(12, Math.max(1, Number(req.query.month) || new Date().getUTCMonth() + 1));
+  try {
+    const t = await pool.query(
+      'SELECT territory_key,name_fr,country_iso3,climate_zone,hemisphere,latitude,longitude FROM v30_territories WHERE territory_key=$1 AND active=true',
+      [key]
+    );
+    if (!t.rows[0]) return res.status(404).json({error:'territory_not_found'});
+    const territory=t.rows[0];
+    const season=await pool.query(
+      'SELECT * FROM v30_climate_seasons WHERE climate_key=$1 AND hemisphere=$2 AND ((month_start<=month_end AND $3 BETWEEN month_start AND month_end) OR (month_start>month_end AND ($3>=month_start OR $3<=month_end))) ORDER BY month_start LIMIT 1',
+      [String(territory.climate_zone||'').toLowerCase(),territory.hemisphere,month]
+    );
+    const conditions=await pool.query('SELECT * FROM v30_conditions_context WHERE territory_key=$1',[key]);
+    const observed=conditions.rows[0]||{status:'not_available'};
+    res.json({
+      territory,
+      calendar:{month,season:season.rows[0]||null},
+      observedConditions:observed,
+      decisionContext:{
+        seasonalContextAvailable:Boolean(season.rows[0]),
+        observedConditionsAvailable:observed.status==='available',
+        weatherMustNotBeInferred:observed.status!=='available'
+      }
+    });
+  } catch(e) {
+    res.status(500).json({error:e.message});
+  }
+});
+
 v30Router.get('/territory/:territoryKey/climate', async (req, res) => {
   const key = req.params.territoryKey.toUpperCase();
   const month = Math.min(12, Math.max(1, Number(req.query.month) || new Date().getUTCMonth() + 1));
