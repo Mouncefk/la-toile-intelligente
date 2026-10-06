@@ -1,4 +1,36 @@
 -- V30.1 — First Living Tourism Platform
+CREATE TABLE IF NOT EXISTS v30_climate_seasons (
+ climate_key TEXT NOT NULL,
+ hemisphere TEXT NOT NULL CHECK(hemisphere IN ('north','south','equatorial')),
+ month_start INT NOT NULL CHECK(month_start BETWEEN 1 AND 12),
+ month_end INT NOT NULL CHECK(month_end BETWEEN 1 AND 12),
+ season_fr TEXT NOT NULL,
+ tourism_context TEXT[] NOT NULL DEFAULT '{}',
+ PRIMARY KEY(climate_key,hemisphere,month_start)
+);
+INSERT INTO v30_climate_seasons(climate_key,hemisphere,month_start,month_end,season_fr,tourism_context) VALUES
+('mediterranean','north',3,5,'Printemps',ARRAY['culture','nature','artisanat','city_break']),
+('mediterranean','north',6,8,'Été',ARRAY['balneaire','montagne','family']),
+('mediterranean','north',9,11,'Automne',ARRAY['culture','gastronomie','nature']),
+('mediterranean','north',12,2,'Hiver',ARRAY['culture','senior','montagne']),
+('oceanic','north',3,5,'Printemps',ARRAY['nature','culture','family']),
+('oceanic','north',6,8,'Été',ARRAY['balneaire','family','nature']),
+('oceanic','north',9,11,'Automne',ARRAY['culture','nature','gastronomie']),
+('oceanic','north',12,2,'Hiver',ARRAY['culture','heritage','senior']),
+('mountain','north',3,5,'Printemps',ARRAY['nature','adventure']),
+('mountain','north',6,8,'Été',ARRAY['montagne','nature','family']),
+('mountain','north',9,11,'Automne',ARRAY['nature','montagne','culture']),
+('mountain','north',12,2,'Hiver',ARRAY['ski','montagne','family']),
+('arid','north',3,5,'Printemps',ARRAY['desert','adventure','culture']),
+('arid','north',6,8,'Été',ARRAY['culture','nightlife','senior']),
+('arid','north',9,11,'Automne',ARRAY['desert','adventure','artisanat']),
+('arid','north',12,2,'Hiver',ARRAY['desert','culture','nature']),
+('mediterranean','south',3,5,'Automne',ARRAY['culture','gastronomie','nature']),
+('mediterranean','south',6,8,'Hiver',ARRAY['culture','senior','montagne']),
+('mediterranean','south',9,11,'Printemps',ARRAY['culture','nature','artisanat']),
+('mediterranean','south',12,2,'Été',ARRAY['balneaire','family','nature']),
+('equatorial','equatorial',1,12,'Toute l’année',ARRAY['nature','culture','adventure','family'])
+ON CONFLICT DO NOTHING;
 CREATE TABLE IF NOT EXISTS v30_geography_nodes (
  id BIGSERIAL PRIMARY KEY,
  node_key TEXT NOT NULL UNIQUE,
