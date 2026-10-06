@@ -1,4 +1,29 @@
 -- V30.1 — First Living Tourism Platform
+CREATE TABLE IF NOT EXISTS v30_geography_nodes (
+ id BIGSERIAL PRIMARY KEY,
+ node_key TEXT NOT NULL UNIQUE,
+ parent_key TEXT REFERENCES v30_geography_nodes(node_key) ON DELETE SET NULL,
+ node_type TEXT NOT NULL CHECK(node_type IN ('world','hemisphere','continent','country','region','territory')),
+ name_fr TEXT NOT NULL,
+ country_iso3 TEXT,
+ hemisphere TEXT CHECK(hemisphere IN ('north','south','equatorial')),
+ climate_zones TEXT[] NOT NULL DEFAULT '{}',
+ latitude DOUBLE PRECISION,
+ longitude DOUBLE PRECISION,
+ active BOOLEAN NOT NULL DEFAULT true
+);
+INSERT INTO v30_geography_nodes(node_key,parent_key,node_type,name_fr,hemisphere,climate_zones) VALUES
+('WORLD',NULL,'world','Monde',NULL,ARRAY['polar','temperate','mediterranean','tropical','arid','equatorial']),
+('HEMISPHERE_NORTH','WORLD','hemisphere','Hémisphère nord','north',ARRAY['polar','temperate','mediterranean','arid','tropical']),
+('HEMISPHERE_SOUTH','WORLD','hemisphere','Hémisphère sud','south',ARRAY['polar','temperate','mediterranean','arid','tropical']),
+('HEMISPHERE_EQUATORIAL','WORLD','hemisphere','Zone équatoriale','equatorial',ARRAY['equatorial','tropical'])
+ON CONFLICT(node_key) DO NOTHING;
+INSERT INTO v30_geography_nodes(node_key,parent_key,node_type,name_fr,country_iso3,hemisphere,climate_zones,latitude,longitude)
+SELECT 'COUNTRY_MAR','HEMISPHERE_NORTH','country','Maroc','MAR','north',ARRAY['mediterranean','arid','mountain'],31.7917,-7.0926
+WHERE NOT EXISTS(SELECT 1 FROM v30_geography_nodes WHERE node_key='COUNTRY_MAR');
+INSERT INTO v30_geography_nodes(node_key,parent_key,node_type,name_fr,country_iso3,hemisphere,climate_zones,latitude,longitude)
+SELECT 'COUNTRY_FRA','HEMISPHERE_NORTH','country','France','FRA','north',ARRAY['oceanic','mediterranean','mountain','continental'],46.2276,2.2137
+WHERE NOT EXISTS(SELECT 1 FROM v30_geography_nodes WHERE node_key='COUNTRY_FRA');
 CREATE TABLE IF NOT EXISTS v30_pilot_territories (
  country_iso3 TEXT PRIMARY KEY,
  pilot_role TEXT NOT NULL CHECK(pilot_role IN ('primary','secondary','future')),
