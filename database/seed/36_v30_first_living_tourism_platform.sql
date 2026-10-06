@@ -377,3 +377,13 @@ INSERT INTO v30_pro_profiles(country_iso3,territory_key,name,pro_type,specialtie
 ('FRA','ALPES','Réseau montagne Alpes','experience',ARRAY['montagne','nature','adventure'],ARRAY['family','senior'],ARRAY['ALPES'],true,'{"pilot":true}'::jsonb),
 ('FRA','BRETAGNE','Réseau littoral Bretagne','experience',ARRAY['balneaire','nature','culture'],ARRAY['family','senior'],ARRAY['BRETAGNE'],true,'{"pilot":true}'::jsonb)
 ON CONFLICT DO NOTHING;
+
+INSERT INTO v30_pro_opportunities(source_pro_id,territory_key,opportunity_type,title,description,specialties,audiences,metadata)
+SELECT p.id,'MARRAKECH','co_creation','Créer une expérience artisanat + patrimoine','Associer découverte des savoir-faire, médiation culturelle et expérience territoriale.',ARRAY['artisanat','culture','heritage'],ARRAY['senior','family'],'{"pilot":true}'::jsonb FROM v30_pro_profiles p WHERE p.name='Réseau artisanat Marrakech'
+AND NOT EXISTS (SELECT 1 FROM v30_pro_opportunities o WHERE o.title='Créer une expérience artisanat + patrimoine');
+INSERT INTO v30_pro_opportunities(source_pro_id,territory_key,opportunity_type,title,description,specialties,audiences,metadata)
+SELECT p.id,'TANGER','cultural_exchange','Échange culturel Méditerranée','Construire une offre d’échange culturel reliant acteurs locaux, patrimoine et découverte des savoir-faire.',ARRAY['culture','artisanat','balneaire'],ARRAY['family','senior'],'{"pilot":true}'::jsonb FROM v30_pro_profiles p WHERE p.name='Réseau tourisme Tanger'
+AND NOT EXISTS (SELECT 1 FROM v30_pro_opportunities o WHERE o.title='Échange culturel Méditerranée');
+INSERT INTO v30_pro_opportunities(source_pro_id,territory_key,opportunity_type,title,description,specialties,audiences,metadata)
+SELECT p.id,'AGADIR','combined_offer','Offre balnéaire adaptée aux seniors','Associer expérience littorale, accompagnement et services adaptés au public senior.',ARRAY['balneaire','senior','nature'],ARRAY['senior'],'{"pilot":true}'::jsonb FROM v30_pro_profiles p WHERE p.name='Réseau balnéaire Agadir'
+AND NOT EXISTS (SELECT 1 FROM v30_pro_opportunities o WHERE o.title='Offre balnéaire adaptée aux seniors');
