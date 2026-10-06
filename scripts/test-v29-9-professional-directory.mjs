@@ -15,3 +15,11 @@ const badRadius=await get('/api/professionals/v29/directory?countryIso3=MAR&radi
 assert.equal(badRadius.status,400);
 assert.equal(badRadius.data.error,'radiusKm_invalid');
 console.log(JSON.stringify({ok:true,tests:['invalid_coordinates','coordinate_pair','invalid_radius']}));
+
+const profile=await get('/api/professionals/v29/1/profile');
+if(![200,404].includes(profile.status)) throw new Error('profile endpoint unexpected status '+profile.status);
+if(profile.status===200){
+ assert.equal(profile.data.principle,'public_professional_profile_traveler_identity_not_shared');
+ assert.ok(profile.data.display_name);
+}
+console.log(JSON.stringify({ok:true,tests:['invalid_coordinates','coordinate_pair','invalid_radius','public_profile']}));
