@@ -73,6 +73,43 @@ INSERT INTO v30_health_safety_points(territory_key,service_type,name,description
 ('RABAT','pharmacy','Pharmacies à proximité','Recherche de pharmacies disponibles.'),
 ('RABAT','security','Sécurité locale','Orientation vers les services de sécurité et assistance.')
 ON CONFLICT DO NOTHING;
+
+-- France pilot: same global core, distinct territory/context data.
+INSERT INTO v30_territories(country_iso3,territory_key,name_fr,region_type,latitude,longitude,climate_zone,hemisphere,tourism_tags) VALUES
+('FRA','FRA','France','country',46.2276,2.2137,'Oceanic / Mediterranean / Mountain / Continental','north',ARRAY['culture','heritage','artisanat','gastronomie','balneaire','montagne','nature','senior','family','colonies_vacances','echanges_culturels']),
+('FRA','PARIS','Paris','city',48.8566,2.3522,'Oceanic / Temperate','north',ARRAY['culture','heritage','gastronomie','artisanat','senior','family']),
+('FRA','BRETAGNE','Bretagne','region',48.2020,-2.9326,'Oceanic','north',ARRAY['balneaire','nature','culture','artisanat','family']),
+('FRA','PROVENCE','Provence','region',43.9352,6.0679,'Mediterranean','north',ARRAY['balneaire','culture','gastronomie','artisanat','senior']),
+('FRA','ALPES','Alpes','region',45.9237,6.8694,'Mountain / Alpine','north',ARRAY['montagne','nature','adventure','family','senior']),
+('FRA','PYRENEES','Pyrénées','region',42.7500,1.5000,'Mountain','north',ARRAY['montagne','nature','adventure','family']),
+('FRA','NORMANDIE','Normandie','region',49.1829,0.3707,'Oceanic','north',ARRAY['heritage','culture','nature','family','senior']),
+('FRA','OCCITANIE','Occitanie','region',43.8927,2.2820,'Mediterranean / Oceanic / Mountain','north',ARRAY['culture','heritage','balneaire','nature','gastronomie'])
+ON CONFLICT(territory_key) DO UPDATE SET name_fr=EXCLUDED.name_fr,latitude=EXCLUDED.latitude,longitude=EXCLUDED.longitude,climate_zone=EXCLUDED.climate_zone,tourism_tags=EXCLUDED.tourism_tags;
+
+INSERT INTO v30_solutions(territory_key,solution_type,title,description,provider_name,specialties,audience,availability) VALUES
+('PARIS','culture','Paris culture & patrimoine','Parcours culturels et patrimoine adaptables au rythme du voyageur.','Réseau culturel La Toile France',ARRAY['Culture & Patrimoine'],ARRAY['family','senior'],'Selon calendrier'),
+('BRETAGNE','experience','Littoral & patrimoine breton','Découverte du littoral, des paysages et du patrimoine vivant.','Réseau tourisme La Toile France',ARRAY['Balnéaire','Nature','Culture'],ARRAY['family','senior'],'Selon saison'),
+('PROVENCE','experience','Provence : culture & gastronomie','Expériences autour des villages, savoir-faire et gastronomie.','Réseau tourisme La Toile France',ARRAY['Culture','Gastronomie','Artisanat'],ARRAY['family','senior'],'Selon saison'),
+('ALPES','experience','Montagne & nature dans les Alpes','Activités de montagne avec options adaptées aux familles et aux seniors.','Réseau montagne La Toile France',ARRAY['Montagne','Nature'],ARRAY['family','senior'],'Selon saison'),
+('PYRENEES','experience','Pyrénées & aventure douce','Découverte de la montagne et de la nature.','Réseau montagne La Toile France',ARRAY['Montagne','Nature','Aventure'],ARRAY['family','adult'],'Selon saison'),
+('NORMANDIE','culture','Normandie & mémoire','Patrimoine, histoire et paysages littoraux.','Réseau culturel La Toile France',ARRAY['Culture & Patrimoine','Nature'],ARRAY['family','senior'],'Selon calendrier'),
+('OCCITANIE','artisanat','Savoir-faire & artisanat d’Occitanie','Rencontres avec les savoir-faire et productions artisanales locales.','Réseau artisanat La Toile France',ARRAY['Artisanat','Culture'],ARRAY['family','senior'],'Sur réservation');
+
+INSERT INTO v30_health_safety_points(territory_key,service_type,name,description) VALUES
+('PARIS','medicine','Soins médicaux à proximité','Orientation vers les structures de soins du territoire.'),
+('PARIS','pharmacy','Pharmacies à proximité','Recherche de pharmacies et services pharmaceutiques disponibles.'),
+('PARIS','security','Sécurité locale','Orientation vers les services de sécurité et assistance.'),
+('BRETAGNE','medicine','Soins médicaux à proximité','Orientation vers les structures de soins du territoire.'),
+('BRETAGNE','pharmacy','Pharmacies à proximité','Recherche de pharmacies disponibles.'),
+('BRETAGNE','security','Sécurité locale','Orientation vers les services de sécurité et assistance.'),
+('ALPES','medicine','Assistance médicale montagne','Orientation vers les structures médicales et services adaptés au territoire.'),
+('ALPES','pharmacy','Pharmacies à proximité','Recherche de pharmacies disponibles.'),
+('ALPES','security','Sécurité montagne','Orientation vers les services de sécurité et assistance.'),
+('PROVENCE','medicine','Soins médicaux à proximité','Orientation vers les structures de soins du territoire.'),
+('PROVENCE','pharmacy','Pharmacies à proximité','Recherche de pharmacies disponibles.'),
+('PROVENCE','security','Sécurité locale','Orientation vers les services de sécurité et assistance.')
+ON CONFLICT DO NOTHING;
+
 CREATE OR REPLACE VIEW v30_globe_entry AS
 SELECT country_iso3,COUNT(*) FILTER(WHERE region_type='country') countries,COUNT(*) FILTER(WHERE region_type<>'country') territories,
 ARRAY_AGG(DISTINCT hemisphere) hemispheres,ARRAY_AGG(DISTINCT climate_zone) FILTER(WHERE climate_zone IS NOT NULL) climate_zones
