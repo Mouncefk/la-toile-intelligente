@@ -288,6 +288,11 @@ INSERT INTO v30_territories(country_iso3,territory_key,name_fr,region_type,latit
 ('MAR','CASABLANCA','Casablanca','city',33.5731,-7.5898,'Coastal / Mediterranean','north',ARRAY['culture','heritage','gastronomie','business','artisanat','family','senior']),
 ('MAR','TANGER','Tanger','city',35.7595,-5.8340,'Mediterranean / Coastal','north',ARRAY['balneaire','culture','heritage','artisanat','gastronomie','echanges_culturels','family','senior'])
 ON CONFLICT(territory_key) DO UPDATE SET name_fr=EXCLUDED.name_fr,latitude=EXCLUDED.latitude,longitude=EXCLUDED.longitude,climate_zone=EXCLUDED.climate_zone,tourism_tags=EXCLUDED.tourism_tags;
+INSERT INTO v30_conditions_context(territory_key,source,status,metadata) VALUES
+('MARRAKECH','pilot_seed','not_available','{"reason":"Aucune observation météo temps réel fournie par le seed V30"}'::jsonb),
+('MERZOUGA','pilot_seed','not_available','{"reason":"Aucune observation météo temps réel fournie par le seed V30"}'::jsonb),
+('IFRANE','pilot_seed','not_available','{"reason":"Aucune observation météo temps réel fournie par le seed V30"}'::jsonb)
+ON CONFLICT(territory_key) DO UPDATE SET source=EXCLUDED.source,status=EXCLUDED.status,metadata=EXCLUDED.metadata;
 INSERT INTO v30_solutions(territory_key,solution_type,title,description,provider_name,specialties,audience,availability) VALUES
 ('MARRAKECH','experience','Médina & artisanat','Découverte guidée du patrimoine vivant et des ateliers d’artisans.','Réseau local La Toile',ARRAY['Artisanat','Culture & Patrimoine'],ARRAY['family','senior'],'Selon calendrier'),
 ('MARRAKECH','culture','Patrimoine de Marrakech','Parcours culturel adaptable au rythme du voyageur.','Réseau culturel La Toile',ARRAY['Culture & Patrimoine'],ARRAY['family','senior'],'Selon calendrier'),
