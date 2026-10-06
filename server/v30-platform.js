@@ -339,6 +339,33 @@ v30Router.get('/journey/windows', async (req,res) => {
   }catch(e){res.status(500).json({error:e.message});}
 });
 
+v30Router.get('/territory/:territoryKey/data-quality', async (req,res) => {
+  const key=String(req.params.territoryKey).toUpperCase();
+  try {
+    const territory=await pool.query('SELECT territory_key,name_fr FROM v30_territories WHERE territory_key=$1 AND active=true',[key]);
+    if(!territory.rows[0]) return res.status(404).json({error:'territory_not_found'});
+    const solutions=await pool.query(
+      'SELECT id,title,provider_name,public_contact,latitude,longitude,active FROM v30_solutions WHERE territory_key=$1',
+      [key]
+    );
+    const professionals=await pool.query(
+      'SELECT id,name,verified,active FROM v30_pro_profiles WHERE territory_key=$1',
+      [key]
+    );
+    const verifiedNames=new Set(professionals.rows.filter(p=>p.verified).map(p=>String(p.name).toLowerCase()));
+    const quality=solutions.rows.map(x=>{
+      let score=40; const reasons=[];
+      if(x.active){score+=15;reasons.push('Offre active');}
+      if(x.public_contact && Object.keys(x.public_contact).length){score+=15;reasons.push('Contact public renseigné');}
+      if(Number.isFinite(Number(x.latitude)) && Number.isFinite(Number(x.longitude))){score+=15;reasons.push('Géolocalisation renseignée');}
+      if(x.provider_name && verifiedNames.has(String(x.provider_name).toLowerCase())){score+=15;reasons.push('Professionnel vérifié associé');}
+      return {solutionId:x.id,title:x.title,qualityScore:Math.min(100,score),qualityReasons:reasons};
+    });
+    const avg=quality.length?Math.round(quality.reduce((a,x)=>a+x.qualityScore,0)/quality.length):0;
+    res.json({territory:territory.rows[0],summary:{solutions:quality.length,averageQualityScore:avg,verifiedProfessionals:professionals.rows.filter(p=>p.verified).length},solutions:quality});
+  }catch(e){res.status(500).json({error:e.message});}
+});
+
 v30Router.get('/session/:id/solutions', async (req, res) => {
   const session = await safeQuery(res, 'SELECT * FROM v30_traveler_sessions WHERE id=$1', [req.params.id]);
   if (!session) return;
