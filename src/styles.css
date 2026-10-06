@@ -74,3 +74,6 @@
 .v30transportPanel{margin:28px auto;max-width:1200px;padding:28px 30px;border:1px solid #244052;border-radius:20px;background:linear-gradient(135deg,#09131b,#071019);box-shadow:0 20px 60px #0005}.v30transportPanel h2{margin:8px 0}.v30transportPanel p{color:#9eacb7;line-height:1.6;max-width:820px}.v30transportNotice{margin:18px 0;padding:14px 16px;border:1px solid #315a6b;border-radius:12px;background:#0d202b;color:#d8edf5}.v30transportLinks{display:flex;flex-wrap:wrap;gap:10px}.v30transportLinks a{color:#eaf8ff;text-decoration:none;border:1px solid #2b5263;border-radius:10px;padding:11px 14px;background:#0b1821}.v30transportLinks a:hover{border-color:#70c9e8}
 .v30transportModes{display:flex;gap:10px;margin:16px 0}.v30transportModes button{border:1px solid #2b5263;background:#0b1821;color:#cfe4ec;border-radius:10px;padding:10px 14px;cursor:pointer}.v30transportModes button.active{border-color:#70c9e8;background:#123040;color:#fff}
 .v30transportLinks button{border:1px solid #4b7890;background:#102735;color:#eefaff;border-radius:10px;padding:11px 14px;cursor:pointer}
+.v30vaultIdeas span{display:inline-flex;align-items:center;gap:8px}
+.v30vaultIdeas span button{border:0;background:transparent;color:#6f8995;cursor:pointer;font-size:14px;padding:0 2px}
+.v30vaultIdeas span button:hover{color:#e9f7fb}
