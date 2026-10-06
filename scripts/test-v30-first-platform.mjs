@@ -45,7 +45,7 @@ import pg from 'pg'; const {Pool}=pg; const pool=new Pool({connectionString:proc
     const claimed=await request('/recalculation-queue/claim',{method:'POST',body:JSON.stringify({limit:20})});
     const history=await request(`/session/${sid}/recommendation-history`);
     const inst=await request('/institutional/dashboard?countryIso3=MAR');
-    if(propagated.invalidatedCount<1||!claimed.items.some(x=>Number(x.session_id)===Number(sid))||!history.history.some(x=>x.reasons?.invalidated===true)) throw new Error('E2E graph/recalculation failed');
+    if(propagated.invalidatedCount<1||!claimed.items.some(x=>Number(x.session_id)===Number(sid))||!history.history.some(x=>x.reasons?.invalidated===true)) throw new Error('E2E graph/recalculation failed: '+JSON.stringify({propagated,claimed,history:history.history}));
     if(!inst.confidentiality.travelerIdentitiesExcluded||!inst.confidentiality.privateVaultExcluded||!inst.confidentiality.healthProfilesExcluded) throw new Error('E2E institutional privacy failed');
     console.log(JSON.stringify({e2e:true,sessionId:sid,solutions:solutions.solutions.length,compared:compare.comparisons.length,vaultItems:vault.items.length,invalidated:propagated.invalidatedCount,claimed:claimed.claimed}));
   } finally { child.kill('SIGTERM'); await sleep(200); }
