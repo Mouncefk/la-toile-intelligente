@@ -314,6 +314,31 @@ v30Router.post('/session/:id/intent', async (req, res) => {
   if (q) res.status(201).json({ intent, analysis: q.rows[0], next: 'solutions' });
 });
 
+v30Router.get('/journey/windows', async (req,res) => {
+  const territoryKey=String(req.query.territoryKey||'').toUpperCase();
+  const tag=String(req.query.tag||'').toLowerCase();
+  const duration=Math.min(365,Math.max(1,Number(req.query.durationDays)||7));
+  const startMonth=Math.min(12,Math.max(1,Number(req.query.startMonth)||1));
+  if(!territoryKey||!tag) return res.status(400).json({error:'territoryKey_and_tag_required'});
+  try {
+    const t=await pool.query('SELECT territory_key,name_fr,climate_zone,hemisphere FROM v30_territories WHERE territory_key=$1 AND active=true',[territoryKey]);
+    if(!t.rows[0]) return res.status(404).json({error:'territory_not_found'});
+    const territory=t.rows[0];
+    const months=[];
+    for(let offset=0;offset<Math.min(duration,12);offset++) months.push(((startMonth-1+offset)%12)+1);
+    const rule=await pool.query('SELECT preferred_months,weight,rationale_fr FROM v30_tourism_climate_rules WHERE tourism_tag=$1 AND climate_key=$2 AND hemisphere=$3',[tag,String(territory.climate_zone||'').toLowerCase(),territory.hemisphere]);
+    const preferred=rule.rows[0]?.preferred_months||[];
+    const results=months.map(month=>({
+      month,
+      favorable:preferred.includes(month),
+      score:preferred.length?(preferred.includes(month)?100:60):50,
+      rationale:rule.rows[0]?.rationale_fr||'Aucune règle climatique spécifique disponible.'
+    }));
+    results.sort((a,b)=>b.score-a.score||a.month-b.month);
+    res.json({territory,durationDays:duration,startMonth,windows:results});
+  }catch(e){res.status(500).json({error:e.message});}
+});
+
 v30Router.get('/session/:id/solutions', async (req, res) => {
   const session = await safeQuery(res, 'SELECT * FROM v30_traveler_sessions WHERE id=$1', [req.params.id]);
   if (!session) return;
