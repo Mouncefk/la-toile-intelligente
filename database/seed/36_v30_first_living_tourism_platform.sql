@@ -1,4 +1,30 @@
 -- V30.1 — First Living Tourism Platform
+CREATE TABLE IF NOT EXISTS v30_vault_access_policy (
+ item_type TEXT PRIMARY KEY,
+ visibility TEXT NOT NULL DEFAULT 'private' CHECK(visibility='private'),
+ institutional_aggregate BOOLEAN NOT NULL DEFAULT false,
+ professional_share_allowed BOOLEAN NOT NULL DEFAULT false
+);
+INSERT INTO v30_vault_access_policy(item_type,visibility,institutional_aggregate,professional_share_allowed) VALUES
+('memory','private',false,false),
+('document','private',false,false),
+('reservation','private',false,false),
+('health','private',false,false),
+('emergency','private',false,false),
+('favorite','private',false,false)
+ON CONFLICT(item_type) DO UPDATE SET visibility='private',institutional_aggregate=false,professional_share_allowed=false;
+CREATE TABLE IF NOT EXISTS v30_institutional_events (
+ id BIGSERIAL PRIMARY KEY,
+ country_iso3 TEXT,
+ territory_key TEXT,
+ event_type TEXT NOT NULL,
+ tourism_tag TEXT,
+ climate_key TEXT,
+ month INT,
+ aggregate_value NUMERIC,
+ metadata JSONB NOT NULL DEFAULT '{}'::jsonb,
+ created_at TIMESTAMPTZ NOT NULL DEFAULT now()
+);
 CREATE TABLE IF NOT EXISTS v30_traveler_profiles (
  session_id BIGINT PRIMARY KEY REFERENCES v30_traveler_sessions(id) ON DELETE CASCADE,
  traveler_type TEXT,
