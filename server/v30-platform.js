@@ -175,8 +175,63 @@ v30Router.get('/session/:id/solutions', async (req, res) => {
   if (!session) return;
   if (!session.rows[0]) return res.status(404).json({ error: 'session_not_found' });
   const key = session.rows[0].territory_key;
-  const q = await safeQuery(res, 'SELECT * FROM v30_solutions WHERE territory_key=$1 AND active=true ORDER BY solution_type,title', [key]);
-  if (q) res.json({ solutions: q.rows, next: 'health_safety' });
+  if (!key) return res.status(400).json({ error: 'territory_required' });
+
+  const intentQ = await safeQuery(res, 'SELECT * FROM v30_traveler_intents WHERE session_id=$1 ORDER BY created_at DESC LIMIT 1', [req.params.id]);
+  if (!intentQ) return;
+  const profileQ = await safeQuery(res, 'SELECT * FROM v30_traveler_profiles WHERE session_id=$1', [req.params.id]);
+  if (!profileQ) return;
+
+  const territoryQ = await safeQuery(res, 'SELECT territory_key,name_fr,climate_zone,hemisphere,country_iso3 FROM v30_territories WHERE territory_key=$1 AND active=true', [key]);
+  if (!territoryQ) return;
+  if (!territoryQ.rows[0]) return res.status(404).json({ error: 'territory_not_found' });
+
+  const territory = territoryQ.rows[0];
+  const intent = intentQ.rows[0]?.intent || {};
+  const profile = profileQ.rows[0] || {};
+  const month = Number(req.query.month) >= 1 && Number(req.query.month) <= 12 ? Number(req.query.month) : new Date().getUTCMonth() + 1;
+  const climate = String(territory.climate_zone || 'mediterranean').toLowerCase();
+  const hemisphere = territory.hemisphere || 'north';
+
+  const climateQ = await safeQuery(res,
+    'SELECT * FROM v30_tourism_climate_rules WHERE tourism_tag=$1 AND climate_key=$2 AND hemisphere=$3 LIMIT 1',
+    [String(intent.activity || '').toLowerCase().replaceAll('é','e').replace(/[^a-z]/g,''), climate, hemisphere]);
+  if (!climateQ) return;
+
+  const climateRule = climateQ.rows[0] || null;
+  const solutionsQ = await safeQuery(res, 'SELECT * FROM v30_solutions WHERE territory_key=$1 AND active=true', [key]);
+  if (!solutionsQ) return;
+
+  const healthQ = await safeQuery(res, 'SELECT service_type,count(*)::int AS n FROM v30_health_safety_points WHERE territory_key=$1 AND active=true GROUP BY service_type', [key]);
+  if (!healthQ) return;
+  const safetyTypes = new Set(healthQ.rows.map(x => x.service_type));
+
+  const scored = solutionsQ.rows.map(solution => {
+    let score = 50;
+    const reasons = [];
+    const hay = [solution.solution_type, solution.title, solution.description, ...(solution.specialties || []), ...(solution.audience || [])].filter(Boolean).join(' ').toLowerCase();
+
+    if (intent.activity && hay.includes(String(intent.activity).toLowerCase())) { score += 20; reasons.push('Intention compatible'); }
+    if (intent.travelerProfile && hay.includes(String(intent.travelerProfile).toLowerCase())) { score += 12; reasons.push('Profil voyageur compatible'); }
+    if (profile.party_type && hay.includes(String(profile.party_type).toLowerCase())) { score += 6; reasons.push('Composition du voyage compatible'); }
+    if (profile.accessibility_needs?.length && solution.audience?.some(a => profile.accessibility_needs.includes(a))) { score += 15; reasons.push('Accessibilité compatible'); }
+    if (climateRule) {
+      const inSeason = (climateRule.preferred_months || []).includes(month);
+      score += inSeason ? 15 : -5;
+      reasons.push(inSeason ? 'Saison climatique favorable' : 'Hors saison optimale');
+    }
+    if (intent.safety && safetyTypes.size) { score += 8; reasons.push('Santé & Sécurité disponible'); }
+    if (safetyTypes.has('medicine') && safetyTypes.has('pharmacy') && safetyTypes.has('security')) { score += 5; reasons.push('Couverture Santé & Sécurité complète'); }
+    score = Math.max(0, Math.min(100, score));
+    return { ...solution, compatibilityScore: score, matchReasons: reasons };
+  }).sort((a,b) => b.compatibilityScore-a.compatibilityScore || a.title.localeCompare(b.title));
+
+  res.json({
+    solutions: scored,
+    context: { territory, month, climate, hemisphere, climateRule },
+    healthSafety: { available: safetyTypes.size > 0, serviceTypes: [...safetyTypes] },
+    next: 'health_safety'
+  });
 });
 
 v30Router.get('/pro/network', async (req, res) => {
