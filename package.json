@@ -27,7 +27,8 @@
     "test:v29-9:directory": "node scripts/test-v29-9-professional-directory.mjs",
     "test:v29-12:temporal-graph": "node scripts/test-v29-12-temporal-graph.mjs",
     "test:v29-13:geography-climate": "node scripts/test-v29-13-global-geography-climate.mjs",
-    "test:v29-15:geography-normalization": "node scripts/test-v29-15-geography-normalization.mjs"
+    "test:v29-15:geography-normalization": "node scripts/test-v29-15-geography-normalization.mjs",
+    "test:v29-16:global-climate": "node scripts/test-v29-16-global-climate.mjs"
   },
   "dependencies": {
     "@vitejs/plugin-react": "latest",
