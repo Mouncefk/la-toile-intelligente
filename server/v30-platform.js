@@ -62,19 +62,52 @@ v30Router.get('/globe/hierarchy', async (_req, res) => {
 
 v30Router.get('/institutional/dashboard', async (req,res) => {
   const country = req.query.countryIso3 ? String(req.query.countryIso3).toUpperCase() : null;
-  const params = country ? [country] : [];
-  const where = country ? ' WHERE country_iso3=$1' : '';
+  const territory = req.query.territoryKey ? String(req.query.territoryKey).toUpperCase() : null;
   try {
-    const q = await pool.query('SELECT country_iso3, COUNT(*)::int AS professional_count, COUNT(*) FILTER (WHERE verified)::int AS verified_count FROM v30_pro_profiles' + where + ' GROUP BY country_iso3', params);
+    const params = [];
+    const filters = [];
+    if (country) { params.push(country); filters.push('country_iso3=$' + params.length); }
+    if (territory) { params.push(territory); filters.push('territory_key=$' + params.length); }
+    const where = filters.length ? ' WHERE ' + filters.join(' AND ') : '';
+
+    const professionals = await pool.query(
+      'SELECT country_iso3,COUNT(*)::int professional_count,COUNT(*) FILTER(WHERE verified)::int verified_count FROM v30_pro_profiles' +
+      (country ? ' WHERE country_iso3=$1' : '') +
+      ' GROUP BY country_iso3 ORDER BY professional_count DESC',
+      country ? [country] : []
+    );
+    const territories = await pool.query(
+      'SELECT country_iso3,COUNT(*)::int territory_count,COUNT(*) FILTER(WHERE active)::int active_count FROM v30_territories' +
+      (country ? ' WHERE country_iso3=$1' : '') +
+      ' GROUP BY country_iso3',
+      country ? [country] : []
+    );
+    const events = await pool.query(
+      'SELECT event_type,tourism_tag,climate_key,month,COALESCE(SUM(aggregate_value),0)::numeric aggregate_value,COUNT(*)::int event_count FROM v30_institutional_events' +
+      where +
+      ' GROUP BY event_type,tourism_tag,climate_key,month ORDER BY aggregate_value DESC',
+      params
+    );
+    const forms = {};
+    const climates = {};
+    const timeline = {};
+    for (const row of events.rows) {
+      if (row.tourism_tag) forms[row.tourism_tag] = (forms[row.tourism_tag] || 0) + Number(row.aggregate_value);
+      if (row.climate_key) climates[row.climate_key] = (climates[row.climate_key] || 0) + Number(row.aggregate_value);
+      if (row.month) timeline[row.month] = (timeline[row.month] || 0) + Number(row.aggregate_value);
+    }
+    const b2b = await pool.query(
+      'SELECT COUNT(*)::int open_opportunities,COUNT(DISTINCT territory_key)::int active_territories FROM v30_pro_opportunities WHERE status=$1',
+      ['open']
+    );
     res.json({
-      scope: { countryIso3: country },
-      confidentiality: {
-        travelerIdentitiesExcluded: true,
-        privateVaultExcluded: true,
-        healthProfilesExcluded: true,
-        individualSessionsExcluded: true
-      },
-      professionalActivity: q.rows
+      scope: { countryIso3: country, territoryKey: territory },
+      confidentiality: { travelerIdentitiesExcluded: true, privateVaultExcluded: true, healthProfilesExcluded: true, individualSessionsExcluded: true },
+      attractiveness: { professionals: professionals.rows, territories: territories.rows },
+      tourismForms: forms,
+      climate: climates,
+      monthlyTrend: timeline,
+      professionalNetwork: b2b.rows[0] || { open_opportunities: 0, active_territories: 0 }
     });
   } catch (e) {
     res.status(500).json({ error: e.message });
