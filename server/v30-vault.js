@@ -36,6 +36,10 @@ v30VaultRouter.post('/trip-draft', async (req, res) => {
       `INSERT INTO v30_trip_drafts
        (traveler_id,session_id,title,territory_key,status,transport,accommodation,experiences,health_safety,notes)
        VALUES($1,$2,$3,$4,'preparation',$5,$6,$7,$8,$9)
+       ON CONFLICT (session_id) DO UPDATE SET
+         traveler_id=EXCLUDED.traveler_id,title=EXCLUDED.title,territory_key=EXCLUDED.territory_key,
+         status='preparation',transport=EXCLUDED.transport,accommodation=EXCLUDED.accommodation,
+         experiences=EXCLUDED.experiences,health_safety=EXCLUDED.health_safety,notes=EXCLUDED.notes,updated_at=now()
        RETURNING *`,
       [travelerId, sessionId, title.trim(), territoryKey, json(transport), json(accommodation), json(experiences, []), json(healthSafety, []), json(notes)]
     );
