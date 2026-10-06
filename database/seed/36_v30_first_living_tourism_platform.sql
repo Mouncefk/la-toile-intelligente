@@ -1,4 +1,17 @@
 -- V30.1 — First Living Tourism Platform
+CREATE TABLE IF NOT EXISTS v30_pilot_territories (
+ country_iso3 TEXT PRIMARY KEY,
+ pilot_role TEXT NOT NULL CHECK(pilot_role IN ('primary','secondary','future')),
+ name_fr TEXT NOT NULL,
+ continent TEXT,
+ hemisphere TEXT NOT NULL,
+ rationale TEXT,
+ active BOOLEAN NOT NULL DEFAULT true
+);
+INSERT INTO v30_pilot_territories(country_iso3,pilot_role,name_fr,continent,hemisphere,rationale) VALUES
+('MAR','primary','Maroc','Africa','north','Premier laboratoire complet : littoral, montagne, désert, culture, artisanat et gastronomie.'),
+('FRA','secondary','France','Europe','north','Validation européenne : océanique, méditerranéen, alpin, patrimoine et diversité territoriale.')
+ON CONFLICT(country_iso3) DO UPDATE SET pilot_role=EXCLUDED.pilot_role,name_fr=EXCLUDED.name_fr,continent=EXCLUDED.continent,hemisphere=EXCLUDED.hemisphere,rationale=EXCLUDED.rationale,active=true;
 CREATE TABLE IF NOT EXISTS v30_traveler_sessions (
  id BIGSERIAL PRIMARY KEY, traveler_id BIGINT, country_iso3 TEXT NOT NULL DEFAULT 'MAR',
  territory_key TEXT, stage TEXT NOT NULL DEFAULT 'globe' CHECK(stage IN ('globe','territory','intent','solutions','compare','vault')),
