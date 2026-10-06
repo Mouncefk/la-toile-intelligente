@@ -336,3 +336,19 @@ CREATE OR REPLACE VIEW v30_globe_entry AS
 SELECT country_iso3,COUNT(*) FILTER(WHERE region_type='country') countries,COUNT(*) FILTER(WHERE region_type<>'country') territories,
 ARRAY_AGG(DISTINCT hemisphere) hemispheres,ARRAY_AGG(DISTINCT climate_zone) FILTER(WHERE climate_zone IS NOT NULL) climate_zones
 FROM v30_territories GROUP BY country_iso3;
+
+-- V30.15 Pro→Pro pilot network: generic ecosystem profiles, no real-world identities/contact data.
+INSERT INTO v30_pro_profiles(country_iso3,territory_key,name,pro_type,specialties,audiences,service_area,verified,metadata) VALUES
+('MAR','MARRAKECH','Réseau hébergement Marrakech','hebergement',ARRAY['hébergement','senior','family'],ARRAY['senior','family'],ARRAY['MARRAKECH'],true,'{"pilot":true}'::jsonb),
+('MAR','MARRAKECH','Réseau artisanat Marrakech','artisanat',ARRAY['artisanat','culture','heritage'],ARRAY['senior','family'],ARRAY['MARRAKECH'],true,'{"pilot":true}'::jsonb),
+('MAR','MARRAKECH','Réseau guides Marrakech','guide',ARRAY['culture','heritage','artisanat'],ARRAY['senior','family'],ARRAY['MARRAKECH'],true,'{"pilot":true}'::jsonb),
+('MAR','MERZOUGA','Réseau désert Merzouga','experience',ARRAY['desert','nature','adventure'],ARRAY['adult','family'],ARRAY['MERZOUGA'],true,'{"pilot":true}'::jsonb),
+('MAR','AGADIR','Réseau balnéaire Agadir','experience',ARRAY['balneaire','nature','senior'],ARRAY['senior','family'],ARRAY['AGADIR'],true,'{"pilot":true}'::jsonb),
+('MAR','RABAT','Réseau culture Rabat','culture',ARRAY['culture','heritage','senior'],ARRAY['senior','family'],ARRAY['RABAT'],true,'{"pilot":true}'::jsonb),
+('MAR','CASABLANCA','Réseau tourisme Casablanca','tourisme',ARRAY['culture','gastronomie','urbain'],ARRAY['senior','family'],ARRAY['CASABLANCA'],true,'{"pilot":true}'::jsonb),
+('MAR','TANGER','Réseau tourisme Tanger','tourisme',ARRAY['culture','balneaire','artisanat'],ARRAY['senior','family'],ARRAY['TANGER'],true,'{"pilot":true}'::jsonb),
+('FRA','PARIS','Réseau culture Paris','culture',ARRAY['culture','heritage','gastronomie'],ARRAY['senior','family'],ARRAY['PARIS'],true,'{"pilot":true}'::jsonb),
+('FRA','PROVENCE','Réseau gastronomie Provence','gastronomie',ARRAY['gastronomie','artisanat','culture'],ARRAY['senior','family'],ARRAY['PROVENCE'],true,'{"pilot":true}'::jsonb),
+('FRA','ALPES','Réseau montagne Alpes','experience',ARRAY['montagne','nature','adventure'],ARRAY['family','senior'],ARRAY['ALPES'],true,'{"pilot":true}'::jsonb),
+('FRA','BRETAGNE','Réseau littoral Bretagne','experience',ARRAY['balneaire','nature','culture'],ARRAY['family','senior'],ARRAY['BRETAGNE'],true,'{"pilot":true}'::jsonb)
+ON CONFLICT DO NOTHING;
