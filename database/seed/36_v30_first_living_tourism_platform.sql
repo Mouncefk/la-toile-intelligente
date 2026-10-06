@@ -387,3 +387,43 @@ AND NOT EXISTS (SELECT 1 FROM v30_pro_opportunities o WHERE o.title='Échange cu
 INSERT INTO v30_pro_opportunities(source_pro_id,territory_key,opportunity_type,title,description,specialties,audiences,metadata)
 SELECT p.id,'AGADIR','combined_offer','Offre balnéaire adaptée aux seniors','Associer expérience littorale, accompagnement et services adaptés au public senior.',ARRAY['balneaire','senior','nature'],ARRAY['senior'],'{"pilot":true}'::jsonb FROM v30_pro_profiles p WHERE p.name='Réseau balnéaire Agadir'
 AND NOT EXISTS (SELECT 1 FROM v30_pro_opportunities o WHERE o.title='Offre balnéaire adaptée aux seniors');
+
+CREATE TABLE IF NOT EXISTS v30_b2b_calls (
+ id BIGSERIAL PRIMARY KEY,
+ source_pro_id BIGINT NOT NULL REFERENCES v30_pro_profiles(id) ON DELETE CASCADE,
+ territory_key TEXT REFERENCES v30_territories(territory_key) ON DELETE SET NULL,
+ call_type TEXT NOT NULL CHECK (call_type IN ('tender','interest','partnership','subcontracting','supplier','skills')),
+ title TEXT NOT NULL,
+ description TEXT NOT NULL,
+ requirements TEXT[] NOT NULL DEFAULT '{}',
+ specialties TEXT[] NOT NULL DEFAULT '{}',
+ audiences TEXT[] NOT NULL DEFAULT '{}',
+ target_countries TEXT[] NOT NULL DEFAULT '{}',
+ languages TEXT[] NOT NULL DEFAULT '{}',
+ budget_level TEXT,
+ response_deadline TIMESTAMPTZ,
+ status TEXT NOT NULL DEFAULT 'open' CHECK (status IN ('draft','open','closed','awarded')),
+ metadata JSONB NOT NULL DEFAULT '{}'::jsonb,
+ created_at TIMESTAMPTZ NOT NULL DEFAULT now()
+);
+CREATE TABLE IF NOT EXISTS v30_b2b_responses (
+ id BIGSERIAL PRIMARY KEY,
+ call_id BIGINT NOT NULL REFERENCES v30_b2b_calls(id) ON DELETE CASCADE,
+ responder_pro_id BIGINT NOT NULL REFERENCES v30_pro_profiles(id) ON DELETE CASCADE,
+ message TEXT NOT NULL,
+ proposal JSONB NOT NULL DEFAULT '{}'::jsonb,
+ match_score NUMERIC(6,2),
+ status TEXT NOT NULL DEFAULT 'submitted' CHECK (status IN ('submitted','shortlisted','accepted','rejected','withdrawn')),
+ created_at TIMESTAMPTZ NOT NULL DEFAULT now(),
+ UNIQUE(call_id,responder_pro_id)
+);
+CREATE TABLE IF NOT EXISTS v30_b2b_call_matches (
+ id BIGSERIAL PRIMARY KEY,
+ call_id BIGINT NOT NULL REFERENCES v30_b2b_calls(id) ON DELETE CASCADE,
+ professional_id BIGINT NOT NULL REFERENCES v30_pro_profiles(id) ON DELETE CASCADE,
+ score NUMERIC(6,2) NOT NULL DEFAULT 0,
+ reasons JSONB NOT NULL DEFAULT '[]'::jsonb,
+ notified_at TIMESTAMPTZ,
+ status TEXT NOT NULL DEFAULT 'suggested',
+ UNIQUE(call_id,professional_id)
+);
