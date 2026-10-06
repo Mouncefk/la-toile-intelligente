@@ -438,3 +438,24 @@ CREATE TABLE IF NOT EXISTS v30_b2b_call_events (
  created_at TIMESTAMPTZ NOT NULL DEFAULT now()
 );
 CREATE INDEX IF NOT EXISTS idx_v30_b2b_events_call ON v30_b2b_call_events(call_id,created_at);
+
+CREATE TABLE IF NOT EXISTS v30_pro_collaboration_signals (
+ id BIGSERIAL PRIMARY KEY,
+ source_pro_id BIGINT NOT NULL REFERENCES v30_pro_profiles(id) ON DELETE CASCADE,
+ target_pro_id BIGINT NOT NULL REFERENCES v30_pro_profiles(id) ON DELETE CASCADE,
+ signal_type TEXT NOT NULL CHECK (signal_type IN ('awarded','repeat','co_creation','complementarity','territorial')),
+ signal_score NUMERIC(8,2) NOT NULL DEFAULT 0,
+ evidence_count INTEGER NOT NULL DEFAULT 1,
+ metadata JSONB NOT NULL DEFAULT '{}'::jsonb,
+ updated_at TIMESTAMPTZ NOT NULL DEFAULT now(),
+ UNIQUE(source_pro_id,target_pro_id,signal_type)
+);
+CREATE TABLE IF NOT EXISTS v30_pro_collaboration_summary (
+ source_pro_id BIGINT NOT NULL REFERENCES v30_pro_profiles(id) ON DELETE CASCADE,
+ target_pro_id BIGINT NOT NULL REFERENCES v30_pro_profiles(id) ON DELETE CASCADE,
+ collaboration_score NUMERIC(8,2) NOT NULL DEFAULT 0,
+ collaboration_count INTEGER NOT NULL DEFAULT 0,
+ last_collaboration_at TIMESTAMPTZ,
+ strengths TEXT[] NOT NULL DEFAULT '{}',
+ PRIMARY KEY(source_pro_id,target_pro_id)
+);
