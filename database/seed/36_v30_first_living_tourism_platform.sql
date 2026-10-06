@@ -1,4 +1,19 @@
 -- V30.1 — First Living Tourism Platform
+CREATE TABLE IF NOT EXISTS v30_trip_records (
+ id BIGSERIAL PRIMARY KEY,
+ traveler_id BIGINT,
+ session_id BIGINT REFERENCES v30_traveler_sessions(id) ON DELETE SET NULL,
+ record_type TEXT NOT NULL CHECK(record_type IN ('reservation','document','memory','favorite')),
+ title TEXT NOT NULL,
+ territory_key TEXT REFERENCES v30_territories(territory_key) ON DELETE SET NULL,
+ start_at TIMESTAMPTZ,
+ end_at TIMESTAMPTZ,
+ status TEXT,
+ payload JSONB NOT NULL DEFAULT '{}'::jsonb,
+ created_at TIMESTAMPTZ NOT NULL DEFAULT now()
+);
+CREATE INDEX IF NOT EXISTS idx_v30_trip_records_traveler ON v30_trip_records(traveler_id,record_type);
+CREATE INDEX IF NOT EXISTS idx_v30_trip_records_territory ON v30_trip_records(territory_key);
 CREATE TABLE IF NOT EXISTS v30_health_profiles (
  traveler_id BIGINT PRIMARY KEY,
  allergies TEXT[] NOT NULL DEFAULT '{}',
