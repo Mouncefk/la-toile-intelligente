@@ -548,6 +548,40 @@ v30Router.get('/graph/changes', async (req,res) => {
   } catch(e){res.status(500).json({error:e.message});}
 });
 
+v30Router.post('/recalculation-queue/claim', async (req,res) => {
+  const limit=Math.min(20,Math.max(1,Number(req.body?.limit)||5));
+  try {
+    const q=await pool.query(
+      `WITH picked AS (
+        SELECT id FROM v30_recalculation_queue
+        WHERE status='pending'
+        ORDER BY priority DESC,created_at ASC
+        LIMIT $1
+        FOR UPDATE SKIP LOCKED
+      )
+      UPDATE v30_recalculation_queue q
+      SET status='processing'
+      FROM picked
+      WHERE q.id=picked.id
+      RETURNING q.*`,
+      [limit]
+    );
+    res.json({claimed:q.rows.length,items:q.rows});
+  }catch(e){res.status(500).json({error:e.message});}
+});
+
+v30Router.post('/recalculation-queue/:id/complete', async (req,res) => {
+  const success=req.body?.success!==false;
+  try {
+    const q=await pool.query(
+      'UPDATE v30_recalculation_queue SET status=$1,processed_at=now() WHERE id=$2 AND status=\'processing\' RETURNING *',
+      [success?'completed':'failed',req.params.id]
+    );
+    if(!q.rows[0]) return res.status(404).json({error:'recalculation_task_not_processing'});
+    res.json({task:q.rows[0]});
+  }catch(e){res.status(500).json({error:e.message});}
+});
+
 v30Router.get('/recalculation-queue', async (req,res) => {
   const status=String(req.query.status||'pending');
   const limit=Math.min(100,Math.max(1,Number(req.query.limit)||25));
