@@ -55,6 +55,41 @@ v30Router.get('/globe', async (_req, res) => {
   if (q) res.json({ pilots: ['MAR', 'FRA'], countries: q.rows });
 });
 
+v30Router.get('/globe/activity', async (req,res) => {
+  const country = req.query.countryIso3 ? String(req.query.countryIso3).toUpperCase() : null;
+  const params = country ? [country] : [];
+  const where = country ? ' WHERE country_iso3=$1' : '';
+  try {
+    const countries = await pool.query(
+      'SELECT country_iso3,COUNT(*)::int professional_count,COUNT(*) FILTER(WHERE verified)::int verified_count FROM v30_pro_profiles' +
+      (country ? ' WHERE country_iso3=$1' : '') +
+      ' GROUP BY country_iso3 ORDER BY professional_count DESC',
+      params
+    );
+    const territories = await pool.query(
+      'SELECT country_iso3,COUNT(*)::int territory_count,COUNT(*) FILTER(WHERE active)::int active_count FROM v30_territories' +
+      (country ? ' WHERE country_iso3=$1' : '') +
+      ' GROUP BY country_iso3 ORDER BY country_iso3',
+      params
+    );
+    const events = await pool.query(
+      'SELECT country_iso3,tourism_tag,climate_key,COALESCE(SUM(aggregate_value),0)::numeric aggregate_value FROM v30_institutional_events' +
+      where +
+      ' GROUP BY country_iso3,tourism_tag,climate_key ORDER BY aggregate_value DESC'
+      , params
+    );
+    res.json({
+      scope:{countryIso3:country},
+      countries:countries.rows,
+      territories:territories.rows,
+      tourismSignals:events.rows,
+      confidentiality:{individualTravelersExcluded:true,privateVaultExcluded:true,healthProfilesExcluded:true}
+    });
+  } catch(e) {
+    res.status(500).json({error:e.message});
+  }
+});
+
 v30Router.get('/globe/hierarchy', async (_req, res) => {
   const q = await safeQuery(res, 'SELECT node_key,parent_key,node_type,name_fr,country_iso3,hemisphere,climate_zones,latitude,longitude FROM v30_geography_nodes WHERE active=true ORDER BY node_type,name_fr');
   if (q) res.json({ root: 'WORLD', nodes: q.rows });
