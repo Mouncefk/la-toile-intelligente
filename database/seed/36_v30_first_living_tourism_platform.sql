@@ -1,4 +1,20 @@
 -- V30.1 — First Living Tourism Platform
+CREATE TABLE IF NOT EXISTS v30_traveler_profiles (
+ session_id BIGINT PRIMARY KEY REFERENCES v30_traveler_sessions(id) ON DELETE CASCADE,
+ traveler_type TEXT,
+ age_group TEXT,
+ mobility_level TEXT,
+ party_type TEXT,
+ party_size INT,
+ children_ages INT[] NOT NULL DEFAULT '{}',
+ budget_level TEXT,
+ pace TEXT,
+ duration_days INT,
+ accessibility_needs TEXT[] NOT NULL DEFAULT '{}',
+ preferences TEXT[] NOT NULL DEFAULT '{}',
+ constraints TEXT[] NOT NULL DEFAULT '{}',
+ updated_at TIMESTAMPTZ NOT NULL DEFAULT now()
+);
 CREATE TABLE IF NOT EXISTS v30_conditions_context (
  territory_key TEXT PRIMARY KEY REFERENCES v30_territories(territory_key) ON DELETE CASCADE,
  observed_at TIMESTAMPTZ NOT NULL DEFAULT now(),
