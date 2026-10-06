@@ -49,7 +49,9 @@ INSERT INTO v30_territories(country_iso3,territory_key,name_fr,region_type,latit
 ('MAR','OUARZAZATE','Ouarzazate','city',30.9335,-6.9370,'Arid / Mountain','north',ARRAY['desert','culture','heritage']),
 ('MAR','AGADIR','Agadir','city',30.4278,-9.5981,'Mediterranean / Coastal','north',ARRAY['balneaire','senior','family','nature']),
 ('MAR','ESSAOUIRA','Essaouira','city',31.5085,-9.7595,'Coastal','north',ARRAY['balneaire','artisanat','culture','surf']),
-('MAR','IFRANE','Ifrane','city',33.5228,-5.1100,'Mountain / Mediterranean','north',ARRAY['montagne','nature','family','senior'])
+('MAR','IFRANE','Ifrane','city',33.5228,-5.1100,'Mountain / Mediterranean','north',ARRAY['montagne','nature','family','senior']),
+('MAR','CASABLANCA','Casablanca','city',33.5731,-7.5898,'Coastal / Mediterranean','north',ARRAY['culture','heritage','gastronomie','business','artisanat','family','senior']),
+('MAR','TANGER','Tanger','city',35.7595,-5.8340,'Mediterranean / Coastal','north',ARRAY['balneaire','culture','heritage','artisanat','gastronomie','echanges_culturels','family','senior'])
 ON CONFLICT(territory_key) DO UPDATE SET name_fr=EXCLUDED.name_fr,latitude=EXCLUDED.latitude,longitude=EXCLUDED.longitude,climate_zone=EXCLUDED.climate_zone,tourism_tags=EXCLUDED.tourism_tags;
 INSERT INTO v30_solutions(territory_key,solution_type,title,description,provider_name,specialties,audience,availability) VALUES
 ('MARRAKECH','experience','Médina & artisanat','Découverte guidée du patrimoine vivant et des ateliers d’artisans.','Réseau local La Toile',ARRAY['Artisanat','Culture & Patrimoine'],ARRAY['family','senior'],'Selon calendrier'),
@@ -108,6 +110,22 @@ INSERT INTO v30_health_safety_points(territory_key,service_type,name,description
 ('PROVENCE','medicine','Soins médicaux à proximité','Orientation vers les structures de soins du territoire.'),
 ('PROVENCE','pharmacy','Pharmacies à proximité','Recherche de pharmacies disponibles.'),
 ('PROVENCE','security','Sécurité locale','Orientation vers les services de sécurité et assistance.')
+ON CONFLICT DO NOTHING;
+
+
+INSERT INTO v30_solutions(territory_key,solution_type,title,description,provider_name,specialties,audience,availability) VALUES
+('CASABLANCA','culture','Casablanca : culture & métropole','Découverte de la culture, du patrimoine urbain et des savoir-faire de la métropole.','Réseau tourisme La Toile Maroc',ARRAY['Culture & Patrimoine','Artisanat'],ARRAY['family','senior'],'Selon calendrier'),
+('CASABLANCA','experience','Casablanca : séjour urbain','Solutions urbaines combinant culture, gastronomie, loisirs et découverte locale.','Réseau tourisme La Toile Maroc',ARRAY['Culture','Gastronomie'],ARRAY['family','senior'],'Selon saison'),
+('TANGER','experience','Tanger : Méditerranée & cultures','Découverte du littoral, du patrimoine et des influences culturelles de Tanger.','Réseau tourisme La Toile Maroc',ARRAY['Balnéaire','Culture & Patrimoine'],ARRAY['family','senior'],'Selon saison'),
+('TANGER','artisanat','Tanger : artisanat & savoir-faire','Rencontres autour des savoir-faire et de l’artisanat local.','Réseau artisanat La Toile Maroc',ARRAY['Artisanat','Culture'],ARRAY['family','senior'],'Sur réservation')
+ON CONFLICT DO NOTHING;
+INSERT INTO v30_health_safety_points(territory_key,service_type,name,description) VALUES
+('CASABLANCA','medicine','Soins médicaux à proximité','Orientation vers les structures de soins du territoire.'),
+('CASABLANCA','pharmacy','Pharmacies à proximité','Recherche de pharmacies et services pharmaceutiques disponibles.'),
+('CASABLANCA','security','Sécurité locale','Orientation vers les services de sécurité et assistance.'),
+('TANGER','medicine','Soins médicaux à proximité','Orientation vers les structures de soins du territoire.'),
+('TANGER','pharmacy','Pharmacies à proximité','Recherche de pharmacies et services pharmaceutiques disponibles.'),
+('TANGER','security','Sécurité locale','Orientation vers les services de sécurité et assistance.')
 ON CONFLICT DO NOTHING;
 
 CREATE OR REPLACE VIEW v30_globe_entry AS
