@@ -388,3 +388,35 @@ CREATE TABLE IF NOT EXISTS v30_b2b_call_events (
  metadata JSONB NOT NULL DEFAULT '{}'::jsonb,
  created_at TIMESTAMPTZ NOT NULL DEFAULT now()
 );
+
+-- Cyclic dependency break: geography and B2B scope roots first.
+CREATE TABLE IF NOT EXISTS v30_geography_nodes (
+ id BIGSERIAL PRIMARY KEY,
+ node_key TEXT NOT NULL UNIQUE,
+ parent_key TEXT REFERENCES v30_geography_nodes(node_key) ON DELETE SET NULL,
+ node_type TEXT NOT NULL CHECK(node_type IN ('world','hemisphere','continent','country','region','territory')),
+ name_fr TEXT NOT NULL,
+ country_iso3 TEXT,
+ hemisphere TEXT CHECK(hemisphere IN ('north','south','equatorial')),
+ climate_zones TEXT[] NOT NULL DEFAULT '{}',
+ latitude DOUBLE PRECISION,
+ longitude DOUBLE PRECISION,
+ active BOOLEAN NOT NULL DEFAULT true
+);
+
+CREATE TABLE IF NOT EXISTS v30_b2b_geo_scopes (
+ id BIGSERIAL PRIMARY KEY,
+ scope_key TEXT UNIQUE NOT NULL,
+ scope_type TEXT NOT NULL CHECK (scope_type IN ('local','regional','national','international','global')),
+ name_fr TEXT NOT NULL,
+ country_iso3 TEXT,
+ region_keys TEXT[] NOT NULL DEFAULT '{}',
+ continent_keys TEXT[] NOT NULL DEFAULT '{}',
+ description TEXT
+);
+
+CREATE TABLE IF NOT EXISTS v30_b2b_geo_membership (
+ scope_key TEXT NOT NULL REFERENCES v30_b2b_geo_scopes(scope_key) ON DELETE CASCADE,
+ node_key TEXT NOT NULL REFERENCES v30_geography_nodes(node_key) ON DELETE CASCADE,
+ PRIMARY KEY(scope_key,node_key)
+);
