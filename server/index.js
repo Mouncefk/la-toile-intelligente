@@ -131,6 +131,23 @@ app.get('/api/professionals/v29/directory',async(req,res)=>{
  }catch(e){res.status(500).json({error:e.message})}
 });
 
+app.get('/api/professionals/v29/:professionalId/profile',async(req,res)=>{
+ try{
+  const q=await pool.query(`SELECT p.id AS professional_id,
+    COALESCE(pp.display_name,p.name) AS display_name,pp.headline,pp.website,pp.email,pp.phone,pp.address,
+    pp.languages,pp.specialties,pp.service_area_km,pp.accepting_requests,pp.availability_status,
+    COALESCE(v.verification_level,'unverified') AS verification_level,
+    COALESCE((SELECT json_agg(json_build_object('key',ps.service_key,'label',ps.label) ORDER BY ps.label)
+      FROM professional_services_v11 ps WHERE ps.professional_id=p.id AND ps.active=true),'[]'::json) AS services
+   FROM professionals p
+   LEFT JOIN professional_profiles_v13 pp ON pp.professional_id=p.id
+   LEFT JOIN verification_profiles_v22 v ON v.actor_type='professional' AND v.actor_id=p.id
+   WHERE p.id=$1 AND p.geom IS NOT NULL`,[req.params.professionalId]);
+  if(!q.rows[0])return res.status(404).json({error:'professional_not_found'});
+  res.json({...q.rows[0],principle:'public_professional_profile_traveler_identity_not_shared'});
+ }catch(e){res.status(500).json({error:e.message})}
+});
+
 app.get('/api/professionals/v13/:professionalId/inbox',async(req,res)=>{
  try{const q=await pool.query(`SELECT * FROM professional_inbox_v13 WHERE professional_id=$1 ORDER BY match_score DESC,sent_at DESC`,[req.params.professionalId]);res.json({professionalId:Number(req.params.professionalId),count:q.rowCount,requests:q.rows})}catch(e){res.status(500).json({error:e.message})}
 });
