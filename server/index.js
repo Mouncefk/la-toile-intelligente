@@ -134,7 +134,7 @@ app.get('/api/professionals/v29/directory',async(req,res)=>{
 app.get('/api/professionals/v29/:professionalId/profile',async(req,res)=>{
  try{
   const q=await pool.query(`SELECT p.id AS professional_id,
-    COALESCE(pp.display_name,p.name) AS display_name,pp.headline,pp.website,pp.email,pp.phone,pp.address,
+    COALESCE(pp.display_name,p.name) AS display_name,pp.headline,pp.website,pp.address,
     pp.languages,pp.specialties,pp.service_area_km,pp.accepting_requests,pp.availability_status,
     COALESCE(v.verification_level,'unverified') AS verification_level,
     COALESCE((SELECT json_agg(json_build_object('key',ps.service_key,'label',ps.label) ORDER BY ps.label)
