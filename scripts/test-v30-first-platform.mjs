@@ -33,8 +33,8 @@ import pg from 'pg'; const {Pool}=pg; const pool=new Pool({connectionString:proc
     if(intent.intent.activity!=='Artisanat'||intent.intent.territoryKey!=='MARRAKECH') throw new Error('E2E intent failed');
     const windows=await request('/journey/windows?territoryKey=MARRAKECH&tag=artisanat&durationDays=7&startMonth=10');
     const solutions=await request(`/session/${sid}/solutions?month=10`);
-    if(!windows.windows.length||!solutions.solutions.length||!solutions.solutions[0].matchReasons) throw new Error('E2E matching failed');
-    const compare=await request(`/session/${sid}/compare`);
+    if(!windows.windows.length||!solutions.solutions.length||!solutions.solutions[0].matchReasons||Number(solutions.persistedMatchCount||0)<1) throw new Error('E2E matching persistence failed: '+JSON.stringify({solutions:solutions.solutions.length,persisted:solutions.persistedMatchCount}));
+    const compare=await request(`/session/${sid}/compare`); if(!compare.comparisons.length) throw new Error('E2E comparison empty after persisted matches: '+JSON.stringify({persisted:solutions.persistedMatchCount,compare:compare.comparisons.length}));
     const ids=compare.comparisons.slice(0,2).map(x=>Number(x.solution_id));
     if(!ids.length) throw new Error('E2E comparison returned no selectable solutions');
     const selected=await request(`/session/${sid}/compare/select`,{method:'POST',body:JSON.stringify({solutionIds:ids})});
