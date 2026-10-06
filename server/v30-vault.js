@@ -150,10 +150,32 @@ v30VaultRouter.post('/trip-draft/:id/optimize', async (req,res) => {
       healthSafety:health.length>0
     };
     const hardMissing=Object.entries(completeness).filter(([,v])=>!v).map(([k])=>k);
-    const score=Math.round(Object.values(completeness).filter(Boolean).length/4*100);
+    let score=Math.round(Object.values(completeness).filter(Boolean).length/4*100);
+    const dates=draft.notes?.dates||{};
+    let dateOptimization=null;
+    if(dates.startDate && draft.territory_key){
+      const base=new Date(dates.startDate);
+      const flex=Math.min(30,Math.max(0,Number(dates.flexibleDays)||0));
+      const territory=await pool.query('SELECT climate_zone,hemisphere FROM v30_territories WHERE territory_key=$1',[draft.territory_key]);
+      if(territory.rows[0] && !Number.isNaN(base.getTime())){
+        const rule=await pool.query('SELECT preferred_months,weight FROM v30_tourism_climate_rules WHERE tourism_tag=$1 AND climate_key=$2 AND hemisphere=$3 LIMIT 1',
+          [String(draft.notes?.tourismTag||draft.notes?.tag||'culture').toLowerCase(),String(territory.rows[0].climate_zone||'').toLowerCase(),territory.rows[0].hemisphere]);
+        const preferred=rule.rows[0]?.preferred_months||[];
+        const candidates=[];
+        for(let offset=-flex;offset<=flex;offset++){
+          const date=new Date(base); date.setUTCDate(date.getUTCDate()+offset);
+          const month=date.getUTCMonth()+1;
+          candidates.push({date:date.toISOString().slice(0,10),offsetDays:offset,score:preferred.length?(preferred.includes(month)?100:60):50,favorable:preferred.includes(month)});
+        }
+        candidates.sort((a,b)=>b.score-a.score||Math.abs(a.offsetDays)-Math.abs(b.offsetDays));
+        dateOptimization={requestedDate:dates.startDate,flexibleDays:flex,recommended:candidates[0]||null,candidates};
+        if(candidates[0]?.favorable) score=Math.min(100,score+5);
+      }
+    }
+    const optimization={score,completeness,hardMissing,constraints,dateOptimization,optimizedAt:new Date().toISOString()};
     const q=await pool.query('UPDATE v30_trip_drafts SET notes=jsonb_set(COALESCE(notes,\'{}\'::jsonb),\'{optimization}\',$1::jsonb,true),status=CASE WHEN $2>=75 THEN \'ready\' ELSE status END,updated_at=now() WHERE id=$3 RETURNING *',
-      [JSON.stringify({score,completeness,hardMissing,constraints,optimizedAt:new Date().toISOString()}),score,req.params.id]);
-    res.json({draft:q.rows[0],optimization:{score,completeness,hardMissing,constraints},travelerDecides:true});
+      [JSON.stringify(optimization),score,req.params.id]);
+    res.json({draft:q.rows[0],optimization,travelerDecides:true});
   } catch(e){res.status(500).json({error:e.message});}
 });
 
