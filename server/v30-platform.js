@@ -100,6 +100,35 @@ v30Router.get('/conditions/:territoryKey', async (req, res) => {
   if (q) res.json({ territoryKey: key, conditions: q.rows[0] || { status: 'not_available' } });
 });
 
+v30Router.get('/territory/:territoryKey/climate', async (req, res) => {
+  const key = req.params.territoryKey.toUpperCase();
+  const month = Math.min(12, Math.max(1, Number(req.query.month) || new Date().getUTCMonth() + 1));
+  const t = await safeQuery(res, 'SELECT territory_key,name_fr,country_iso3,climate_zone,hemisphere,latitude,longitude FROM v30_territories WHERE territory_key=$1 AND active=true', [key]);
+  if (!t) return;
+  if (!t.rows[0]) return res.status(404).json({ error: 'territory_not_found' });
+  const territory = t.rows[0];
+  const climate = String(territory.climate_zone || 'mediterranean').toLowerCase();
+  const c = await safeQuery(res,
+    'SELECT * FROM v30_climate_seasons WHERE climate_key=$1 AND hemisphere=$2 AND ((month_start<=month_end AND $3 BETWEEN month_start AND month_end) OR (month_start>month_end AND ($3>=month_start OR $3<=month_end))) ORDER BY month_start LIMIT 1',
+    [climate, territory.hemisphere, month]);
+  if (!c) return;
+  res.json({ territory, month, climate, hemisphere: territory.hemisphere, season: c.rows[0] || null });
+});
+
+v30Router.get('/journey/context', async (req, res) => {
+  const territoryKey = String(req.query.territoryKey || '').toUpperCase();
+  const tag = String(req.query.tag || '').toLowerCase();
+  const month = Math.min(12, Math.max(1, Number(req.query.month) || new Date().getUTCMonth() + 1));
+  if (!territoryKey || !tag) return res.status(400).json({ error: 'territoryKey_and_tag_required' });
+  const t = await safeQuery(res, 'SELECT territory_key,name_fr,climate_zone,hemisphere,country_iso3 FROM v30_territories WHERE territory_key=$1 AND active=true', [territoryKey]);
+  if (!t) return;
+  if (!t.rows[0]) return res.status(404).json({ error: 'territory_not_found' });
+  const territory=t.rows[0], climate=String(territory.climate_zone||'mediterranean').toLowerCase();
+  const r = await safeQuery(res, 'SELECT *,CASE WHEN $4=ANY(preferred_months) THEN weight ELSE weight*0.65 END AS compatibility_score FROM v30_tourism_climate_rules WHERE tourism_tag=$1 AND climate_key=$2 AND hemisphere=$3 LIMIT 1', [tag,climate,territory.hemisphere,month]);
+  if (!r) return;
+  res.json({ territory, tag, month, climate, hemisphere: territory.hemisphere, compatibility: r.rows[0] || null });
+});
+
 v30Router.get('/compatibility', async (req, res) => {
   const tag = String(req.query.tag || '').toLowerCase();
   if (!tag) return res.status(400).json({ error: 'tag_required' });
