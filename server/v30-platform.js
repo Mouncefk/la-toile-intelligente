@@ -495,6 +495,31 @@ v30Router.post('/session/:id/recommendations/invalidate', async (req,res) => {
   } catch(e){res.status(500).json({error:e.message});}
 });
 
+v30Router.post('/graph/propagate', async (req,res) => {
+  const { eventId=null, territoryKey=null, entityType=null, entityId=null } = req.body || {};
+  try {
+    let event=null;
+    if(eventId){
+      const e=await pool.query('SELECT * FROM v30_graph_events WHERE id=$1',[eventId]);
+      event=e.rows[0]||null;
+    }
+    const tk=territoryKey || event?.territory_key || null;
+    const et=entityType || event?.entity_type || null;
+    const eid=entityId || event?.entity_id || null;
+    if(!tk && !eid) return res.status(400).json({error:'event_or_scope_required'});
+    const q=tk
+      ? await pool.query(
+          'UPDATE v30_matches m SET reasons=COALESCE(m.reasons,\'{}\'::jsonb) || $1::jsonb WHERE m.session_id IN (SELECT id FROM v30_traveler_sessions WHERE territory_key=$2) RETURNING m.id,m.solution_id',
+          [JSON.stringify({invalidated:true,invalidationReason:event?.event_type||'graph_change',invalidationAt:new Date().toISOString()}),tk]
+        )
+      : await pool.query(
+          'UPDATE v30_matches SET reasons=COALESCE(reasons,\'{}\'::jsonb) || $1::jsonb WHERE solution_id=$2 RETURNING id,solution_id',
+          [JSON.stringify({invalidated:true,invalidationReason:event?.event_type||'entity_change',invalidationAt:new Date().toISOString()}),eid]
+        );
+    res.json({propagated:true,eventId:event?.id||eventId||null,scope:{territoryKey:tk,entityType:et,entityId:eid},invalidatedCount:q.rowCount,recalculationRequired:q.rowCount>0});
+  }catch(e){res.status(500).json({error:e.message});}
+});
+
 v30Router.post('/graph/change', async (req,res) => {
   const { entityType, entityId=null, territoryKey=null, changeType, payload={} } = req.body || {};
   if(!entityType||!changeType) return res.status(400).json({error:'entityType_and_changeType_required'});
