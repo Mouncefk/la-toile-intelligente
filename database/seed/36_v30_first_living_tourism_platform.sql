@@ -123,6 +123,7 @@ CREATE TABLE IF NOT EXISTS v30_tourism_climate_rules (
 INSERT INTO v30_tourism_climate_rules(tourism_tag,climate_key,hemisphere,preferred_months,weight,rationale_fr) VALUES
 ('balneaire','mediterranean','north',ARRAY[5,6,7,8,9],1.00,'Le climat méditerranéen est particulièrement favorable aux activités littorales pendant la belle saison.'),
 ('balneaire','oceanic','north',ARRAY[6,7,8],0.90,'La saison estivale est généralement la plus adaptée au littoral océanique.'),
+('balneaire','mediterranean','south',ARRAY[12,1,2,3],1.00,'Dans l’hémisphère sud, la belle saison littorale est décalée vers les mois de décembre à mars.'),
 ('montagne','mountain','north',ARRAY[6,7,8,12,1,2],1.00,'Les activités de montagne dépendent fortement de la saison et de l’altitude.'),
 ('desert','arid','north',ARRAY[3,4,5,10,11,12,1,2],1.00,'Les périodes tempérées sont généralement plus confortables pour l’exploration désertique.'),
 ('culture','mediterranean','north',ARRAY[1,2,3,4,5,9,10,11,12],0.90,'Le patrimoine culturel est souvent plus confortable hors des fortes chaleurs estivales.'),
