@@ -456,8 +456,7 @@ v30Router.get('/session/:id/solutions', async (req, res) => {
         reasons.push('Forme touristique cohérente avec la saison');
       }
     }
-    if (intent.safety && safetyTypes.size) { score += 8; reasons.push('Santé & Sécurité disponible'); }
-    if (safetyTypes.has('medicine') && safetyTypes.has('pharmacy') && safetyTypes.has('security')) { score += 5; reasons.push('Couverture Santé & Sécurité complète'); }
+    const healthSafetyScore = Math.round((new Set(safetyTypes).size / 4) * 100); const safetyRelevant = Boolean(intent.safety || profile.traveler_type || profile.age_group || profile.mobility_level || profile.accessibility_needs?.length); if (safetyRelevant) { const highNeed=Boolean(profile.accessibility_needs?.length || String(profile.traveler_type||'').toLowerCase().includes('senior')); score += Math.round((healthSafetyScore/100)*(highNeed?12:8)); reasons.push('Couverture Santé & Sécurité : '+healthSafetyScore+'/100'); } if (safetyTypes.has('medicine') && safetyTypes.has('pharmacy') && safetyTypes.has('security')) { score += 5; reasons.push('Couverture Santé & Sécurité complète'); }
     if (observed.status === 'available') {
       const outdoor = /montagne|balneaire|desert|nature|adventure|plein air/i.test(hay);
       const precipitation = Number(observed.precipitation_probability);
