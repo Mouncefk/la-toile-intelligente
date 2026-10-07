@@ -642,11 +642,11 @@ v30Router.get('/session/:id/compare', async (req, res) => {
   if (!matches) return;
   const ids = matches.rows.map(x => x.solution_id);
   if (!ids.length) return res.json({ sessionId, comparisons: [], selectionRequired: true });
-  const solutions = await safeQuery(res, 'SELECT * FROM v30_solutions WHERE id=ANY($1::bigint[])', [ids]);
+  const solutions = await safeQuery(res, `SELECT s.*, COALESCE((SELECT ROUND(COUNT(DISTINCT h.service_type)*100.0/4) FROM v30_health_safety_points h WHERE h.territory_key=s.territory_key AND h.active=true),0)::int AS health_safety_score FROM v30_solutions s WHERE s.id=ANY($1::bigint[])`, [ids]);
   if (!solutions) return;
   const byId = new Map(solutions.rows.map(x => [Number(x.id), x]));
   const comparisons = matches.rows.map(m => ({ ...m, solution: byId.get(Number(m.solution_id)) || null }));
-  res.json({ sessionId, comparisons, selectionRequired: true, maxSelections: 3, next: 'vault' });
+  res.json({ sessionId, comparisons, selectionRequired: true, maxSelections: 3, comparisonColumns: ['match_score','health_safety_score','reasons','provider','territory'], next: 'vault' });
 });
 
 v30Router.post('/session/:id/compare/select', async (req, res) => {
