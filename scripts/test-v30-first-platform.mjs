@@ -61,3 +61,11 @@ if(!v30_23_vault.includes("'/trip-draft/:id/checklist'")) throw new Error('V30.2
 if(!v30_23_vault.includes('blockingMissing')) throw new Error('V30.23 blocking checklist state missing');
 if(!v30_23_vault.includes('readyForReview')) throw new Error('V30.23 readiness decision missing');
 console.log('V30.23 traveler preparation checklist contract: ok');
+
+// V30.24 traveler composition contract
+const v30_24_vault=fs.readFileSync(new URL('../server/v30-vault.js',import.meta.url),'utf8');
+const v30_24_ui=fs.readFileSync(new URL('../src/v30-app.jsx',import.meta.url),'utf8');
+if(!v30_24_vault.includes("'/trip-draft/:id/compose'")) throw new Error('V30.24 composition endpoint missing');
+if(!v30_24_ui.includes('composeTrip')) throw new Error('V30.24 composition UI action missing');
+if(!v30_24_ui.includes('Composer le voyage')) throw new Error('V30.24 composition CTA missing');
+console.log('V30.24 traveler composition contract: ok');
