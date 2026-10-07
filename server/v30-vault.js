@@ -176,8 +176,7 @@ v30VaultRouter.post('/trip-draft/:id/optimize', async (req,res) => {
         const senior=String(traveler.traveler_type||'').toLowerCase().includes('senior') || String(traveler.age_group||'').toLowerCase().includes('senior');
         const family=String(traveler.party_type||'').toLowerCase().includes('family') || Number(traveler.party_size||0)>=3 && Array.isArray(traveler.children_ages) && traveler.children_ages.length>0;
         const mobility=Array.isArray(traveler.accessibility_needs)&&traveler.accessibility_needs.length>0;
-        const candidates=[];
-        const duration=Math.max(1,Number(dates.durationDays)||Number(traveler.duration_days)||7);
+        const candidates=[];        const duration=Math.max(1,Number(dates.durationDays)||Number(traveler.duration_days)||7);
         for(let offset=-flex;offset<=flex;offset++){
           const date=new Date(base); date.setUTCDate(date.getUTCDate()+offset);
           const month=date.getUTCMonth()+1;
@@ -203,6 +202,29 @@ v30VaultRouter.post('/trip-draft/:id/optimize', async (req,res) => {
     const q=await pool.query('UPDATE v30_trip_drafts SET notes=jsonb_set(COALESCE(notes,\'{}\'::jsonb),\'{optimization}\',$1::jsonb,true),status=CASE WHEN $2>=75 THEN \'ready\' ELSE status END,updated_at=now() WHERE id=$3 RETURNING *',
       [JSON.stringify(optimization),score,req.params.id]);
     res.json({draft:q.rows[0],optimization,travelerDecides:true});
+  } catch(e){res.status(500).json({error:e.message});}
+});
+
+v30VaultRouter.get('/trip-draft/:id/checklist', async (req,res) => {
+  try {
+    const q=await pool.query('SELECT id,title,status,transport,accommodation,experiences,health_safety,notes,territory_key,updated_at FROM v30_trip_drafts WHERE id=$1',[req.params.id]);
+    if(!q.rows[0]) return res.status(404).json({error:'trip_draft_not_found'});
+    const d=q.rows[0];
+    const notes=d.notes||{};
+    const optimization=notes.optimization||{};
+    const dates=notes.dates||{};
+    const items=[
+      {key:'territory',label:'Territoire choisi',done:Boolean(d.territory_key),blocking:true,detail:d.territory_key?'Le territoire est défini.':'Choisissez un territoire avant de finaliser.'},
+      {key:'dates',label:'Dates du voyage',done:Boolean(dates.startDate),blocking:true,detail:dates.startDate?'Une date de départ est enregistrée.':'Définissez une date ou une fenêtre flexible.'},
+      {key:'transport',label:'Transport',done:Boolean(d.transport&&Object.keys(d.transport).length),blocking:true,detail:d.transport&&Object.keys(d.transport).length?'Un choix de transport est présent.':'Ajoutez un transport.'},
+      {key:'accommodation',label:'Hébergement',done:Boolean(d.accommodation&&Object.keys(d.accommodation).length),blocking:true,detail:d.accommodation&&Object.keys(d.accommodation).length?'Un hébergement est présent.':'Ajoutez un hébergement.'},
+      {key:'experiences',label:'Expériences',done:Array.isArray(d.experiences)&&d.experiences.length>0,blocking:false,detail:Array.isArray(d.experiences)&&d.experiences.length?d.experiences.length+' expérience(s) retenue(s).':'Gardez au moins une expérience qui vous convient.'},
+      {key:'healthSafety',label:'Santé & Sécurité',done:Array.isArray(d.health_safety)&&d.health_safety.length>0,blocking:true,detail:Array.isArray(d.health_safety)&&d.health_safety.length?'Des repères Santé & Sécurité sont associés.':'Ajoutez les repères utiles à proximité.'},
+      {key:'optimization',label:'Analyse de préparation',done:Boolean(optimization.optimizedAt),blocking:false,detail:optimization.optimizedAt?'Le projet a été analysé.':'Lancez l’analyse de préparation.'}
+    ];
+    const blockingMissing=items.filter(x=>x.blocking&&!x.done).map(x=>x.key);
+    const readiness=Math.max(0,Math.min(100,Math.round(items.filter(x=>x.done).length/items.length*100)));
+    res.json({draftId:Number(req.params.id),status:d.status,readiness,readyForReview:blockingMissing.length===0,blockingMissing,items,travelerDecides:true,proposalOnly:true});
   } catch(e){res.status(500).json({error:e.message});}
 });
 
