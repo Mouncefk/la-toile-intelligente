@@ -323,23 +323,26 @@ v30Router.get('/journey/windows', async (req,res) => {
   const tag=String(req.query.tag||'').toLowerCase();
   const duration=Math.min(365,Math.max(1,Number(req.query.durationDays)||7));
   const startMonth=Math.min(12,Math.max(1,Number(req.query.startMonth)||1));
+  const flexibility=Math.min(30,Math.max(0,Number(req.query.flexibilityDays)||0));
   if(!territoryKey||!tag) return res.status(400).json({error:'territoryKey_and_tag_required'});
-  try {
+  try{
     const t=await pool.query('SELECT territory_key,name_fr,climate_zone,hemisphere FROM v30_territories WHERE territory_key=$1 AND active=true',[territoryKey]);
     if(!t.rows[0]) return res.status(404).json({error:'territory_not_found'});
-    const territory=t.rows[0];
-    const months=[];
-    for(let offset=0;offset<Math.min(duration,12);offset++) months.push(((startMonth-1+offset)%12)+1);
-    const rule=await pool.query('SELECT preferred_months,weight,rationale_fr FROM v30_tourism_climate_rules WHERE tourism_tag=$1 AND climate_key=$2 AND hemisphere=$3',[tag,String(territory.climate_zone||'').toLowerCase(),territory.hemisphere]);
-    const preferred=rule.rows[0]?.preferred_months||[];
-    const results=months.map(month=>({
-      month,
-      favorable:preferred.includes(month),
-      score:preferred.length?(preferred.includes(month)?100:60):50,
-      rationale:rule.rows[0]?.rationale_fr||'Aucune règle climatique spécifique disponible.'
-    }));
-    results.sort((a,b)=>b.score-a.score||a.month-b.month);
-    res.json({territory,durationDays:duration,startMonth,windows:results});
+    const territory=t.rows[0], climate=String(territory.climate_zone||'').toLowerCase();
+    const rule=await pool.query('SELECT preferred_months,weight,rationale_fr FROM v30_tourism_climate_rules WHERE tourism_tag=$1 AND climate_key=$2 AND hemisphere=$3',[tag,climate,territory.hemisphere]);
+    const climateRule=rule.rows[0]||null, preferred=climateRule?.preferred_months||[], weight=Math.max(0,Math.min(1,Number(climateRule?.weight)||0));
+    const candidates=[];
+    for(let offset=-flexibility;offset<=flexibility;offset++){
+      const anchor=new Date(Date.UTC(2026,startMonth-1,15)); anchor.setUTCDate(anchor.getUTCDate()+offset);
+      const months=[]; for(let d=0;d<Math.min(duration,12);d++) months.push(((anchor.getUTCMonth()+d)%12)+1);
+      const favorableMonths=months.filter(m=>preferred.includes(m)).length;
+      const coverage=months.length?favorableMonths/months.length:0;
+      const score=preferred.length?Math.round(50+50*coverage*weight):50;
+      const reasons=preferred.length?(coverage===1?['Fenêtre entièrement dans la période climatique favorable']:coverage>=0.5?['Fenêtre majoritairement favorable climatiquement']:['Fenêtre avec couverture climatique partielle']):['Aucune règle climatique spécifique disponible'];
+      candidates.push({startMonth:anchor.getUTCMonth()+1,offsetDays:offset,durationDays:duration,score,favorable:coverage>=0.5,coverage:Math.round(coverage*100),months,reasons});
+    }
+    candidates.sort((a,b)=>b.score-a.score||Math.abs(a.offsetDays)-Math.abs(b.offsetDays));
+    res.json({territory,durationDays:duration,requestedStartMonth:startMonth,flexibilityDays:flexibility,rule:climateRule,windows:candidates.slice(0,Math.min(candidates.length,15)),recommended:candidates[0]||null});
   }catch(e){res.status(500).json({error:e.message});}
 });
 
