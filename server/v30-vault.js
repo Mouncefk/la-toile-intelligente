@@ -186,13 +186,16 @@ v30VaultRouter.post('/trip-draft/:id/optimize', async (req,res) => {
           const coverage=windowMonths.length?favorableDays/windowMonths.length:0;
           let windowScore=preferred.length?Math.round(50+50*coverage*(Number(rule.rows[0]?.weight)||1)):50;
           const reasons=[];
-          if(senior && [6,7,8].includes(month)){windowScore-=10;reasons.push('Période potentiellement chaude pour un profil senior');}
-          if(family && [6,7,8].includes(month)){windowScore+=3;reasons.push('Période compatible avec les vacances familiales');}
-          if(mobility && [6,7,8].includes(month)===false){reasons.push('Accessibilité à vérifier selon les conditions locales');}
-          candidates.push({date:date.toISOString().slice(0,10),offsetDays:offset,durationDays:duration,score:windowScore,coverage:Math.round(coverage*100),favorable:coverage>=0.5,reasons});
+          const hotDays=windowMonths.filter(m=>[6,7,8].includes(m)).length;
+          const hotRatio=windowMonths.length?hotDays/windowMonths.length:0;
+          if(senior && hotRatio>=0.5){windowScore-=10;reasons.push('Période potentiellement chaude pour un profil senior');}
+          if(family && hotRatio>=0.5){windowScore+=3;reasons.push('Période compatible avec les vacances familiales');}
+          if(mobility && coverage<0.75){windowScore-=4;reasons.push('Accessibilité à vérifier selon les conditions locales');}
+          if(safetyPriority && health.length===0){reasons.push('Santé & Sécurité à compléter avant décision');}
+          candidates.push({date:date.toISOString().slice(0,10),offsetDays:offset,durationDays:duration,score:Math.max(0,Math.min(100,windowScore)),coverage:Math.round(coverage*100),favorable:coverage>=0.5,reasons});
         }
         candidates.sort((a,b)=>b.score-a.score||Math.abs(a.offsetDays)-Math.abs(b.offsetDays));
-        dateOptimization={requestedDate:dates.startDate,flexibleDays:flex,recommended:candidates[0]||null,candidates,travelerContext:{senior,family,mobility,budgetLevel:traveler.budget_level||budgetLevel||null}};
+        dateOptimization={requestedDate:dates.startDate,flexibleDays:flex,recommended:candidates[0]||null,candidates,travelerContext:{senior,family,mobility,budgetLevel:traveler.budget_level||budgetLevel||null},priorities:{climate:climatePriority,safety:safetyPriority}};
         if(candidates[0]?.favorable) score=Math.min(100,score+5);
       }
     }
