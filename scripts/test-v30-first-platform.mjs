@@ -54,3 +54,10 @@ const serverSource=fs.readFileSync(new URL('../server/v30-platform.js',import.me
   } finally { child.kill('SIGTERM'); await sleep(200); }
 }
 /* V30_HTTP_E2E_END */
+
+// V30.23 traveler preparation checklist contract
+const v30_23_vault=fs.readFileSync(new URL('../server/v30-vault.js',import.meta.url),'utf8');
+if(!v30_23_vault.includes("'/trip-draft/:id/checklist'")) throw new Error('V30.23 preparation checklist route missing');
+if(!v30_23_vault.includes('blockingMissing')) throw new Error('V30.23 blocking checklist state missing');
+if(!v30_23_vault.includes('readyForReview')) throw new Error('V30.23 readiness decision missing');
+console.log('V30.23 traveler preparation checklist contract: ok');
