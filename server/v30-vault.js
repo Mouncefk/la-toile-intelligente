@@ -177,15 +177,19 @@ v30VaultRouter.post('/trip-draft/:id/optimize', async (req,res) => {
         const family=String(traveler.party_type||'').toLowerCase().includes('family') || Number(traveler.party_size||0)>=3 && Array.isArray(traveler.children_ages) && traveler.children_ages.length>0;
         const mobility=Array.isArray(traveler.accessibility_needs)&&traveler.accessibility_needs.length>0;
         const candidates=[];
+        const duration=Math.max(1,Number(dates.durationDays)||Number(traveler.duration_days)||7);
         for(let offset=-flex;offset<=flex;offset++){
           const date=new Date(base); date.setUTCDate(date.getUTCDate()+offset);
           const month=date.getUTCMonth()+1;
-          let windowScore=preferred.length?(preferred.includes(month)?100:60):50;
+          const windowMonths=[]; for(let day=0;day<duration;day++){const x=new Date(date);x.setUTCDate(x.getUTCDate()+day);windowMonths.push(x.getUTCMonth()+1)}
+          const favorableDays=windowMonths.filter(m=>preferred.includes(m)).length;
+          const coverage=windowMonths.length?favorableDays/windowMonths.length:0;
+          let windowScore=preferred.length?Math.round(50+50*coverage*(Number(rule.rows[0]?.weight)||1)):50;
           const reasons=[];
           if(senior && [6,7,8].includes(month)){windowScore-=10;reasons.push('Période potentiellement chaude pour un profil senior');}
           if(family && [6,7,8].includes(month)){windowScore+=3;reasons.push('Période compatible avec les vacances familiales');}
           if(mobility && [6,7,8].includes(month)===false){reasons.push('Accessibilité à vérifier selon les conditions locales');}
-          candidates.push({date:date.toISOString().slice(0,10),offsetDays:offset,score:windowScore,favorable:preferred.includes(month),reasons});
+          candidates.push({date:date.toISOString().slice(0,10),offsetDays:offset,durationDays:duration,score:windowScore,coverage:Math.round(coverage*100),favorable:coverage>=0.5,reasons});
         }
         candidates.sort((a,b)=>b.score-a.score||Math.abs(a.offsetDays)-Math.abs(b.offsetDays));
         dateOptimization={requestedDate:dates.startDate,flexibleDays:flex,recommended:candidates[0]||null,candidates,travelerContext:{senior,family,mobility,budgetLevel:traveler.budget_level||budgetLevel||null}};
