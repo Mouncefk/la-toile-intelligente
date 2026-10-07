@@ -115,3 +115,11 @@ if(!v30_27_vault.includes('noAutomaticBooking')) throw new Error('V30.30 no-auto
 if(!v30_27_ui.includes('BILAN AVANT DÉCISION')) throw new Error('V30.30 readiness UI missing');
 if(!v30_27_ui.includes('loadReadiness')) throw new Error('V30.30 readiness action missing');
 console.log('V30.30 traveler readiness contract: ok');
+
+/* V31.1 professional offers contract */
+const v31_schema=fs.readFileSync(new URL('../database/seed/38_v31_professional_offers.sql',import.meta.url),'utf8');
+if(!v31_schema.includes('v31_pro_offers')||!v31_schema.includes('v31_offer_availability')) throw new Error('V31.1 offer schema missing');
+const v31_platform=fs.readFileSync(new URL('../server/v30-platform.js',import.meta.url),'utf8');
+for(const x of ["'/v31/professionals/:proId/offers'","'/v31/offers/:offerId/availability'","'/v31/session/:sessionId/offers'"]) if(!v31_platform.includes(x)) throw new Error('V31.1 endpoint missing: '+x);
+if(!v31_platform.includes('next_available')) throw new Error('V31.1 availability matching missing');
+console.log('V31.1 professional offers contract: ok');
