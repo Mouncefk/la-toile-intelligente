@@ -263,7 +263,14 @@ v30VaultRouter.post('/trip-draft/:id/optimize', async (req,res) => {
         if(candidates[0]?.favorable) score=Math.min(100,score+5);
       }
     }
-    const optimization={score,completeness,hardMissing,compatibilityWarnings,constraints,dateOptimization,travelerContext:{travelerType:traveler.traveler_type||null,budgetLevel:effectiveBudget,accessibilityNeeds:effectiveAccessibility},optimizedAt:new Date().toISOString()};
+    const profileIsSenior=String(traveler.traveler_type||'').toLowerCase().includes('senior')||String(traveler.age_group||'').toLowerCase().includes('senior');
+    const profileIsFamily=String(traveler.party_type||'').toLowerCase().includes('family')||(Array.isArray(traveler.children_ages)&&traveler.children_ages.length>0);
+    const profileHasAccessibility=effectiveAccessibility.length>0||String(traveler.mobility_level||'').toLowerCase().includes('réduit')||String(traveler.mobility_level||'').toLowerCase().includes('reduced');
+    const profileMissing=['traveler_type','party_type','budget_level','pace'].filter(k=>!traveler[k]);
+    let profileFitScore=Math.max(0,100-profileMissing.length*8-(profileHasAccessibility?5:0));
+    if(profileIsSenior&&dateOptimization?.recommended?.reasons?.some(r=>String(r).includes('chaude'))) profileFitScore=Math.max(0,profileFitScore-8);
+    const profileFit={score:profileFitScore,signals:{senior:profileIsSenior,family:profileIsFamily,mobility:Boolean(traveler.mobility_level),accessibility:profileHasAccessibility,budget:Boolean(effectiveBudget),pace:Boolean(traveler.pace)},missing:profileMissing,confirmationNeeded:profileHasAccessibility?['accessibility']:[],capturedAt:new Date().toISOString()};
+    const optimization={score,completeness,hardMissing,compatibilityWarnings,constraints,dateOptimization,profileFit,travelerContext:{travelerType:traveler.traveler_type||null,budgetLevel:effectiveBudget,accessibilityNeeds:effectiveAccessibility},optimizedAt:new Date().toISOString()};
     const q=await pool.query('UPDATE v30_trip_drafts SET notes=jsonb_set(COALESCE(notes,\'{}\'::jsonb),\'{optimization}\',$1::jsonb,true),status=CASE WHEN $2>=75 THEN \'ready\' ELSE status END,updated_at=now() WHERE id=$3 RETURNING *',
       [JSON.stringify(optimization),score,req.params.id]);
     res.json({draft:q.rows[0],optimization,travelerDecides:true});
@@ -285,7 +292,8 @@ v30VaultRouter.get('/trip-draft/:id/checklist', async (req,res) => {
       {key:'accommodation',label:'Hébergement',done:Boolean(d.accommodation&&Object.keys(d.accommodation).length),blocking:true,detail:d.accommodation&&Object.keys(d.accommodation).length?'Un hébergement est présent.':'Ajoutez un hébergement.'},
       {key:'experiences',label:'Expériences',done:Array.isArray(d.experiences)&&d.experiences.length>0,blocking:false,detail:Array.isArray(d.experiences)&&d.experiences.length?d.experiences.length+' expérience(s) retenue(s).':'Gardez au moins une expérience qui vous convient.'},
       {key:'healthSafety',label:'Santé & Sécurité',done:Array.isArray(d.health_safety)&&d.health_safety.length>0,blocking:true,detail:Array.isArray(d.health_safety)&&d.health_safety.length?'Des repères Santé & Sécurité sont associés.':'Ajoutez les repères utiles à proximité.'},
-      {key:'optimization',label:'Analyse de préparation',done:Boolean(optimization.optimizedAt),blocking:false,detail:optimization.optimizedAt?'Le projet a été analysé.':'Lancez l’analyse de préparation.'}
+      {key:'optimization',label:'Analyse de préparation',done:Boolean(optimization.optimizedAt),blocking:false,detail:optimization.optimizedAt?'Le projet a été analysé.':'Lancez l’analyse de préparation.'},
+      {key:'profileFit',label:'Personnalisation du profil',done:Boolean(optimization.profileFit?.capturedAt),blocking:false,detail:optimization.profileFit?.capturedAt?'Le profil voyageur est intégré à l’analyse.':'Le profil sera intégré lors de l’analyse.'}
     ];
     const blockingMissing=items.filter(x=>x.blocking&&!x.done).map(x=>x.key);
     const readiness=Math.max(0,Math.min(100,Math.round(items.filter(x=>x.done).length/items.length*100)));

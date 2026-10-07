@@ -96,3 +96,9 @@ if(!v30_27_vault.includes('warm_period')) throw new Error('V30.27 senior warm-pe
 if(!v30_27_ui.includes('profileFit')) throw new Error('V30.27 profile-fit UI state missing');
 if(!v30_27_ui.includes('Votre profil influence la préparation')) throw new Error('V30.27 profile-fit UI panel missing');
 console.log('V30.27 traveler profile-fit contract: ok');
+
+/* V30.28 profile-aware optimization contract */
+if(!v30_27_vault.includes('const profileFit={score:profileFitScore')) throw new Error('V30.28 persisted profile-fit summary missing');
+if(!v30_27_vault.includes("key:'profileFit'")) throw new Error('V30.28 checklist personalization item missing');
+if(!v30_27_ui.includes('profileFit?.fitScore')) throw new Error('V30.28 profile-fit score bridge missing');
+console.log('V30.28 profile-aware optimization contract: ok');
