@@ -202,6 +202,23 @@ CREATE TABLE IF NOT EXISTS v30_pilot_territories (
  rationale TEXT,
  active BOOLEAN NOT NULL DEFAULT true
 );
+-- V30.5 — country → region hierarchy for pilot territories
+INSERT INTO v30_geography_nodes(node_key,parent_key,node_type,name_fr,country_iso3,hemisphere,climate_zones)
+VALUES
+('REGION_MAR_TANGER_TETOUAN_AL_HOCEIMA','COUNTRY_MAR','region','Tanger-Tétouan-Al Hoceïma','MAR','north',ARRAY['mediterranean','oceanic']),
+('REGION_MAR_ORIENTAL','COUNTRY_MAR','region','Oriental','MAR','north',ARRAY['mediterranean','arid']),
+('REGION_MAR_FES_MEKNES','COUNTRY_MAR','region','Fès-Meknès','MAR','north',ARRAY['mediterranean','mountain']),
+('REGION_MAR_RABAT_SALE_KENITRA','COUNTRY_MAR','region','Rabat-Salé-Kénitra','MAR','north',ARRAY['mediterranean','oceanic']),
+('REGION_MAR_BENI_MELLAL_KHENIFRA','COUNTRY_MAR','region','Béni Mellal-Khénifra','MAR','north',ARRAY['mountain','mediterranean']),
+('REGION_MAR_CASABLANCA_SETTAT','COUNTRY_MAR','region','Casablanca-Settat','MAR','north',ARRAY['mediterranean','oceanic']),
+('REGION_MAR_MARRAKECH_SAFI','COUNTRY_MAR','region','Marrakech-Safi','MAR','north',ARRAY['arid','mediterranean']),
+('REGION_MAR_DRAA_TAFILALET','COUNTRY_MAR','region','Drâa-Tafilalet','MAR','north',ARRAY['arid','mountain']),
+('REGION_MAR_SOUSS_MASSA','COUNTRY_MAR','region','Souss-Massa','MAR','north',ARRAY['arid','mediterranean']),
+('REGION_MAR_GUELMIM_OUED_NOUN','COUNTRY_MAR','region','Guelmim-Oued Noun','MAR','north',ARRAY['arid','mediterranean']),
+('REGION_MAR_LAAYOUNE_SAKIA_EL_HAMRA','COUNTRY_MAR','region','Laâyoune-Sakia El Hamra','MAR','north',ARRAY['arid']),
+('REGION_MAR_DAKHLA_OUED_ED_DAHAB','COUNTRY_MAR','region','Dakhla-Oued Ed-Dahab','MAR','north',ARRAY['arid'])
+ON CONFLICT(node_key) DO UPDATE SET parent_key=EXCLUDED.parent_key,name_fr=EXCLUDED.name_fr,country_iso3=EXCLUDED.country_iso3,hemisphere=EXCLUDED.hemisphere,climate_zones=EXCLUDED.climate_zones,active=true;
+
 INSERT INTO v30_pilot_territories(country_iso3,pilot_role,name_fr,continent,hemisphere,rationale) VALUES
 ('MAR','primary','Maroc','Africa','north','Premier laboratoire complet : littoral, montagne, désert, culture, artisanat et gastronomie.'),
 ('FRA','secondary','France','Europe','north','Validation européenne : océanique, méditerranéen, alpin, patrimoine et diversité territoriale.')
@@ -275,7 +292,21 @@ CREATE TABLE IF NOT EXISTS v30_stay_proposal_templates (
 CREATE INDEX IF NOT EXISTS idx_v30_stay_proposal_templates_territory ON v30_stay_proposal_templates(territory_key,active);
 
 
+UPDATE v30_territories SET region_key=CASE territory_key
+ WHEN 'RABAT' THEN 'REGION_MAR_RABAT_SALE_KENITRA'
+ WHEN 'MARRAKECH' THEN 'REGION_MAR_MARRAKECH_SAFI'
+ WHEN 'MERZOUGA' THEN 'REGION_MAR_DRAA_TAFILALET'
+ WHEN 'OUARZAZATE' THEN 'REGION_MAR_DRAA_TAFILALET'
+ WHEN 'AGADIR' THEN 'REGION_MAR_SOUSS_MASSA'
+ WHEN 'ESSAOUIRA' THEN 'REGION_MAR_MARRAKECH_SAFI'
+ WHEN 'IFRANE' THEN 'REGION_MAR_FES_MEKNES'
+ WHEN 'CASABLANCA' THEN 'REGION_MAR_CASABLANCA_SETTAT'
+ WHEN 'TANGER' THEN 'REGION_MAR_TANGER_TETOUAN_AL_HOCEIMA'
+ ELSE region_key END
+WHERE country_iso3='MAR';
+
 CREATE INDEX IF NOT EXISTS idx_v30_health_territory ON v30_health_safety_points(territory_key,service_type);
+ALTER TABLE v30_territories ADD COLUMN IF NOT EXISTS region_key TEXT;
 INSERT INTO v30_territories(country_iso3,territory_key,name_fr,region_type,latitude,longitude,climate_zone,hemisphere,tourism_tags) VALUES
 ('MAR','MAR','Maroc','country',31.7917,-7.0926,'Mediterranean / Arid / Mountain','north',ARRAY['culture','heritage','artisanat','desert','balneaire','montagne','gastronomie','senior','family']),
 ('MAR','RABAT','Rabat','city',34.0209,-6.8416,'Mediterranean','north',ARRAY['culture','heritage','artisanat','family','senior']),
