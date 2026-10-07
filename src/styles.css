@@ -87,3 +87,7 @@
 
 /* V30.6 — geographic navigation breadcrumb */
 .v30breadcrumb{display:flex;align-items:center;gap:7px;margin-bottom:14px;min-height:22px}.v30breadcrumb button{border:0;background:transparent;color:#607783;padding:2px 0;font-size:9px;letter-spacing:.12em;text-transform:uppercase;cursor:pointer}.v30breadcrumb button:hover,.v30breadcrumb button.active{color:#b9e6ef}.v30breadcrumb span{color:#344c56;font-size:11px}
+
+
+/* V30.7 — level-aware globe */
+.v30globeNode.regionNode{font-size:9px;padding:6px 8px;border-radius:9px;letter-spacing:.02em}.v30globeNode.regionNode:hover{transform:scale(1.05)}
