@@ -399,6 +399,11 @@ v30Router.get('/session/:id/solutions', async (req, res) => {
   if (!climateQ) return;
 
   const climateRule = climateQ.rows[0] || null;
+  const seasonQ = await safeQuery(res,
+    'SELECT * FROM v30_climate_seasons WHERE climate_key=$1 AND hemisphere=$2 AND ((month_start<=month_end AND $3 BETWEEN month_start AND month_end) OR (month_start>month_end AND ($3>=month_start OR $3<=month_end))) ORDER BY month_start LIMIT 1',
+    [climate, hemisphere, month]);
+  if (!seasonQ) return;
+  const seasonalContext = seasonQ.rows[0] || null;
   const solutionsQ = await safeQuery(res, 'SELECT * FROM v30_solutions WHERE territory_key=$1 AND active=true', [key]);
   if (!solutionsQ) return;
 
@@ -436,8 +441,17 @@ v30Router.get('/session/:id/solutions', async (req, res) => {
     }
     if (climateRule) {
       const inSeason = (climateRule.preferred_months || []).includes(month);
-      score += inSeason ? 15 : -5;
-      reasons.push(inSeason ? 'Saison climatique favorable' : 'Hors saison optimale');
+      const weight = Math.max(0, Math.min(1, Number(climateRule.weight) || 0));
+      const seasonalBonus = Math.round(15 * weight);
+      const offSeasonPenalty = Math.round(5 * Math.max(0.5, weight));
+      score += inSeason ? seasonalBonus : -offSeasonPenalty;
+      reasons.push(inSeason
+        ? 'Saison climatique favorable (' + seasonalBonus + ' pts)'
+        : 'Hors saison optimale (' + offSeasonPenalty + ' pts)');
+      if (seasonalContext?.tourism_context?.length && seasonalContext.tourism_context.includes(String(intent.activity || '').toLowerCase().replaceAll('é','e').replace(/[^a-z_]/g,''))) {
+        score += 4;
+        reasons.push('Forme touristique cohérente avec la saison');
+      }
     }
     if (intent.safety && safetyTypes.size) { score += 8; reasons.push('Santé & Sécurité disponible'); }
     if (safetyTypes.has('medicine') && safetyTypes.has('pharmacy') && safetyTypes.has('security')) { score += 5; reasons.push('Couverture Santé & Sécurité complète'); }
@@ -466,8 +480,8 @@ v30Router.get('/session/:id/solutions', async (req, res) => {
       matchReasons: reasons,
       rankingMeta: {
         computedAt: new Date().toISOString(),
-        scoringVersion: 'v30.2',
-        evidenceFactors: ['active','public_contact','geolocation','provider_identity'],
+        scoringVersion: 'v30.11',
+        evidenceFactors: ['active','public_contact','geolocation','provider_identity','climate_rule','seasonal_context'],
         weatherSourceStatus: observed.status
       }
     };
@@ -484,7 +498,7 @@ v30Router.get('/session/:id/solutions', async (req, res) => {
   res.json({
     solutions: scored,
     persistedMatchCount: persisted.rows[0].count,
-    context: { territory, month, climate, hemisphere, climateRule, observedConditions: observed },
+    context: { territory, month, climate, hemisphere, climateRule, seasonalContext, observedConditions: observed },
     healthSafety: { available: safetyTypes.size > 0, serviceTypes: [...safetyTypes] },
     next: 'health_safety'
   });
