@@ -123,3 +123,11 @@ const v31_platform=fs.readFileSync(new URL('../server/v30-platform.js',import.me
 for(const x of ["'/v31/professionals/:proId/offers'","'/v31/offers/:offerId/availability'","'/v31/session/:sessionId/offers'"]) if(!v31_platform.includes(x)) throw new Error('V31.1 endpoint missing: '+x);
 if(!v31_platform.includes('next_available')) throw new Error('V31.1 availability matching missing');
 console.log('V31.1 professional offers contract: ok');
+
+/* V31.2 reservation lifecycle contract */
+const v31_2_schema=fs.readFileSync(new URL('../database/seed/39_v31_reservations.sql',import.meta.url),'utf8');
+if(!v31_2_schema.includes('v31_reservation_requests')) throw new Error('V31.2 reservation schema missing');
+const v31_2_platform=fs.readFileSync(new URL('../server/v30-platform.js',import.meta.url),'utf8');
+for(const x of ["'/v31/session/:sessionId/reservations'","'/v31/professionals/:proId/reservations'","'/v31/reservations/:reservationId'"])if(!v31_2_platform.includes(x))throw new Error('V31.2 endpoint missing: '+x);
+if(!v31_2_platform.includes('automaticBooking:false'))throw new Error('V31.2 automatic booking boundary missing');
+console.log('V31.2 reservation lifecycle contract: ok');

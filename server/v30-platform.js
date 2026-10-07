@@ -749,4 +749,32 @@ v30Router.patch('/v31/offers/:offerId', async (req,res)=>{ const b=req.body||{},
 v30Router.post('/v31/offers/:offerId/availability', async (req,res)=>{ const b=req.body||{}; if(!b.availableFrom||!b.availableTo)return res.status(400).json({error:'availability_window_required'}); const q=await safeQuery(res,'INSERT INTO v31_offer_availability(offer_id,available_from,available_to,capacity,booked,status,metadata) VALUES($1,$2,$3,$4,0,$5,$6) RETURNING *',[req.params.offerId,b.availableFrom,b.availableTo,b.capacity||1,b.status||'open',b.metadata||{}]); if(q)res.status(201).json({availability:q.rows[0]}); });
 v30Router.get('/v31/offers/:offerId/availability', async (req,res)=>{ const q=await safeQuery(res,'SELECT * FROM v31_offer_availability WHERE offer_id=$1 ORDER BY available_from',[req.params.offerId]); if(q)res.json({offerId:Number(req.params.offerId),availability:q.rows}); });
 v30Router.get('/v31/session/:sessionId/offers', async (req,res)=>{ try{const s=await pool.query('SELECT * FROM v30_traveler_sessions WHERE id=$1',[req.params.sessionId]);if(!s.rows[0])return res.status(404).json({error:'session_not_found'});const session=s.rows[0],p=(await pool.query('SELECT * FROM v30_traveler_profiles WHERE session_id=$1',[req.params.sessionId])).rows[0]||{},intent=(await pool.query('SELECT intent FROM v30_traveler_intents WHERE session_id=$1 ORDER BY created_at DESC LIMIT 1',[req.params.sessionId])).rows[0]?.intent||{};const q=await pool.query(`SELECT o.*,p.name professional_name,p.verified,p.pro_type,COALESCE(a.next_available,NULL) next_available,(CASE WHEN o.territory_key=$2 THEN 25 ELSE 0 END+CASE WHEN o.audiences && $3::text[] THEN 20 ELSE 0 END+CASE WHEN o.specialties && $4::text[] THEN 25 ELSE 0 END+CASE WHEN o.status='published' THEN 15 ELSE 0 END+CASE WHEN p.verified THEN 10 ELSE 0 END) AS match_score FROM v31_pro_offers o JOIN v30_pro_profiles p ON p.id=o.professional_id LEFT JOIN LATERAL(SELECT MIN(available_from) next_available FROM v31_offer_availability av WHERE av.offer_id=o.id AND av.status='open' AND av.booked<av.capacity AND av.available_to>=now()) a ON true WHERE o.status='published' ORDER BY match_score DESC,o.updated_at DESC LIMIT 50`,[req.params.sessionId,session.territory_key,p.party_type?[p.party_type]:[],intent.activity?[intent.activity]:[]]);res.json({sessionId:Number(req.params.sessionId),territoryKey:session.territory_key,offers:q.rows,travelerDecides:true,proposalOnly:true});}catch(e){res.status(500).json({error:e.message})} });
+v30Router.post('/v31/session/:sessionId/reservations',async(req,res)=>{
+ try{
+  const s=await pool.query('SELECT id FROM v30_traveler_sessions WHERE id=$1',[req.params.sessionId]);
+  if(!s.rows[0])return res.status(404).json({error:'session_not_found'});
+  const b=req.body||{},o=await pool.query('SELECT id FROM v31_pro_offers WHERE id=$1 AND status=\'published\'',[b.offerId]);
+  if(!o.rows[0])return res.status(404).json({error:'offer_not_found_or_not_published'});
+  const q=await pool.query('INSERT INTO v31_reservation_requests(traveler_session_id,offer_id,availability_id,requested_from,requested_to,party_size,traveler_note) VALUES($1,$2,$3,$4,$5,$6,$7) RETURNING *',[req.params.sessionId,b.offerId,b.availabilityId||null,b.requestedFrom||null,b.requestedTo||null,Math.max(1,Number(b.partySize)||1),b.travelerNote||null]);
+  res.status(201).json({reservation:q.rows[0],status:'requested',travelerDecides:true,automaticBooking:false});
+ }catch(err){res.status(500).json({error:err.message})}
+});
+v30Router.get('/v31/session/:sessionId/reservations',async(req,res)=>{
+ const q=await safeQuery(res,'SELECT r.*,o.title offer_title,p.name professional_name FROM v31_reservation_requests r JOIN v31_pro_offers o ON o.id=r.offer_id JOIN v30_pro_profiles p ON p.id=o.professional_id WHERE r.traveler_session_id=$1 ORDER BY r.created_at DESC',[req.params.sessionId]);
+ if(q)res.json({reservations:q.rows,travelerDecides:true});
+});
+v30Router.get('/v31/professionals/:proId/reservations',async(req,res)=>{
+ const q=await safeQuery(res,'SELECT r.*,o.title offer_title,ts.country_iso3 FROM v31_reservation_requests r JOIN v31_pro_offers o ON o.id=r.offer_id JOIN v30_traveler_sessions ts ON ts.id=r.traveler_session_id WHERE o.professional_id=$1 ORDER BY r.created_at DESC',[req.params.proId]);
+ if(q)res.json({professionalId:Number(req.params.proId),reservations:q.rows});
+});
+v30Router.patch('/v31/reservations/:reservationId',async(req,res)=>{
+ const allowed=['status','priceAmount','currency','professionalNote'],map={status:'status',priceAmount:'price_amount',currency:'currency',professionalNote:'professional_note'},sets=[],vals=[];
+ for(const [k,col] of Object.entries(map))if(req.body?.[k]!==undefined){sets.push(col+'=, (_req, res) => res.json({ ok: true, version: '30.2', router: 'v30-platform' }));
++(vals.length+1));vals.push(req.body[k])}
+ if(!sets.length)return res.status(400).json({error:'no_updates'});
+ vals.push(req.params.reservationId);const q=await safeQuery(res,'UPDATE v31_reservation_requests SET '+sets.join(',')+',updated_at=now() WHERE id=, (_req, res) => res.json({ ok: true, version: '30.2', router: 'v30-platform' }));
++vals.length+' RETURNING *',vals);
+ if(q&&!q.rows[0])return res.status(404).json({error:'reservation_not_found'});if(q)res.json({reservation:q.rows[0]});
+});
+
 v30Router.get('/health', (_req, res) => res.json({ ok: true, version: '30.2', router: 'v30-platform' }));
