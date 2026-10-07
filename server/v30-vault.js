@@ -326,6 +326,31 @@ v30VaultRouter.get('/trip-draft/:id/checklist', async (req,res) => {
   } catch(e){res.status(500).json({error:e.message});}
 });
 
+v30VaultRouter.get('/trip-draft/:id/readiness', async (req,res) => {
+  try {
+    const q=await pool.query('SELECT id,title,status,territory_key,transport,accommodation,experiences,health_safety,notes,session_id FROM v30_trip_drafts WHERE id=$1',[req.params.id]);
+    if(!q.rows[0]) return res.status(404).json({error:'trip_draft_not_found'});
+    const d=q.rows[0], notes=d.notes||{}, dates=notes.dates||{}, optimization=notes.optimization||{};
+    const profile=await pool.query('SELECT traveler_type,age_group,mobility_level,party_type,party_size,budget_level,pace,accessibility_needs,preferences,constraints FROM v30_traveler_profiles WHERE session_id=$1',[d.session_id]);
+    const p=profile.rows[0]||null;
+    const items=[
+      {key:'profile',label:'Profil voyageur',done:Boolean(p),blocking:false},
+      {key:'territory',label:'Territoire',done:Boolean(d.territory_key),blocking:true},
+      {key:'dates',label:'Dates',done:Boolean(dates.startDate),blocking:true},
+      {key:'transport',label:'Transport',done:Boolean(d.transport&&Object.keys(d.transport).length),blocking:true},
+      {key:'accommodation',label:'Hébergement',done:Boolean(d.accommodation&&Object.keys(d.accommodation).length),blocking:true},
+      {key:'experiences',label:'Expériences',done:Array.isArray(d.experiences)&&d.experiences.length>0,blocking:false},
+      {key:'healthSafety',label:'Santé & Sécurité',done:Array.isArray(d.health_safety)&&d.health_safety.length>0,blocking:true},
+      {key:'optimization',label:'Optimisation',done:Boolean(optimization.optimizedAt),blocking:false},
+      {key:'profileFit',label:'Adéquation au profil',done:Boolean(optimization.profileFit?.capturedAt),blocking:false}
+    ];
+    const blockingMissing=items.filter(x=>x.blocking&&!x.done).map(x=>x.key);
+    const completeness=Math.round(items.filter(x=>x.done).length/items.length*100);
+    const readyForDecision=blockingMissing.length===0;
+    res.json({draftId:Number(d.id),title:d.title,status:d.status,territoryKey:d.territory_key,profile:p,dates,optimization,items,blockingMissing,completeness,readyForDecision,travelerDecides:true,proposalOnly:true,noAutomaticBooking:true});
+  } catch(e){res.status(500).json({error:e.message});}
+});
+
 v30VaultRouter.get('/trip-draft/:id/summary', async (req,res) => {
   try {
     const q=await pool.query('SELECT id,title,territory_key,status,transport,accommodation,experiences,health_safety,notes,updated_at FROM v30_trip_drafts WHERE id=$1',[req.params.id]);

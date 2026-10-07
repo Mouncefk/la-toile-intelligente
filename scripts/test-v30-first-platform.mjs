@@ -108,3 +108,10 @@ if(!v30_27_vault.includes("'/trip-draft/:id/profile'")) throw new Error('V30.29 
 if(!v30_27_ui.includes('saveTravelerProfile')) throw new Error('V30.29 profile save action missing');
 if(!v30_27_ui.includes('Modifier le profil voyageur')) throw new Error('V30.29 profile editor UI missing');
 console.log('V30.29 traveler profile editor contract: ok');
+/* V30.30 traveler readiness contract */
+if(!v30_27_vault.includes("'/trip-draft/:id/readiness'")) throw new Error('V30.30 readiness endpoint missing');
+if(!v30_27_vault.includes('readyForDecision')) throw new Error('V30.30 readiness decision missing');
+if(!v30_27_vault.includes('noAutomaticBooking')) throw new Error('V30.30 no-auto-booking boundary missing');
+if(!v30_27_ui.includes('BILAN AVANT DÉCISION')) throw new Error('V30.30 readiness UI missing');
+if(!v30_27_ui.includes('loadReadiness')) throw new Error('V30.30 readiness action missing');
+console.log('V30.30 traveler readiness contract: ok');
