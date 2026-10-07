@@ -10,6 +10,8 @@ function json(value, fallback = {}) {
   return value;
 }
 
+v30VaultRouter.get('/trip-draft/:id/components', async (req,res) => { try { const q=await pool.query('SELECT id,transport,accommodation,experiences,health_safety,notes FROM v30_trip_drafts WHERE id=$1',[req.params.id]); if(!q.rows[0]) return res.status(404).json({error:'trip_draft_not_found'}); const d=q.rows[0]; res.json({draftId:Number(d.id),components:{transport:d.transport||{},accommodation:d.accommodation||{},experiences:Array.isArray(d.experiences)?d.experiences:[],healthSafety:Array.isArray(d.health_safety)?d.health_safety:[]},dates:d.notes?.dates||null,travelerDecides:true,proposalOnly:true}); } catch(e){res.status(500).json({error:e.message});} });
+
 v30VaultRouter.get('/trip-draft/session/:sessionId', async (req, res) => {
   try {
     const q = await pool.query(
