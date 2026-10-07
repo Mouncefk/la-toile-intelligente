@@ -75,6 +75,31 @@ v30VaultRouter.get('/trip-draft/:id/profile-fit', async (req,res) => {
   } catch(e){res.status(500).json({error:e.message});}
 });
 
+v30VaultRouter.get('/trip-draft/:id/profile', async (req,res) => {
+  try {
+    const q=await pool.query('SELECT d.id,d.session_id,d.territory_key,p.* FROM v30_trip_drafts d LEFT JOIN v30_traveler_profiles p ON p.session_id=d.session_id WHERE d.id=$1',[req.params.id]);
+    if(!q.rows[0]) return res.status(404).json({error:'trip_draft_not_found'});
+    res.json({draftId:Number(q.rows[0].id),profile:q.rows[0],travelerDecides:true,private:true});
+  } catch(e){res.status(500).json({error:e.message});}
+});
+v30VaultRouter.put('/trip-draft/:id/profile', async (req,res) => {
+  try {
+    const d=await pool.query('SELECT session_id FROM v30_trip_drafts WHERE id=$1',[req.params.id]);
+    if(!d.rows[0]) return res.status(404).json({error:'trip_draft_not_found'});
+    const allowed=['traveler_type','age_group','mobility_level','party_type','party_size','children_ages','budget_level','pace','duration_days','accessibility_needs','preferences','constraints'];
+    const arrays=new Set(['children_ages','accessibility_needs','preferences','constraints']);
+    const vals=allowed.map(k=>arrays.has(k)?(Array.isArray(req.body?.[k])?req.body[k]:[]):(req.body?.[k]??null));
+    const q=await pool.query(
+      `INSERT INTO v30_traveler_profiles(session_id,traveler_type,age_group,mobility_level,party_type,party_size,children_ages,budget_level,pace,duration_days,accessibility_needs,preferences,constraints)
+       VALUES($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13)
+       ON CONFLICT(session_id) DO UPDATE SET traveler_type=EXCLUDED.traveler_type,age_group=EXCLUDED.age_group,mobility_level=EXCLUDED.mobility_level,party_type=EXCLUDED.party_type,party_size=EXCLUDED.party_size,children_ages=EXCLUDED.children_ages,budget_level=EXCLUDED.budget_level,pace=EXCLUDED.pace,duration_days=EXCLUDED.duration_days,accessibility_needs=EXCLUDED.accessibility_needs,preferences=EXCLUDED.preferences,constraints=EXCLUDED.constraints,updated_at=now()
+       RETURNING *`,
+      [d.rows[0].session_id,...vals]
+    );
+    res.json({draftId:Number(req.params.id),profile:q.rows[0],private:true,travelerDecides:true});
+  } catch(e){res.status(500).json({error:e.message});}
+});
+
 v30VaultRouter.get('/trip-draft/session/:sessionId', async (req, res) => {
   try {
     const q = await pool.query(

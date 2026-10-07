@@ -102,3 +102,9 @@ if(!v30_27_vault.includes('const profileFit={score:profileFitScore')) throw new 
 if(!v30_27_vault.includes("key:'profileFit'")) throw new Error('V30.28 checklist personalization item missing');
 if(!v30_27_ui.includes('profileFit?.fitScore')) throw new Error('V30.28 profile-fit score bridge missing');
 console.log('V30.28 profile-aware optimization contract: ok');
+/* V30.29 traveler profile editor contract */
+if(!v30_27_vault.includes("'/trip-draft/:id/profile'")) throw new Error('V30.29 profile GET endpoint missing');
+if(!v30_27_vault.includes("'/trip-draft/:id/profile'")) throw new Error('V30.29 profile PUT endpoint missing');
+if(!v30_27_ui.includes('saveTravelerProfile')) throw new Error('V30.29 profile save action missing');
+if(!v30_27_ui.includes('Modifier le profil voyageur')) throw new Error('V30.29 profile editor UI missing');
+console.log('V30.29 traveler profile editor contract: ok');
