@@ -91,3 +91,7 @@
 
 /* V30.7 — level-aware globe */
 .v30globeNode.regionNode{font-size:9px;padding:6px 8px;border-radius:9px;letter-spacing:.02em}.v30globeNode.regionNode:hover{transform:scale(1.05)}
+
+
+/* V30.9 — territory tourism facets */
+.v30territoryFacets{margin:15px 0;padding:13px 14px;border:1px solid #18313b;border-radius:13px;background:rgba(7,18,24,.72)}.v30territoryFacets>div{display:flex;flex-wrap:wrap;gap:6px;margin-top:9px}.v30territoryFacets>div>span{padding:6px 8px;border:1px solid #284751;border-radius:999px;color:#a9cbd4;background:#0b1b22;font-size:9px;text-transform:capitalize}
