@@ -12,6 +12,69 @@ function json(value, fallback = {}) {
 
 v30VaultRouter.get('/trip-draft/:id/components', async (req,res) => { try { const q=await pool.query('SELECT id,transport,accommodation,experiences,health_safety,notes FROM v30_trip_drafts WHERE id=$1',[req.params.id]); if(!q.rows[0]) return res.status(404).json({error:'trip_draft_not_found'}); const d=q.rows[0]; res.json({draftId:Number(d.id),components:{transport:d.transport||{},accommodation:d.accommodation||{},experiences:Array.isArray(d.experiences)?d.experiences:[],healthSafety:Array.isArray(d.health_safety)?d.health_safety:[]},dates:d.notes?.dates||null,travelerDecides:true,proposalOnly:true}); } catch(e){res.status(500).json({error:e.message});} });
 
+
+v30VaultRouter.get('/trip-draft/:id/profile-fit', async (req,res) => {
+  try {
+    const q = await pool.query(
+      `SELECT d.*, p.traveler_type,p.age_group,p.mobility_level,p.party_type,p.party_size,p.children_ages,
+              p.budget_level,p.pace,p.duration_days,p.accessibility_needs,p.preferences,p.constraints,
+              t.hemisphere,t.climate_zone,t.name_fr AS territory_name
+       FROM v30_trip_drafts d
+       LEFT JOIN v30_traveler_profiles p ON p.session_id=d.session_id
+       LEFT JOIN v30_territories t ON t.territory_key=d.territory_key
+       WHERE d.id=$1`,
+      [req.params.id]
+    );
+    if (!q.rows[0]) return res.status(404).json({error:'trip_draft_not_found'});
+    const d=q.rows[0];
+    const profile = {
+      traveler_type:d.traveler_type||null, age_group:d.age_group||null, mobility_level:d.mobility_level||null,
+      party_type:d.party_type||null, party_size:d.party_size==null?null:Number(d.party_size),
+      children_ages:Array.isArray(d.children_ages)?d.children_ages:[], budget_level:d.budget_level||null,
+      pace:d.pace||null, duration_days:d.duration_days==null?null:Number(d.duration_days),
+      accessibility_needs:Array.isArray(d.accessibility_needs)?d.accessibility_needs:[],
+      preferences:Array.isArray(d.preferences)?d.preferences:[],
+      constraints:Array.isArray(d.constraints)?d.constraints:[]
+    };
+    const textValue=v=>String(v||'').toLowerCase();
+    const isSenior=textValue(profile.traveler_type).includes('senior') || textValue(profile.age_group).includes('senior');
+    const isFamily=textValue(profile.party_type).includes('family') || profile.children_ages.length>0;
+    const hasAccessibility=profile.accessibility_needs.length>0 || textValue(profile.mobility_level).includes('réduit') || textValue(profile.mobility_level).includes('reduced');
+    const dates=(d.notes&&d.notes.dates)||{};
+    const startDate=dates.startDate?new Date(dates.startDate):null;
+    const hemisphere=d.hemisphere||'north';
+    const hotMonths=hemisphere==='south'?[12,1,2]:hemisphere==='equatorial'?[1,2,3,4,5,6,7,8,9,10,11,12]:[6,7,8];
+    const dateMonths=[];
+    const duration=Math.max(1,Number(dates.durationDays||profile.duration_days||7));
+    if(startDate&&!Number.isNaN(startDate.getTime())) for(let i=0;i<duration;i++){const x=new Date(startDate);x.setUTCDate(x.getUTCDate()+i);dateMonths.push(x.getUTCMonth()+1);}
+    const hotRatio=dateMonths.length?dateMonths.filter(m=>hotMonths.includes(m)).length/dateMonths.length:0;
+    const signals=[];
+    if(isSenior) signals.push({key:'senior',label:'Profil senior pris en compte',detail:'Le rythme et la période climatique sont intégrés à la préparation.',status:'considered',impact:hotRatio>=0.5?'attention':'positive'});
+    if(isFamily) signals.push({key:'family',label:'Contexte familial pris en compte',detail:'La composition du groupe et les contraintes familiales accompagnent les recommandations.',status:'considered',impact:'positive'});
+    if(profile.pace) signals.push({key:'pace',label:'Rythme de voyage pris en compte',detail:'Rythme souhaité : '+profile.pace+'.',status:'considered',impact:'positive'});
+    if(profile.budget_level) signals.push({key:'budget',label:'Budget pris en compte',detail:'Niveau budgétaire : '+profile.budget_level+'. Les coûts définitifs restent à confirmer.',status:'considered',impact:'positive'});
+    if(profile.mobility_level) signals.push({key:'mobility',label:'Mobilité prise en compte',detail:'Niveau de mobilité : '+profile.mobility_level+'.',status:'considered',impact:'positive'});
+    if(hasAccessibility) signals.push({key:'accessibility',label:'Accessibilité à confirmer',detail:'Les besoins d’accessibilité influencent le matching, mais les services sélectionnés doivent être explicitement confirmés.',status:'confirmation_required',impact:'attention'});
+    if(profile.preferences.length) signals.push({key:'preferences',label:'Préférences intégrées',detail:profile.preferences.slice(0,6).join(' · '),status:'considered',impact:'positive'});
+    if(profile.constraints.length) signals.push({key:'constraints',label:'Contraintes intégrées',detail:profile.constraints.slice(0,6).join(' · '),status:'considered',impact:'attention'});
+    if(isSenior&&hotRatio>=0.5) signals.push({key:'warm_period',label:'Période chaude à surveiller',detail:'Les dates actuelles couvrent majoritairement une période chaude pour cet hémisphère.',status:'attention',impact:'attention'});
+    const missingProfile=[];
+    for(const key of ['traveler_type','party_type','budget_level','pace']) if(!profile[key]) missingProfile.push(key);
+    let fitScore=100;
+    fitScore-=missingProfile.length*8;
+    if(hasAccessibility) fitScore-=5;
+    if(isSenior&&hotRatio>=0.5) fitScore-=8;
+    fitScore=Math.max(0,Math.min(100,fitScore));
+    res.json({
+      draftId:Number(d.id), territory:{key:d.territory_key,name:d.territory_name||null,hemisphere,climateZone:d.climate_zone||null},
+      profile, fitScore, signals, missingProfile,
+      confirmationNeeded:signals.filter(x=>x.status==='confirmation_required').map(x=>x.key),
+      dates:{startDate:dates.startDate||null,endDate:dates.endDate||null,durationDays:duration},
+      travelerDecides:true, proposalOnly:true
+    });
+  } catch(e){res.status(500).json({error:e.message});}
+});
+
 v30VaultRouter.get('/trip-draft/session/:sessionId', async (req, res) => {
   try {
     const q = await pool.query(

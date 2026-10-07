@@ -84,3 +84,15 @@ if(!v30_26_vault.includes("'/trip-draft/:id/components'")) throw new Error('V30.
 if(!v30_26_ui.includes('refreshTripComponents')) throw new Error('V30.26 component refresh UI missing');
 if(!v30_26_ui.includes('Transport · Hébergement · Expériences · Santé & Sécurité')) throw new Error('V30.26 component labels missing');
 console.log('V30.26 structured preparation components contract: ok');
+
+
+/* V30.27 traveler profile-fit contract */
+const v30_27_vault=fs.readFileSync(new URL('../server/v30-vault.js',import.meta.url),'utf8');
+const v30_27_ui=fs.readFileSync(new URL('../src/v30-app.jsx',import.meta.url),'utf8');
+if(!v30_27_vault.includes("'/trip-draft/:id/profile-fit'")) throw new Error('V30.27 profile-fit endpoint missing');
+for(const field of ['traveler_type','age_group','mobility_level','party_type','party_size','budget_level','pace','accessibility_needs','preferences','constraints']) if(!v30_27_vault.includes(field)) throw new Error('V30.27 profile field missing: '+field);
+if(!v30_27_vault.includes('confirmation_required')) throw new Error('V30.27 accessibility confirmation signal missing');
+if(!v30_27_vault.includes('warm_period')) throw new Error('V30.27 senior warm-period signal missing');
+if(!v30_27_ui.includes('profileFit')) throw new Error('V30.27 profile-fit UI state missing');
+if(!v30_27_ui.includes('Votre profil influence la préparation')) throw new Error('V30.27 profile-fit UI panel missing');
+console.log('V30.27 traveler profile-fit contract: ok');
