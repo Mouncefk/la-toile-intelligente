@@ -103,3 +103,5 @@
 
 /* V30.12 — flexible travel windows */
 .v30travelWindows{margin:15px 0;padding:14px;border:1px solid #294752;border-radius:14px;background:rgba(7,20,27,.72)}.v30windowHead{display:flex;justify-content:space-between;align-items:center;gap:14px;margin:9px 0}.v30windowHead strong{color:#c8e5ea}.v30windowHead label{font-size:9px;color:#78959f;display:flex;align-items:center;gap:8px}.v30windowHead input{width:90px}.v30windowRecommended{font-size:10px;color:#9ab5bd;line-height:1.5}.v30windowRecommended b{color:#d4edf1}
+
+.v30healthSummary{margin:14px 0;padding:14px;border:1px solid #294752;border-radius:14px;background:rgba(7,20,27,.72);display:grid;grid-template-columns:auto 1fr;gap:4px 12px;align-items:center}.v30healthSummary .eyebrow{grid-column:1/-1}.v30healthSummary strong{font-size:24px;color:#d7edf1}.v30healthSummary small{color:#8da9b2;font-size:10px}.v30healthSummary em{grid-column:1/-1;color:#5f7a84;font-size:9px;font-style:normal;line-height:1.4}
