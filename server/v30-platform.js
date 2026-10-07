@@ -768,12 +768,11 @@ v30Router.get('/v31/professionals/:proId/reservations',async(req,res)=>{
  if(q)res.json({professionalId:Number(req.params.proId),reservations:q.rows});
 });
 v30Router.patch('/v31/reservations/:reservationId',async(req,res)=>{
- const allowed=['status','priceAmount','currency','professionalNote'],map={status:'status',priceAmount:'price_amount',currency:'currency',professionalNote:'professional_note'},sets=[],vals=[];
- for(const [k,col] of Object.entries(map))if(req.body?.[k]!==undefined){sets.push(col+'=, (_req, res) => res.json({ ok: true, version: '30.2', router: 'v30-platform' }));
-+(vals.length+1));vals.push(req.body[k])}
+ const map={status:'status',priceAmount:'price_amount',currency:'currency',professionalNote:'professional_note'},sets=[],vals=[];
+ for(const [k,col] of Object.entries(map))if(req.body?.[k]!==undefined){sets.push(col+'=$'+(vals.length+1));vals.push(req.body[k])}
  if(!sets.length)return res.status(400).json({error:'no_updates'});
- vals.push(req.params.reservationId);const q=await safeQuery(res,'UPDATE v31_reservation_requests SET '+sets.join(',')+',updated_at=now() WHERE id=, (_req, res) => res.json({ ok: true, version: '30.2', router: 'v30-platform' }));
-+vals.length+' RETURNING *',vals);
+ vals.push(req.params.reservationId);
+ const q=await safeQuery(res,'UPDATE v31_reservation_requests SET '+sets.join(',')+',updated_at=now() WHERE id=$'+vals.length+' RETURNING *',vals);
  if(q&&!q.rows[0])return res.status(404).json({error:'reservation_not_found'});if(q)res.json({reservation:q.rows[0]});
 });
 
