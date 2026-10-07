@@ -34,7 +34,7 @@ export function V30App(){
  const countryRegions=useMemo(()=>globeNodes.filter(n=>n.parent_key===countryNode?.node_key&&n.node_type!=='country'),[globeNodes,countryNode]);
  const activeHemisphere=countryNode?.hemisphere||'north';
  const activeClimates=countryNode?.climate_zones||[];
- const selectedRegionKey=scope==='region'?status:null;
+  const selectedRegionKey=scope==='region'?targetTerritories[0]?.__regionKey||status:null;
  const selectedRegion=countryRegions.find(r=>r.node_key===selectedRegionKey);
  const globeLevelNodes=scope==='region'?(regionTerritories[selectedRegionKey]||[]):scope==='country'?countryRegions:globeCountries;
  const globeLevelLabel=scope==='region'?((selectedRegion?.name_fr||'Région')+' · TERRITOIRES · '+globeLevelNodes.length+' NŒUDS'):scope==='country'?((countryNode?.name_fr||country)+' · RÉGIONS · '+countryRegions.length+' NŒUDS'):'MONDE · HÉMISPHÈRES · CLIMATS · '+globeCountries.length+' PAYS';
