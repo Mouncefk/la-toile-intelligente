@@ -83,3 +83,7 @@
 
 /* V30.5 — country → region navigation */
 .v30regionList{display:grid;gap:7px;margin:16px 0 10px}.v30regionList button{display:flex;justify-content:space-between;align-items:center;gap:10px;text-align:left;background:#08131a;border:1px solid #1d3540;color:#a7bbc4;border-radius:11px;padding:9px 11px;cursor:pointer}.v30regionList button:hover,.v30regionList button.selected{border-color:#4d91a5;background:#10242d;color:#e4f5fa}.v30regionList strong{font-size:11px;font-weight:600}.v30regionList small{font-size:9px;color:#657d88;white-space:nowrap}.v30regionList button.selected small{color:#8ecddd}
+
+
+/* V30.6 — geographic navigation breadcrumb */
+.v30breadcrumb{display:flex;align-items:center;gap:7px;margin-bottom:14px;min-height:22px}.v30breadcrumb button{border:0;background:transparent;color:#607783;padding:2px 0;font-size:9px;letter-spacing:.12em;text-transform:uppercase;cursor:pointer}.v30breadcrumb button:hover,.v30breadcrumb button.active{color:#b9e6ef}.v30breadcrumb span{color:#344c56;font-size:11px}
