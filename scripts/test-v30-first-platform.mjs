@@ -76,3 +76,11 @@ if(!v30_25_ui.includes('applyRecommendedDates')) throw new Error('V30.25 date de
 if(!v30_25_ui.includes('Retenir cette fenêtre')) throw new Error('V30.25 date decision CTA missing');
 if(!v30_25_ui.includes('/trip-draft/'+tripDraft.id+'/dates')) throw new Error('V30.25 date persistence endpoint missing');
 console.log('V30.25 travel-window decision contract: ok');
+
+// V30.26 structured preparation components contract
+const v30_26_vault=fs.readFileSync(new URL('../server/v30-vault.js',import.meta.url),'utf8');
+const v30_26_ui=fs.readFileSync(new URL('../src/v30-app.jsx',import.meta.url),'utf8');
+if(!v30_26_vault.includes("'/trip-draft/:id/components'")) throw new Error('V30.26 components endpoint missing');
+if(!v30_26_ui.includes('refreshTripComponents')) throw new Error('V30.26 component refresh UI missing');
+if(!v30_26_ui.includes('Transport · Hébergement · Expériences · Santé & Sécurité')) throw new Error('V30.26 component labels missing');
+console.log('V30.26 structured preparation components contract: ok');
