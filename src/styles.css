@@ -122,3 +122,6 @@
 
 .v30compositionBar{display:flex;align-items:center;justify-content:space-between;gap:16px;margin:14px 0;padding:14px 16px;border:1px solid rgba(255,255,255,.1);border-radius:14px;background:rgba(255,255,255,.03)}
 .v30compositionBar div{display:flex;flex-direction:column;gap:4px}.v30compositionBar small{opacity:.65}.v30compositionBar button{border:1px solid rgba(255,255,255,.18);border-radius:10px;padding:9px 14px;background:rgba(255,255,255,.07);color:inherit;cursor:pointer}.v30compositionBar button:disabled{opacity:.5;cursor:wait}
+
+.v30dateDecision{display:flex;align-items:center;justify-content:space-between;gap:12px;margin:10px 0;padding:11px 13px;border:1px solid rgba(255,255,255,.09);border-radius:12px;background:rgba(255,255,255,.025)}
+.v30dateDecision small{opacity:.72}.v30dateDecision button{border:1px solid rgba(255,255,255,.16);border-radius:9px;padding:8px 12px;background:rgba(255,255,255,.06);color:inherit;cursor:pointer}.v30dateDecision button:disabled{opacity:.5}
