@@ -223,3 +223,8 @@ if(!v31p.includes("'/v32/trip-draft/:draftId/select-scenario'")) throw new Error
 if(!v31p.includes('decisionChanged:true')) throw new Error('V33.16 scenario decision state missing');
 if(!v31p.includes('reoptimizationSuggested:true')) throw new Error('V33.16 scenario reoptimization signal missing');
 console.log('V33.16 scenario decision freshness contract: ok');
+
+/* V33.18 recalculation freshness contract */
+if(!v31p.includes('optimizationStale')) throw new Error('V33.18 optimization freshness signal missing after recalculation');
+if(!v31p.includes('latestOptimization')) throw new Error('V33.18 latest optimization lookup missing');
+console.log('V33.18 recalculation freshness contract: ok');
