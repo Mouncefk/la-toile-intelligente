@@ -794,6 +794,18 @@ v30Router.post('/v31/reservations/:reservationId/payment-intent',async(req,res)=
  }catch(e){res.status(500).json({error:e.message})}
 });
 
+v30Router.post('/v32/globe/trip-draft/:draftId/select-component',async(req,res)=>{
+ try{
+  const type=req.body?.componentType,id=Number(req.body?.offerId);
+  if(!['transport','accommodation','experiences'].includes(type)||!Number.isInteger(id))return res.status(400).json({error:'invalid_selection'});
+  const d=await pool.query("SELECT id FROM v30_trip_drafts WHERE id=$1",[req.params.draftId]);
+  if(!d.rows[0])return res.status(404).json({error:'trip_draft_not_found'});
+  const o=await pool.query("SELECT id,title,offer_type,territory_key,price_amount,currency,booking_mode FROM v31_pro_offers WHERE id=$1 AND status='published'",[id]);
+  if(!o.rows[0])return res.status(404).json({error:'offer_not_found'});
+  const s=await pool.query("INSERT INTO v32_trip_component_selections(trip_draft_id,component_type,offer_id,metadata) VALUES($1,$2,$3,$4) RETURNING *",[d.rows[0].id,type,id,JSON.stringify(o.rows[0])]);
+  res.status(201).json({selection:s.rows[0],offer:o.rows[0],travelerDecides:true,automaticBooking:false});
+ }catch(e){res.status(500).json({error:e.message})}
+});
 v30Router.get('/v32/globe/root',async(req,res)=>{
  try{const q=await pool.query("SELECT node_key,node_type,name,hemisphere,climate_keys,latitude,longitude FROM v32_geo_nodes WHERE node_type='world' AND active=true ORDER BY name");res.json({zoomLevel:0,nodes:q.rows,navigation:'progressive'});}catch(e){res.status(500).json({error:e.message})}
 });
