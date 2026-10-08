@@ -928,6 +928,16 @@ v30Router.get('/v32/globe/:nodeKey/offers',async(req,res)=>{
   res.json({node:n.rows[0],tag:tag||null,offers:q.rows,travelerDecides:true,proposalOnly:true,automaticBooking:false});
  }catch(e){res.status(500).json({error:e.message})}
 });
+v30Router.post('/v32/trip-draft/:draftId/select-scenario',async(req,res)=>{
+ try{
+  const key=req.body?.scenarioKey;
+  if(!['comfort','balanced','discovery'].includes(key))return res.status(400).json({error:'invalid_scenario'});
+  const d=await pool.query("SELECT id FROM v30_trip_drafts WHERE id=$1",[req.params.draftId]);
+  if(!d.rows[0])return res.status(404).json({error:'trip_draft_not_found'});
+  const s=await pool.query("INSERT INTO v32_trip_scenario_selections(trip_draft_id,scenario_key,metadata) VALUES($1,$2,$3) RETURNING *",[d.rows[0].id,key,JSON.stringify({source:'globe',decision:'traveler_selected'})]);
+  res.status(201).json({selection:s.rows[0],travelerDecides:true,automaticBooking:false});
+ }catch(e){res.status(500).json({error:e.message})}
+});
 v30Router.get('/v32/trip-draft/:draftId/scenarios',async(req,res)=>{
  try{
   const d=await pool.query("SELECT id,territory_key,transport,accommodation,experiences,health_safety FROM v30_trip_drafts WHERE id=$1",[req.params.draftId]);
