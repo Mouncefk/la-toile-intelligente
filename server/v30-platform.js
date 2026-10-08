@@ -1062,6 +1062,35 @@ v30Router.get('/v32/globe/:nodeKey/overview',async(req,res)=>{
   res.json({node:x,seasonalWindows:seasons.rows,children:children.rows,tourismTags:tags.rows.map(r=>r.tourism_tag),seasonalTourismTags:seasonalTags.rows.map(r=>r.tourism_tag),month,signals:{climates:x.climate_keys||[],hemisphere:x.hemisphere,childCount:children.rowCount}});
  }catch(e){res.status(500).json({error:e.message})}
 });
+v30Router.get('/v32/trip-draft/:draftId/recalculation-history',async(req,res)=>{
+ try{
+  const d=await pool.query("SELECT id,active_scenario_key FROM v30_trip_drafts WHERE id=$1",[req.params.draftId]);
+  if(!d.rows[0])return res.status(404).json({error:'trip_draft_not_found'});
+  const q=await pool.query("SELECT id,trip_draft_id,scenario_key,score,reason,created_at,metadata FROM v32_trip_recalculation_events WHERE trip_draft_id=$1 ORDER BY created_at DESC LIMIT 50",[d.rows[0].id]);
+  res.json({tripDraftId:d.rows[0].id,activeScenario:d.rows[0].active_scenario_key,events:q.rows,count:q.rowCount,travelerDecides:true});
+ }catch(e){res.status(500).json({error:e.message})}
+});
+v30Router.get('/v32/trip-draft/:draftId/optimization-history',async(req,res)=>{
+ try{
+  const d=await pool.query("SELECT id,active_scenario_key FROM v30_trip_drafts WHERE id=$1",[req.params.draftId]);
+  if(!d.rows[0])return res.status(404).json({error:'trip_draft_not_found'});
+  const q=await pool.query("SELECT id,trip_draft_id,scenario_key,score,dimensions,created_at FROM v32_trip_optimization_snapshots WHERE trip_draft_id=$1 ORDER BY created_at DESC LIMIT 50",[d.rows[0].id]);
+  const rows=q.rows.map((row,i)=>({...row,deltaFromPrevious:i===q.rows.length-1?null:row.score-q.rows[i+1].score}));
+  res.json({tripDraftId:d.rows[0].id,activeScenario:d.rows[0].active_scenario_key,snapshots:rows,count:rows.length,travelerDecides:true});
+ }catch(e){res.status(500).json({error:e.message})}
+});
+v30Router.get('/v32/trip-draft/:draftId/optimization-diff',async(req,res)=>{
+ try{
+  const d=await pool.query("SELECT id,active_scenario_key FROM v30_trip_drafts WHERE id=$1",[req.params.draftId]);
+  if(!d.rows[0])return res.status(404).json({error:'trip_draft_not_found'});
+  const q=await pool.query("SELECT score,dimensions,created_at FROM v32_trip_optimization_snapshots WHERE trip_draft_id=$1 ORDER BY created_at DESC LIMIT 2",[d.rows[0].id]);
+  if(q.rows.length<2)return res.json({tripDraftId:d.rows[0].id,activeScenario:d.rows[0].active_scenario_key,available:false,reason:'insufficient_snapshots',travelerDecides:true});
+  const current=q.rows[0],previous=q.rows[1];
+  const prevByKey=Object.fromEntries((previous.dimensions||[]).map(x=>[x.key,x]));
+  const dimensions=(current.dimensions||[]).map(x=>({...x,previousScore:prevByKey[x.key]?.score??null,delta:prevByKey[x.key]?x.score-prevByKey[x.key].score:null}));
+  res.json({tripDraftId:d.rows[0].id,activeScenario:d.rows[0].active_scenario_key,currentScore:current.score,previousScore:previous.score,scoreDelta:current.score-previous.score,currentAt:current.created_at,previousAt:previous.created_at,dimensions,available:true,travelerDecides:true});
+ }catch(e){res.status(500).json({error:e.message})}
+});
 v30Router.get('/v32/trip-draft/:draftId/decision-memory',async(req,res)=>{
  try{
   const d=await pool.query("SELECT id,active_scenario_key FROM v30_trip_drafts WHERE id=$1",[req.params.draftId]);
