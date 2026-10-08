@@ -162,3 +162,9 @@ for(const x of ["'/v32/trip-draft/:draftId/recalculation-history'","'/v32/trip-d
 if(!v31p.includes('deltaFromPrevious')) throw new Error('V32.99 optimization history delta missing');
 if(!v31p.includes('scoreDelta')) throw new Error('V32.99 optimization diff score delta missing');
 console.log('V32.99 trip history API contract: ok');
+
+/* V33.01 decision brief state contract */
+if(!v31p.includes("'/v32/trip-draft/:draftId/decision-brief'")) throw new Error('V33.01 decision brief endpoint missing');
+if(!v31p.includes('latestOptimization')) throw new Error('V33.01 latest optimization missing from decision brief');
+if(!v31p.includes('decisionMemory:Object.values(latestMemory)')) throw new Error('V33.01 decision memory missing from decision brief');
+console.log('V33.01 decision brief state contract: ok');
