@@ -1014,8 +1014,11 @@ v30Router.get('/v32/trip-draft/:draftId/optimization',async(req,res)=>{
   }
   const decisionMemory=Object.values(latestMemory).map(row=>({proposalKey:row.proposal_key,decision:row.decision,lastAt:row.created_at}));
   const score=Math.round(dimensions.reduce((s,d)=>s+d.score*d.weight/100,0));
-  await pool.query("INSERT INTO v32_trip_optimization_snapshots(trip_draft_id,scenario_key,score,dimensions) VALUES($1,$2,$3,$4)",[x.id,x.active_scenario_key,score,JSON.stringify(dimensions)]);
-  res.json({tripDraftId:x.id,activeScenario:x.active_scenario_key,score,dimensions,decisionMemory,profileSummary:{ageGroup:profile.age_group,mobility:profile.mobility_level,partyType:profile.party_type,budget:profile.budget_level,pace:profile.pace,durationDays:profile.duration_days},travelerDecides:true,proposalOnly:true,automaticBooking:false});
+  const snapshotPayload=JSON.stringify(dimensions);
+  const previous=await pool.query("SELECT id,score,dimensions,created_at FROM v32_trip_optimization_snapshots WHERE trip_draft_id=$1 AND scenario_key IS NOT DISTINCT FROM $2 ORDER BY created_at DESC LIMIT 1",[x.id,x.active_scenario_key]);
+  const previousSame=previous.rows[0]&&Number(previous.rows[0].score)===score&&JSON.stringify(previous.rows[0].dimensions)===snapshotPayload;
+  const snapshot=previousSame?previous.rows[0]:(await pool.query("INSERT INTO v32_trip_optimization_snapshots(trip_draft_id,scenario_key,score,dimensions) VALUES($1,$2,$3,$4) RETURNING id,score,dimensions,created_at",[x.id,x.active_scenario_key,score,snapshotPayload])).rows[0];
+  res.json({tripDraftId:x.id,activeScenario:x.active_scenario_key,score,dimensions,decisionMemory,snapshotCreated:!previousSame,snapshot,profileSummary:{ageGroup:profile.age_group,mobility:profile.mobility_level,partyType:profile.party_type,budget:profile.budget_level,pace:profile.pace,durationDays:profile.duration_days},travelerDecides:true,proposalOnly:true,automaticBooking:false});
  }catch(e){res.status(500).json({error:e.message})}
 });
 v30Router.get('/v32/trip-draft/:draftId/decision-brief',async(req,res)=>{
