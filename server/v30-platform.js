@@ -928,6 +928,21 @@ v30Router.get('/v32/globe/:nodeKey/offers',async(req,res)=>{
   res.json({node:n.rows[0],tag:tag||null,offers:q.rows,travelerDecides:true,proposalOnly:true,automaticBooking:false});
  }catch(e){res.status(500).json({error:e.message})}
 });
+v30Router.get('/v32/trip-draft/:draftId/scenarios',async(req,res)=>{
+ try{
+  const d=await pool.query("SELECT id,territory_key,transport,accommodation,experiences,health_safety FROM v30_trip_drafts WHERE id=$1",[req.params.draftId]);
+  if(!d.rows[0])return res.status(404).json({error:'trip_draft_not_found'});
+  const x=d.rows[0];
+  const q=await pool.query("SELECT o.id,o.title,o.offer_type,o.price_amount,o.currency,o.booking_mode,o.specialties,o.audiences,p.name professional_name,p.verified FROM v31_pro_offers o JOIN v30_pro_profiles p ON p.id=o.professional_id WHERE o.status='published' AND (o.territory_key=$1 OR o.territory_key IN (SELECT node_key FROM v32_geo_nodes WHERE parent_key=$1)) ORDER BY p.verified DESC,o.updated_at DESC LIMIT 60",[x.territory_key]);
+  const scenarios=[
+   {key:'comfort',name:'Confort',description:'Privilégie la qualité, la simplicité et les solutions vérifiées.'},
+   {key:'balanced',name:'Équilibre',description:'Cherche un compromis entre confort, diversité et maîtrise du coût.'},
+   {key:'discovery',name:'Découverte',description:'Privilégie la diversité des expériences et l’exploration du territoire.'}
+  ];
+  for(const s of scenarios){const offers=s.key==='comfort'?q.rows.filter(o=>o.verified).slice(0,8):s.key==='discovery'?q.rows.slice(0,12):q.rows.slice(0,10);s.candidates=offers.map(o=>({offerId:o.id,title:o.title,type:o.offer_type,professional:o.professional_name,verified:o.verified,price:o.price_amount,currency:o.currency,bookingMode:o.booking_mode}));}
+  res.json({tripDraftId:x.id,scenarios,travelerDecides:true,proposalOnly:true,automaticBooking:false});
+ }catch(e){res.status(500).json({error:e.message})}
+});
 v30Router.get('/v32/trip-draft/:draftId/optimization',async(req,res)=>{
  try{
   const d=await pool.query("SELECT id,territory_key,transport,accommodation,experiences,health_safety FROM v30_trip_drafts WHERE id=$1",[req.params.draftId]);
