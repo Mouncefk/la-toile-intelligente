@@ -839,6 +839,20 @@ v30Router.get('/v32/globe/:nodeKey/climate',async(req,res)=>{
  }catch(e){res.status(500).json({error:e.message})}
 });
 
+v30Router.get('/v32/globe/:nodeKey/offers',async(req,res)=>{
+ try{
+  const n=await pool.query("SELECT node_key,name,climate_keys,hemisphere FROM v32_geo_nodes WHERE node_key=$1 AND active=true",[req.params.nodeKey]);
+  if(!n.rows[0])return res.status(404).json({error:'geo_node_not_found'});
+  const tag=(req.query.tag||'').trim();
+  const params=[req.params.nodeKey];
+  let filter="o.status='published' AND (o.territory_key=$1 OR o.territory_key IN (SELECT node_key FROM v32_geo_nodes WHERE parent_key=$1))";
+  if(tag){params.push(tag);filter+=" AND ($2=ANY(o.specialties) OR $2=ANY(o.audiences))";}
+  const q=await pool.query(`SELECT o.id,o.title,o.description,o.offer_type,o.territory_key,o.price_amount,o.currency,o.booking_mode,o.specialties,o.audiences,p.name professional_name,p.verified,p.pro_type
+   FROM v31_pro_offers o JOIN v30_pro_profiles p ON p.id=o.professional_id
+   WHERE ${filter} ORDER BY p.verified DESC,o.updated_at DESC LIMIT 30`,params);
+  res.json({node:n.rows[0],tag:tag||null,offers:q.rows,travelerDecides:true,proposalOnly:true,automaticBooking:false});
+ }catch(e){res.status(500).json({error:e.message})}
+});
 v30Router.get('/v32/globe/:nodeKey/overview',async(req,res)=>{
  try{
   const n=await pool.query("SELECT node_key,node_type,name,country_iso3,hemisphere,climate_keys,latitude,longitude,metadata FROM v32_geo_nodes WHERE node_key=$1 AND active=true",[req.params.nodeKey]);
