@@ -33,7 +33,8 @@
     "test:v29-18:global-climate": "node scripts/test-v29-18-global-climate.mjs",
     "test:v29-19:spatial-grid": "node scripts/test-v29-19-spatial-climate-grid.mjs",
     "test:v30:first-platform": "node scripts/test-v30-first-platform.mjs",
-    "check:v30": "node --check server/v30-platform.js && node --check server/index-v27.js && node --check scripts/test-v30-first-platform.mjs"
+    "check:v30": "node --check server/v30-platform.js && node --check server/index-v27.js && node --check scripts/test-v30-first-platform.mjs",
+    "check:v33": "node --check server/v30-platform.js && node --check scripts/test-v30-first-platform.mjs"
   },
   "dependencies": {
     "@vitejs/plugin-react": "latest",
