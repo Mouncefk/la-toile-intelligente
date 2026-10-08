@@ -954,9 +954,13 @@ v30Router.post('/v32/trip-draft/:draftId/select-scenario',async(req,res)=>{
   if(!['comfort','balanced','discovery'].includes(key))return res.status(400).json({error:'invalid_scenario'});
   const d=await pool.query("SELECT id FROM v30_trip_drafts WHERE id=$1",[req.params.draftId]);
   if(!d.rows[0])return res.status(404).json({error:'trip_draft_not_found'});
-  const s=await pool.query("INSERT INTO v32_trip_scenario_selections(trip_draft_id,scenario_key,metadata) VALUES($1,$2,$3) RETURNING *",[d.rows[0].id,key,JSON.stringify({source:'globe',decision:'traveler_selected'})]);
-  const active=await pool.query("UPDATE v30_trip_drafts SET active_scenario_key=$1,updated_at=now() WHERE id=$2 RETURNING id,active_scenario_key,updated_at",[key,d.rows[0].id]);
-  res.status(201).json({selection:s.rows[0],activeScenario:active.rows[0],decisionChanged:true,reoptimizationSuggested:true,travelerDecides:true,automaticBooking:false});
+  const current=await pool.query("SELECT id,active_scenario_key,updated_at FROM v30_trip_drafts WHERE id=$1",[d.rows[0].id]);
+  const wasSame=current.rows[0].active_scenario_key===key;
+  const s=wasSame
+    ? await pool.query("SELECT id,trip_draft_id,scenario_key,selected_at,metadata FROM v32_trip_scenario_selections WHERE trip_draft_id=$1 AND scenario_key=$2 ORDER BY selected_at DESC LIMIT 1",[d.rows[0].id,key])
+    : await pool.query("INSERT INTO v32_trip_scenario_selections(trip_draft_id,scenario_key,metadata) VALUES($1,$2,$3) RETURNING *",[d.rows[0].id,key,JSON.stringify({source:'globe',decision:'traveler_selected'})]);
+  const active=wasSame ? current : await pool.query("UPDATE v30_trip_drafts SET active_scenario_key=$1,updated_at=now() WHERE id=$2 RETURNING id,active_scenario_key,updated_at",[key,d.rows[0].id]);
+  res.status(wasSame?200:201).json({selection:s.rows[0]||null,activeScenario:active.rows[0],decisionChanged:!wasSame,reoptimizationSuggested:!wasSame,travelerDecides:true,automaticBooking:false});
  }catch(e){res.status(500).json({error:e.message})}
 });
 v30Router.get('/v32/trip-draft/:draftId/scenarios',async(req,res)=>{
