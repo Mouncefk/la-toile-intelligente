@@ -13,6 +13,11 @@ const fallbackTerritories=[
 
 const scopeLabel={local:'Local',regional:'Régional',national:'National',international:'International',global:'Mondial'};
 async function v30fetch(url,options){const r=await fetch(url,options);const d=await r.json().catch(()=>({}));if(!r.ok)throw new Error(d.error||'Service V30 indisponible');return d}
+function TripRecalculationPanel({draftId}){
+ const [data,setData]=useState(null);
+ const run=async()=>{if(!draftId)return;try{const x=await v30fetch('/api/platform/v30/v32/trip-draft/'+draftId+'/recalculate',{method:'POST',headers:{'Content-Type':'application/json'},body:'{}'});setData(x)}catch(_){setData(null)}};
+ return <div className="v32Recalc"><small>RÉÉVALUER LE VOYAGE</small><button onClick={run}>Recalculer après modification</button>{data&&<span>{data.score}% · recalcul effectué</span>}</div>
+}
 function TripScenariosPanel({draftId}){
  const [data,setData]=useState(null);
  useEffect(()=>{if(!draftId)return;v30fetch('/api/platform/v30/v32/trip-draft/'+draftId+'/scenarios').then(setData).catch(()=>setData(null))},[draftId]);
