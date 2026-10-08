@@ -156,3 +156,9 @@ if(!v31p.includes("'/v32/trip-draft/:draftId/recalculate'")) throw new Error('V3
 if(!v31p.includes('v32_trip_recalculation_events')) throw new Error('V32.97 recalculation event persistence missing');
 if(!v31p.includes('traveler_action')) throw new Error('V32.97 traveler recalculation source missing');
 console.log('V32.97 recalculation event contract: ok');
+
+/* V32.99 trip history API contract */
+for(const x of ["'/v32/trip-draft/:draftId/recalculation-history'","'/v32/trip-draft/:draftId/optimization-history'","'/v32/trip-draft/:draftId/optimization-diff'"]) if(!v31p.includes(x)) throw new Error('V32.99 history endpoint missing: '+x);
+if(!v31p.includes('deltaFromPrevious')) throw new Error('V32.99 optimization history delta missing');
+if(!v31p.includes('scoreDelta')) throw new Error('V32.99 optimization diff score delta missing');
+console.log('V32.99 trip history API contract: ok');
