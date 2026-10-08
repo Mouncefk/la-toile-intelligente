@@ -17,7 +17,7 @@ function TripImprovementPanel({draftId}){
  const [data,setData]=useState(null);
  useEffect(()=>{if(!draftId)return;v30fetch('/api/platform/v30/v32/trip-draft/'+draftId+'/improvement-proposals').then(setData).catch(()=>setData(null))},[draftId]);
  if(!data?.proposals?.length)return null;
- return <div className="v32Improvements"><small>AMÉLIORATIONS PROPOSÉES</small>{data.proposals.map(p=><div key={p.key}><b>{p.priority}</b><strong>{p.action}</strong><span>{p.reason}</span><em>{p.expectedImpact.join(' · ')}</em></div>)}<i>Propositions uniquement — le voyageur décide.</i></div>
+ return <div className="v32Improvements"><small>AMÉLIORATIONS PROPOSÉES</small>{data.proposals.map(p=><div key={p.key}><b>{p.priority}</b><strong>{p.action}</strong><span>{p.reason}</span><em>{p.expectedImpact.join(' · ')}{p.previousFeedback?' · déjà '+p.previousFeedback:''}</em><button onClick={async()=>{if(!window.v30TripDraftId)return;await v30fetch('/api/platform/v30/v32/trip-draft/'+window.v30TripDraftId+'/improvement-feedback',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({proposalKey:p.key,decision:'rejected'})});setData({...data,proposals:data.proposals.filter(x=>x.key!==p.key)})}}>Ne pas proposer</button></div>)}<i>Propositions uniquement — le voyageur décide.</i></div>
 }
 function TripOptimizationDiffPanel({draftId}){
  const [data,setData]=useState(null);
