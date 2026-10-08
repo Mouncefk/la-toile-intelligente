@@ -232,3 +232,9 @@ console.log('V33.18 recalculation freshness contract: ok');
 /* V33.20 freshness comparison contract */
 if(!v31p.includes("new Date(latestOptimization.rows[0].created_at)<new Date(x.updated_at)")) throw new Error('V33.20 stale comparison is not timestamp-based');
 console.log('V33.20 freshness comparison contract: ok');
+
+/* V33.22 idempotent scenario selection contract */
+if(!v31p.includes('wasSame')) throw new Error('V33.22 same-scenario guard missing');
+if(!v31p.includes('decisionChanged:!wasSame')) throw new Error('V33.22 scenario decision idempotency missing');
+if(!v31p.includes('reoptimizationSuggested:!wasSame')) throw new Error('V33.22 scenario reoptimization idempotency missing');
+console.log('V33.22 idempotent scenario selection contract: ok');
