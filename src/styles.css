@@ -156,3 +156,5 @@
 .v32RealGeometry{position:absolute;inset:0;width:100%;height:100%;z-index:2;pointer-events:none;overflow:visible}
 .v32RealGeometry path{fill:rgba(88,168,116,.12);stroke:rgba(170,224,255,.78);stroke-width:.34;vector-effect:non-scaling-stroke;filter:drop-shadow(0 0 2px rgba(100,190,255,.45))}
 .v32Sphere3D .v32Dot{z-index:6}
+
+.v32Overview{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin:12px 0}.v32Overview>div{padding:10px;border:1px solid rgba(255,255,255,.08);border-radius:12px;background:rgba(255,255,255,.025)}.v32Overview b{display:block;font-size:20px;color:#fff}.v32Overview small{color:rgba(255,255,255,.48);font-size:10px}@media(max-width:600px){.v32Overview{grid-template-columns:1fr}}
