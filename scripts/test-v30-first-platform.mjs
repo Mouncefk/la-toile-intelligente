@@ -142,3 +142,11 @@ if(!v31p.includes('status_transition_use_action_endpoint'))throw new Error('V31 
 const v31t=fs.readFileSync(new URL('../database/seed/41_v31_transactions.sql',import.meta.url),'utf8');
 if(!v31t.includes('v31_transaction_intents'))throw new Error('V31 transaction schema missing');
 console.log('V31 reservation lifecycle contracts: ok');
+
+/* V32.94-V32.95 trip decision memory contract */
+if(!v31p.includes("'/v32/trip-draft/:draftId/decision-memory'")) throw new Error('V32.94 decision-memory endpoint missing');
+if(!v31p.includes("scope:'trip_draft'")||!v31p.includes('reusableTravelerMemory:false')) throw new Error('V32.94 trip-only memory boundary missing');
+if(!v31p.includes('decisionMemory')) throw new Error('V32.95 optimization decision memory missing');
+if(!v31p.includes("memoryDimension")) throw new Error('V32.95 memory-to-dimension mapping missing');
+if(!v31p.includes("row.decision==='accepted'?6:-6")) throw new Error('V32.95 accepted/rejected optimization adjustment missing');
+console.log('V32.94-V32.95 trip decision memory contract: ok');
