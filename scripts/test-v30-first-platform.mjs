@@ -179,3 +179,9 @@ if(!v31p.includes('snapshotCreated')) throw new Error('V33.05 snapshot creation 
 if(!v31p.includes('previousSame')) throw new Error('V33.05 duplicate snapshot guard missing');
 if(!v31p.includes('IS NOT DISTINCT FROM')) throw new Error('V33.05 scenario null-safe comparison missing');
 console.log('V33.05 optimization snapshot idempotency contract: ok');
+
+/* V33.07 improvement feedback action contract */
+if(!v31p.includes("'/v32/trip-draft/:draftId/improvement-feedback'")) throw new Error('V33.07 feedback endpoint missing');
+if(!v31p.includes("['accepted','rejected','deferred']")) throw new Error('V33.07 feedback decision validation missing');
+if(!v31p.includes("reusableTravelerMemory:false")) throw new Error('V33.07 trip-only feedback boundary missing');
+console.log('V33.07 improvement feedback action contract: ok');
