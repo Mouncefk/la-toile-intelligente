@@ -743,7 +743,823 @@ v30Router.get('/pro/matches/:proId', async (req,res) => {
 });
 v30Router.get('/v31/professionals/:proId/offers', async (req,res)=>{ const q=await safeQuery(res,`SELECT o.*,p.name professional_name,p.verified,p.pro_type FROM v31_pro_offers o JOIN v30_pro_profiles p ON p.id=o.professional_id WHERE o.professional_id=$1 AND o.status<>'archived' ORDER BY o.updated_at DESC`,[req.params.proId]); if(q) res.json({professionalId:Number(req.params.proId),offers:q.rows}); });
 v30Router.post('/v31/professionals/:proId/offers', async (req,res)=>{ const b=req.body||{}; const q=await safeQuery(res,`INSERT INTO v31_pro_offers(professional_id,territory_key,title,description,offer_type,specialties,audiences,inclusions,exclusions,price_amount,currency,capacity_min,capacity_max,booking_mode,status,public_contact,metadata) VALUES($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,$15,$16,$17) RETURNING *`,[req.params.proId,b.territoryKey,b.title,b.description||null,b.offerType||'experience',b.specialties||[],b.audiences||[],b.inclusions||[],b.exclusions||[],b.priceAmount??null,b.currency||null,b.capacityMin||1,b.capacityMax??null,b.bookingMode||'request',b.status||'draft',b.publicContact||{},b.metadata||{}]); if(q) res.status(201).json({offer:q.rows[0]}); });
-v30Router.patch('/v31/offers/:offerId', async (req,res)=>{ const b=req.body||{},map={title:'title',description:'description',offerType:'offer_type',specialties:'specialties',audiences:'audiences',inclusions:'inclusions',exclusions:'exclusions',priceAmount:'price_amount',currency:'currency',capacityMin:'capacity_min',capacityMax:'capacity_max',bookingMode:'booking_mode',status:'status',publicContact:'public_contact',metadata:'metadata'},sets=[],vals=[]; for(const [k,col] of Object.entries(map)) if(b[k]!==undefined){sets.push(col+'=, (_req, res) => res.json({ ok: true, version: '30.2', router: 'v30-platform' }));
+v30Router.patch('/v31/offers/:offerId', async (req,res)=>{ const b=req.body||{},map={title:'title',description:'description',offerType:'offer_type',specialties:'specialties',audiences:'audiences',inclusions:'inclusions',exclusions:'exclusions',priceAmount:'price_amount',currency:'currency',capacityMin:'capacity_min',capacityMax:'capacity_max',bookingMode:'booking_mode',status:'status',publicContact:'public_contact',metadata:'metadata'},sets=[],vals=[]; for(const [k,col] of Object.entries(map)) if(b[k]!==undefined){sets.push(col+'=+(vals.length+1));vals.push(b[k])}; if(!sets.length)return res.status(400).json({error:'no_updates'}); vals.push(req.params.offerId); const q=await safeQuery(res,'UPDATE v31_pro_offers SET '+sets.join(',')+',updated_at=now() WHERE id=, (_req, res) => res.json({ ok: true, version: '30.2', router: 'v30-platform' }));
++vals.length+' RETURNING *',vals); if(q&&!q.rows[0])return res.status(404).json({error:'offer_not_found'}); if(q)res.json({offer:q.rows[0]}); });
+v30Router.post('/v31/offers/:offerId/availability', async (req,res)=>{ const b=req.body||{}; if(!b.availableFrom||!b.availableTo)return res.status(400).json({error:'availability_window_required'}); const q=await safeQuery(res,'INSERT INTO v31_offer_availability(offer_id,available_from,available_to,capacity,booked,status,metadata) VALUES($1,$2,$3,$4,0,$5,$6) RETURNING *',[req.params.offerId,b.availableFrom,b.availableTo,b.capacity||1,b.status||'open',b.metadata||{}]); if(q)res.status(201).json({availability:q.rows[0]}); });
+v30Router.get('/v31/offers/:offerId/availability', async (req,res)=>{ const q=await safeQuery(res,'SELECT * FROM v31_offer_availability WHERE offer_id=$1 ORDER BY available_from',[req.params.offerId]); if(q)res.json({offerId:Number(req.params.offerId),availability:q.rows}); });
+v30Router.get('/v31/session/:sessionId/offers', async (req,res)=>{ try{const s=await pool.query('SELECT * FROM v30_traveler_sessions WHERE id=$1',[req.params.sessionId]);if(!s.rows[0])return res.status(404).json({error:'session_not_found'});const session=s.rows[0],p=(await pool.query('SELECT * FROM v30_traveler_profiles WHERE session_id=$1',[req.params.sessionId])).rows[0]||{},intent=(await pool.query('SELECT intent FROM v30_traveler_intents WHERE session_id=$1 ORDER BY created_at DESC LIMIT 1',[req.params.sessionId])).rows[0]?.intent||{};const q=await pool.query(`SELECT o.*,p.name professional_name,p.verified,p.pro_type,COALESCE(a.next_available,NULL) next_available,(CASE WHEN o.territory_key=$2 THEN 25 ELSE 0 END+CASE WHEN o.audiences && $3::text[] THEN 20 ELSE 0 END+CASE WHEN o.specialties && $4::text[] THEN 25 ELSE 0 END+CASE WHEN o.status='published' THEN 15 ELSE 0 END+CASE WHEN p.verified THEN 10 ELSE 0 END) AS match_score FROM v31_pro_offers o JOIN v30_pro_profiles p ON p.id=o.professional_id LEFT JOIN LATERAL(SELECT MIN(available_from) next_available FROM v31_offer_availability av WHERE av.offer_id=o.id AND av.status='open' AND av.booked<av.capacity AND av.available_to>=now()) a ON true WHERE o.status='published' ORDER BY match_score DESC,o.updated_at DESC LIMIT 50`,[req.params.sessionId,session.territory_key,p.party_type?[p.party_type]:[],intent.activity?[intent.activity]:[]]);res.json({sessionId:Number(req.params.sessionId),territoryKey:session.territory_key,offers:q.rows,travelerDecides:true,proposalOnly:true});}catch(e){res.status(500).json({error:e.message})} });
+v30Router.post('/v31/session/:sessionId/reservations',async(req,res)=>{
+ try{
+  const s=await pool.query('SELECT id FROM v30_traveler_sessions WHERE id=$1',[req.params.sessionId]);if(!s.rows[0])return res.status(404).json({error:'session_not_found'});
+  const b=req.body||{},o=await pool.query("SELECT id FROM v31_pro_offers WHERE id=$1 AND status='published'",[b.offerId]);if(!o.rows[0])return res.status(404).json({error:'offer_not_found_or_not_published'});
+  const party=Math.max(1,Number(b.partySize)||1);
+  if(b.requestedFrom&&b.requestedTo&&new Date(b.requestedTo)<=new Date(b.requestedFrom))return res.status(400).json({error:'invalid_reservation_window'});
+  if(b.availabilityId){const av=await pool.query("SELECT id,offer_id,available_from,available_to,capacity,booked,status FROM v31_offer_availability WHERE id=$1",[b.availabilityId]);const a=av.rows[0];if(!a||Number(a.offer_id)!==Number(b.offerId))return res.status(400).json({error:'availability_offer_mismatch'});if(a.status!=='open'||Number(a.booked)+party>Number(a.capacity))return res.status(409).json({error:'capacity_unavailable'});if(b.requestedFrom&&new Date(b.requestedFrom)<new Date(a.available_from))return res.status(400).json({error:'outside_availability_window'});if(b.requestedTo&&new Date(b.requestedTo)>new Date(a.available_to))return res.status(400).json({error:'outside_availability_window'})}
+  const q=await pool.query('INSERT INTO v31_reservation_requests(traveler_session_id,offer_id,availability_id,requested_from,requested_to,party_size,traveler_note) VALUES($1,$2,$3,$4,$5,$6,$7) RETURNING *',[req.params.sessionId,b.offerId,b.availabilityId||null,b.requestedFrom||null,b.requestedTo||null,party,b.travelerNote||null]);
+  res.status(201).json({reservation:q.rows[0],status:'requested',travelerDecides:true,automaticBooking:false});
+ }catch(err){res.status(500).json({error:err.message})}
+});
+v30Router.get('/v31/session/:sessionId/reservations',async(req,res)=>{
+ const q=await safeQuery(res,'SELECT r.*,o.title offer_title,p.name professional_name FROM v31_reservation_requests r JOIN v31_pro_offers o ON o.id=r.offer_id JOIN v30_pro_profiles p ON p.id=o.professional_id WHERE r.traveler_session_id=$1 ORDER BY r.created_at DESC',[req.params.sessionId]);
+ if(q)res.json({reservations:q.rows,travelerDecides:true});
+});
+v30Router.get('/v31/professionals/:proId/reservations',async(req,res)=>{
+ const q=await safeQuery(res,'SELECT r.*,o.title offer_title,ts.country_iso3 FROM v31_reservation_requests r JOIN v31_pro_offers o ON o.id=r.offer_id JOIN v30_traveler_sessions ts ON ts.id=r.traveler_session_id WHERE o.professional_id=$1 ORDER BY r.created_at DESC',[req.params.proId]);
+ if(q)res.json({professionalId:Number(req.params.proId),reservations:q.rows});
+});
+v30Router.patch('/v31/reservations/:reservationId',async(req,res)=>{
+ if(req.body?.status!==undefined)return res.status(400).json({error:'status_transition_use_action_endpoint'});
+ const map={priceAmount:'price_amount',currency:'currency',professionalNote:'professional_note'},sets=[],vals=[];
+ for(const [k,col] of Object.entries(map))if(req.body?.[k]!==undefined){sets.push(col+'=$'+(vals.length+1));vals.push(req.body[k])}
+ if(!sets.length)return res.status(400).json({error:'no_updates'});
+ vals.push(req.params.reservationId);
+ const q=await safeQuery(res,'UPDATE v31_reservation_requests SET '+sets.join(',')+',updated_at=now() WHERE id=$'+vals.length+' AND status NOT IN ('+"'cancelled'"+','+"'expired'"+') RETURNING *',vals);
+ if(q&&!q.rows[0])return res.status(404).json({error:'reservation_not_found_or_closed'});if(q)res.json({reservation:q.rows[0]});
+});
+
+
+v30Router.post('/v31/reservations/:reservationId/confirm',async(req,res)=>{try{const c=await pool.connect();try{await c.query('BEGIN');const q=await c.query("SELECT r.* FROM v31_reservation_requests r WHERE r.id=$1 FOR UPDATE",[req.params.reservationId]);if(!q.rows[0]){await c.query('ROLLBACK');return res.status(404).json({error:'reservation_not_found'})}const x=q.rows[0];if(!['requested','proposed'].includes(x.status)){await c.query('ROLLBACK');return res.status(409).json({error:'reservation_not_confirmable',status:x.status})} if(x.requested_from&&x.requested_to&&new Date(x.requested_to)<=new Date(x.requested_from)){await c.query('ROLLBACK');return res.status(400).json({error:'invalid_reservation_window'})}if(x.availability_id){const a=(await c.query("SELECT * FROM v31_offer_availability WHERE id=$1 FOR UPDATE",[x.availability_id])).rows[0];if(!a||a.status!=='open'||Number(a.booked)+Number(x.party_size)>Number(a.capacity)){await c.query('ROLLBACK');return res.status(409).json({error:'capacity_unavailable'})}await c.query("UPDATE v31_offer_availability SET booked=booked+$1,status=CASE WHEN booked+$1>=capacity THEN 'sold_out' ELSE status END WHERE id=$2",[x.party_size,x.availability_id])}const u=await c.query("UPDATE v31_reservation_requests SET status='confirmed',updated_at=now() WHERE id=$1 RETURNING *",[x.id]);await c.query("INSERT INTO v31_reservation_events(reservation_id,from_status,to_status,actor_type,note) VALUES($1,$2,'confirmed','traveler',$3)",[x.id,x.status,req.body?.note||null]);await c.query('COMMIT');res.json({reservation:u.rows[0],status:'confirmed',capacityReserved:Boolean(x.availability_id),travelerDecides:true,automaticBooking:false});}catch(e){await c.query('ROLLBACK').catch(()=>{});throw e}finally{c.release()}}catch(e){res.status(500).json({error:e.message})}});
+v30Router.post('/v31/reservations/:reservationId/cancel',async(req,res)=>{try{const c=await pool.connect();try{await c.query('BEGIN');const q=await c.query("SELECT * FROM v31_reservation_requests WHERE id=$1 FOR UPDATE",[req.params.reservationId]);if(!q.rows[0]){await c.query('ROLLBACK');return res.status(404).json({error:'reservation_not_found'})}const x=q.rows[0];if(!['requested','proposed','confirmed'].includes(x.status)){await c.query('ROLLBACK');return res.status(409).json({error:'reservation_not_cancellable',status:x.status})}if(x.status==='confirmed'&&x.availability_id)await c.query("UPDATE v31_offer_availability SET booked=GREATEST(0,booked-$1),status=CASE WHEN booked-$1<capacity THEN 'open' ELSE status END WHERE id=$2",[x.party_size,x.availability_id]);const u=await c.query("UPDATE v31_reservation_requests SET status='cancelled',updated_at=now() WHERE id=$1 RETURNING *",[x.id]);await c.query("INSERT INTO v31_reservation_events(reservation_id,from_status,to_status,actor_type,note) VALUES($1,$2,'cancelled',$3,$4)",[x.id,x.status,req.body?.actorType==='professional'?'professional':'traveler',req.body?.note||null]);await c.query('COMMIT');res.json({reservation:u.rows[0],status:'cancelled',capacityReleased:x.status==='confirmed'&&Boolean(x.availability_id)});}catch(e){await c.query('ROLLBACK').catch(()=>{});throw e}finally{c.release()}}catch(e){res.status(500).json({error:e.message})}});
+
+v30Router.post('/v31/reservations/:reservationId/payment-intent',async(req,res)=>{
+ try{
+  const q=await pool.query("SELECT id,status,price_amount,currency FROM v31_reservation_requests WHERE id=$1",[req.params.reservationId]);
+  if(!q.rows[0])return res.status(404).json({error:'reservation_not_found'});
+  const x=q.rows[0];if(x.status!=='confirmed')return res.status(409).json({error:'reservation_not_confirmed',status:x.status});
+  const requestedAmount=req.body?.amount!==undefined?Number(req.body.amount):null;
+  const amount=x.price_amount!==null&&x.price_amount!==undefined?Number(x.price_amount):(requestedAmount??0);
+  const currency=x.currency||req.body?.currency;
+  if(x.price_amount!==null&&x.price_amount!==undefined&&requestedAmount!==null&&requestedAmount!==amount)return res.status(409).json({error:'payment_amount_mismatch',reservationAmount:amount});
+  if(x.currency&&req.body?.currency&&req.body.currency!==x.currency)return res.status(409).json({error:'payment_currency_mismatch',reservationCurrency:x.currency});
+  if(!currency)return res.status(400).json({error:'currency_required'});if(!Number.isFinite(amount)||amount<0)return res.status(400).json({error:'invalid_amount'});
+  const mode=['direct','escrow','external'].includes(req.body?.paymentMode)?req.body.paymentMode:'direct';
+  const i=await pool.query("INSERT INTO v31_transaction_intents(reservation_id,amount,currency,payment_mode,provider,metadata) VALUES($1,$2,$3,$4,$5,$6) ON CONFLICT(reservation_id) DO UPDATE SET amount=EXCLUDED.amount,currency=EXCLUDED.currency,payment_mode=EXCLUDED.payment_mode,provider=EXCLUDED.provider,updated_at=now() RETURNING *",[x.id,amount,currency,mode,req.body?.provider||null,req.body?.metadata||{}]);
+  res.status(201).json({paymentIntent:i.rows[0],paymentRequired:amount>0,automaticPayment:false,travelerDecides:true});
+ }catch(e){res.status(500).json({error:e.message})}
+});
+
+v30Router.post('/v32/globe/trip-draft/:draftId/select-component',async(req,res)=>{
+ try{
+  const type=req.body?.componentType,id=Number(req.body?.offerId);
+  if(!['transport','accommodation','experiences'].includes(type)||!Number.isInteger(id))return res.status(400).json({error:'invalid_selection'});
+  const d=await pool.query("SELECT id FROM v30_trip_drafts WHERE id=$1",[req.params.draftId]);
+  if(!d.rows[0])return res.status(404).json({error:'trip_draft_not_found'});
+  const o=await pool.query("SELECT id,title,offer_type,territory_key,price_amount,currency,booking_mode FROM v31_pro_offers WHERE id=$1 AND status='published'",[id]);
+  if(!o.rows[0])return res.status(404).json({error:'offer_not_found'});
+  const x=d.rows[0];
+  const col=type==='transport'?'transport':type==='accommodation'?'accommodation':'experiences';
+  const current=await pool.query(`SELECT ${col} FROM v30_trip_drafts WHERE id=$1`,[x.id]);
+  const currentValue=current.rows[0]?.[col];
+  const currentOfferId=type==='experiences'
+    ? (Array.isArray(currentValue)&&currentValue[0]?.id!=null?Number(currentValue[0].id):null)
+    : (currentValue?.id!=null?Number(currentValue.id):null);
+  const wasSame=currentOfferId===id;
+  const s=wasSame
+    ? await pool.query("SELECT * FROM v32_trip_component_selections WHERE trip_draft_id=$1 AND component_type=$2 AND offer_id=$3 ORDER BY selected_at DESC LIMIT 1",[x.id,type,id])
+    : await pool.query("INSERT INTO v32_trip_component_selections(trip_draft_id,component_type,offer_id,metadata) VALUES($1,$2,$3,$4) RETURNING *",[x.id,type,id,JSON.stringify(o.rows[0])]);
+  const value=type==='experiences'?[o.rows[0]]:o.rows[0];
+  const updated=wasSame
+    ? await pool.query(`SELECT id,${col},updated_at FROM v30_trip_drafts WHERE id=$1`,[x.id])
+    : await pool.query(`UPDATE v30_trip_drafts SET ${col}=$1::jsonb,updated_at=now() WHERE id=$2 RETURNING id,${col},updated_at`,[JSON.stringify(value),x.id]);
+  res.status(wasSame?200:201).json({selection:s.rows[0]||null,offer:o.rows[0],tripDraftUpdate:updated.rows[0],selectionChanged:!wasSame,reoptimizationSuggested:!wasSame,travelerDecides:true,automaticBooking:false});
+ }catch(e){res.status(500).json({error:e.message})}
+});
+v30Router.get('/v32/trip-draft/:draftId/readiness',async(req,res)=>{
+ try{
+  const d=await pool.query("SELECT id,title,status,territory_key,transport,accommodation,experiences,health_safety FROM v30_trip_drafts WHERE id=$1",[req.params.draftId]);
+  if(!d.rows[0])return res.status(404).json({error:'trip_draft_not_found'});
+  const x=d.rows[0],missing=[];
+  if(!x.territory_key)missing.push('territory');
+  if(!x.transport||!Object.keys(x.transport).length)missing.push('transport');
+  if(!x.accommodation||!Object.keys(x.accommodation).length)missing.push('accommodation');
+  if(!Array.isArray(x.experiences)||!x.experiences.length)missing.push('experiences');
+  if(!Array.isArray(x.health_safety)||!x.health_safety.length)missing.push('health_safety');
+  res.json({tripDraftId:x.id,missing,completeness:Math.round((5-missing.length)/5*100),readyForDecision:missing.length===0,travelerDecides:true,proposalOnly:true,automaticBooking:false});
+ }catch(e){res.status(500).json({error:e.message})}
+});
+v30Router.get('/v32/trip-draft/:draftId/preparation',async(req,res)=>{
+ try{
+  const d=await pool.query("SELECT id,title,status,territory_key,transport,accommodation,experiences,health_safety FROM v30_trip_drafts WHERE id=$1",[req.params.draftId]);
+  if(!d.rows[0])return res.status(404).json({error:'trip_draft_not_found'});
+  const x=d.rows[0];
+  const profile=await pool.query("SELECT p.traveler_type,p.age_group,p.mobility_level,p.party_type,p.party_size,p.budget_level,p.pace,p.duration_days,p.accessibility_needs,p.preferences,p.constraints FROM v30_traveler_profiles p JOIN v30_trip_drafts t ON t.session_id=p.session_id WHERE t.id=$1",[x.id]);
+  const travelerProfile=profile.rows[0]||null;
+  const fitSignals=[];
+  if(travelerProfile){if(travelerProfile.mobility_level&&travelerProfile.mobility_level!=='independent')fitSignals.push({key:'mobility',label:'Vérifier l’accessibilité des solutions',priority:'high'});if(travelerProfile.age_group==='senior')fitSignals.push({key:'senior',label:'Privilégier confort, rythme et périodes tempérées',priority:'medium'});if(travelerProfile.party_type==='family')fitSignals.push({key:'family',label:'Vérifier les solutions adaptées aux enfants',priority:'medium'});if(travelerProfile.constraints?.length)fitSignals.push({key:'constraints',label:'Prendre en compte les contraintes déclarées',priority:'high'});if(travelerProfile.budget_level)fitSignals.push({key:'budget',label:'Vérifier que le coût total reste dans le niveau de budget choisi',priority:'medium'});if(travelerProfile.duration_days)fitSignals.push({key:'duration',label:'Vérifier que les composants couvrent la durée prévue',priority:'medium'});if(travelerProfile.pace)fitSignals.push({key:'pace',label:'Vérifier la compatibilité entre le rythme souhaité et les expériences choisies',priority:'medium'});if(travelerProfile.preferences?.length)fitSignals.push({key:'preferences',label:'Comparer les offres avec les préférences déclarées',priority:'medium'});}
+  const s=await pool.query("SELECT component_type,COUNT(*)::int count FROM v32_trip_component_selections WHERE trip_draft_id=$1 GROUP BY component_type",[x.id]);
+  const counts={transport:0,accommodation:0,experiences:0};for(const row of s.rows)counts[row.component_type]=row.count;
+  const checklist=[
+   {key:'territory',label:'Territoire',done:Boolean(x.territory_key)},
+   {key:'transport',label:'Transport',done:Boolean(x.transport&&Object.keys(x.transport).length)||counts.transport>0},
+   {key:'accommodation',label:'Hébergement',done:Boolean(x.accommodation&&Object.keys(x.accommodation).length)||counts.accommodation>0},
+   {key:'experiences',label:'Expériences',done:Array.isArray(x.experiences)&&x.experiences.length>0||counts.experiences>0},
+   {key:'health_safety',label:'Santé & Sécurité',done:Array.isArray(x.health_safety)&&x.health_safety.length>0}
+  ];
+  const done=checklist.filter(i=>i.done).length;
+  res.json({tripDraft:x,travelerProfile,fitSignals,componentSelectionCounts:counts,checklist,completeness:Math.round(done/checklist.length*100),travelerDecides:true,proposalOnly:true,automaticBooking:false});
+ }catch(e){res.status(500).json({error:e.message})}
+});
+v30Router.get('/v32/trip-draft/:draftId/component-selections',async(req,res)=>{
+ try{
+  const d=await pool.query("SELECT id,title,status,territory_key,transport,accommodation,experiences,health_safety FROM v30_trip_drafts WHERE id=$1",[req.params.draftId]);
+  if(!d.rows[0])return res.status(404).json({error:'trip_draft_not_found'});
+  const q=await pool.query("SELECT id,component_type,offer_id,selected_at,metadata FROM v32_trip_component_selections WHERE trip_draft_id=$1 ORDER BY selected_at DESC",[d.rows[0].id]);
+  const grouped={transport:[],accommodation:[],experiences:[]};for(const x of q.rows)grouped[x.component_type].push(x);
+  res.json({tripDraft:d.rows[0],selections:q.rows,grouped,decisionBoundary:{travelerDecides:true,automaticBooking:false}});
+ }catch(e){res.status(500).json({error:e.message})}
+});
+v30Router.post('/v32/trip-draft/:draftId/revise-component',async(req,res)=>{
+ try{
+  const type=req.body?.componentType,id=Number(req.body?.offerId);
+  if(!['transport','accommodation','experiences'].includes(type)||!Number.isInteger(id))return res.status(400).json({error:'invalid_component'});
+  const d=await pool.query("SELECT id,transport,accommodation,experiences FROM v30_trip_drafts WHERE id=$1",[req.params.draftId]);
+  if(!d.rows[0])return res.status(404).json({error:'trip_draft_not_found'});
+  const o=await pool.query("SELECT id,title,offer_type,territory_key,price_amount,currency,booking_mode FROM v31_pro_offers WHERE id=$1 AND status='published'",[id]);
+  if(!o.rows[0])return res.status(404).json({error:'offer_not_found'});
+  const x=d.rows[0],col=type==='transport'?'transport':type==='accommodation'?'accommodation':'experiences';
+  const prev=x[col]; const next=type==='experiences'?[o.rows[0]]:o.rows[0];
+  const previousId=type==='experiences'?(Array.isArray(prev)&&prev[0]?.id||null):(prev?.id||null);
+  const wasSame=previousId===id;
+  if(wasSame){
+    const latest=await pool.query("SELECT * FROM v32_trip_component_revisions WHERE trip_draft_id=$1 AND component_type=$2 AND new_offer_id=$3 ORDER BY created_at DESC LIMIT 1",[x.id,type,id]);
+    return res.status(200).json({tripDraftId:x.id,componentType:type,previousOfferId:previousId,newOfferId:id,revision:latest.rows[0]||null,currentOffer:o.rows[0],revisionChanged:false,reoptimizationSuggested:false,travelerDecides:true,automaticBooking:false});
+  }
+  await pool.query(`UPDATE v30_trip_drafts SET ${col}=$1::jsonb,updated_at=now() WHERE id=$2`,[JSON.stringify(next),x.id]);
+  const revision=await pool.query("INSERT INTO v32_trip_component_revisions(trip_draft_id,component_type,previous_offer_id,new_offer_id,metadata) VALUES($1,$2,$3,$4,$5) RETURNING *",[x.id,type,previousId,id,JSON.stringify({source:'traveler_revision'})]);
+  res.status(200).json({tripDraftId:x.id,componentType:type,previousOfferId:previousId,newOfferId:id,revision:revision.rows[0],currentOffer:o.rows[0],revisionChanged:true,reoptimizationSuggested:true,travelerDecides:true,automaticBooking:false});
+ }catch(e){res.status(500).json({error:e.message})}
+});
+v30Router.get('/v32/globe/root',async(req,res)=>{
+ try{const q=await pool.query("SELECT node_key,node_type,name,hemisphere,climate_keys,latitude,longitude FROM v32_geo_nodes WHERE node_type='world' AND active=true ORDER BY name");res.json({zoomLevel:0,nodes:q.rows,navigation:'progressive'});}catch(e){res.status(500).json({error:e.message})}
+});
+v30Router.get('/v32/globe/:nodeKey',async(req,res)=>{
+ try{const node=await pool.query("SELECT * FROM v32_geo_nodes WHERE node_key=$1 AND active=true",[req.params.nodeKey]);if(!node.rows[0])return res.status(404).json({error:'geo_node_not_found'});const n=node.rows[0];const q=await pool.query("SELECT node_key,node_type,name,country_iso3,hemisphere,climate_keys,latitude,longitude FROM v32_geo_nodes WHERE parent_key=$1 AND active=true ORDER BY name",[n.node_key]);res.json({node:n,children:q.rows,zoomLevel:n.node_type==='world'?0:n.node_type==='continent'?1:n.node_type==='country'?2:n.node_type==='region'?3:n.node_type==='territory'?4:5,navigation:'progressive'});}catch(e){res.status(500).json({error:e.message})}
+});
+
+v30Router.get('/v32/globe/:nodeKey/geometry',async(req,res)=>{
+ try{
+  const n=await pool.query("SELECT g.node_key,g.node_type,g.name,g.country_iso3,r.source_dataset,r.source_key,r.geometry_type,r.geometry_ref FROM v32_geo_nodes g LEFT JOIN v32_geo_render_sources r ON r.node_key=g.node_key WHERE g.node_key=$1 AND g.active=true",[req.params.nodeKey]);
+  if(!n.rows[0])return res.status(404).json({error:'geo_node_not_found'});
+  const x=n.rows[0];
+  if(!x.source_key)return res.json({node:x,geometry:null,source:null,available:false});
+  const table=x.node_type==='country'?'ne_admin0_countries_v29_14':(x.node_type==='region'||x.node_type==='territory'?'ne_admin1_states_v29_14':null);
+  if(!table)return res.json({node:x,geometry:null,source:x.source_dataset,available:false});
+  const exists=await pool.query("SELECT to_regclass($1) IS NOT NULL AS ok",['public.'+table]);
+  if(!exists.rows[0]?.ok)return res.json({node:x,geometry:null,source:x.source_dataset,available:false});
+  const sql=x.node_type==='country'
+   ? "SELECT ST_AsGeoJSON(ST_SimplifyPreserveTopology(ST_Force2D(geom),0.08))::json AS geometry FROM ne_admin0_countries_v29_14 WHERE COALESCE(NULLIF(UPPER(iso_a3),'-'),NULLIF(UPPER(adm0_a3),'-'))=$1 LIMIT 1"
+   : "SELECT ST_AsGeoJSON(ST_SimplifyPreserveTopology(ST_Force2D(geom),0.03))::json AS geometry FROM ne_admin1_states_v29_14 WHERE gid_1=$1 OR adm1_code=$1 LIMIT 1";
+  const q=await pool.query(sql,[x.geometry_ref.replace(/^country:/,'').replace(/^admin1:/,'')]);
+  res.json({node:x,geometry:q.rows[0]?.geometry||null,source:x.source_dataset,available:true});
+ }catch(e){res.status(500).json({error:e.message})}
+});
+
+v30Router.get('/v32/globe/:nodeKey/render-profile',async(req,res)=>{
+ try{
+  const n=await pool.query("SELECT node_key,node_type,name,hemisphere,climate_keys FROM v32_geo_nodes WHERE node_key=$1 AND active=true",[req.params.nodeKey]);
+  if(!n.rows[0])return res.status(404).json({error:'geo_node_not_found'});
+  const x=n.rows[0];
+  const p=await pool.query("SELECT * FROM v32_globe_render_profiles WHERE node_type=$1",[x.node_type]);
+  if(!p.rows[0])return res.status(404).json({error:'render_profile_not_found'});
+  res.json({node:x,renderProfile:p.rows[0],navigation:'progressive'});
+ }catch(e){res.status(500).json({error:e.message})}
+});
+
+v30Router.get('/v32/globe/:nodeKey/climate',async(req,res)=>{
+ try{
+  const n=await pool.query("SELECT node_key,name,hemisphere,climate_keys FROM v32_geo_nodes WHERE node_key=$1 AND active=true",[req.params.nodeKey]);
+  if(!n.rows[0])return res.status(404).json({error:'geo_node_not_found'});
+  const x=n.rows[0],q=await pool.query("SELECT w.* FROM v32_seasonal_windows w WHERE w.climate_key=ANY($1::text[]) AND w.hemisphere IN ($2,'equatorial') ORDER BY w.climate_key,w.season_key",[x.climate_keys,x.hemisphere]);
+  res.json({node:x,seasons:q.rows,hemisphere:x.hemisphere});
+ }catch(e){res.status(500).json({error:e.message})}
+});
+
+v30Router.get('/v32/globe/:nodeKey/travel-components',async(req,res)=>{
+ try{
+  const n=await pool.query("SELECT node_key,name FROM v32_geo_nodes WHERE node_key=$1 AND active=true",[req.params.nodeKey]);
+  if(!n.rows[0])return res.status(404).json({error:'geo_node_not_found'});
+  const q=await pool.query("SELECT o.id,o.title,o.description,o.offer_type,o.price_amount,o.currency,o.booking_mode,o.territory_key,p.name professional_name,p.verified FROM v31_pro_offers o JOIN v30_pro_profiles p ON p.id=o.professional_id WHERE o.status='published' AND (o.territory_key=$1 OR o.territory_key IN (SELECT node_key FROM v32_geo_nodes WHERE parent_key=$1)) ORDER BY p.verified DESC,o.updated_at DESC LIMIT 60",[req.params.nodeKey]);
+  const groups={transport:[],accommodation:[],experiences:[]};
+  for(const row of q.rows){const t=String(row.offer_type||'').toLowerCase();const key=t.includes('transport')||t.includes('transfert')||t.includes('mobil')?'transport':t.includes('accommodation')||t.includes('hébergement')||t.includes('hotel')||t.includes('lodging')?'accommodation':'experiences';groups[key].push(row);}
+  res.json({node:n.rows[0],components:groups,travelerDecides:true,proposalOnly:true,automaticBooking:false});
+ }catch(e){res.status(500).json({error:e.message})}
+});
+v30Router.get('/v32/globe/:nodeKey/health-safety',async(req,res)=>{
+ try{
+  const n=await pool.query("SELECT node_key,name FROM v32_geo_nodes WHERE node_key=$1 AND active=true",[req.params.nodeKey]);
+  if(!n.rows[0])return res.status(404).json({error:'geo_node_not_found'});
+  const q=await pool.query("SELECT id,service_type,name,description,latitude,longitude,public_contact FROM v30_health_safety_points WHERE territory_key=$1 AND active=true ORDER BY service_type,name",[req.params.nodeKey]);
+  const counts=q.rows.reduce((a,x)=>(a[x.service_type]=(a[x.service_type]||0)+1,a),{});
+  res.json({node:n.rows[0],points:q.rows,counts,privacy:'public_service_data_only'});
+ }catch(e){res.status(500).json({error:e.message})}
+});
+v30Router.get('/v32/globe/:nodeKey/offers',async(req,res)=>{
+ try{
+  const n=await pool.query("SELECT node_key,name,climate_keys,hemisphere FROM v32_geo_nodes WHERE node_key=$1 AND active=true",[req.params.nodeKey]);
+  if(!n.rows[0])return res.status(404).json({error:'geo_node_not_found'});
+  const tag=(req.query.tag||'').trim();
+  const params=[req.params.nodeKey];
+  let filter="o.status='published' AND (o.territory_key=$1 OR o.territory_key IN (SELECT node_key FROM v32_geo_nodes WHERE parent_key=$1))";
+  if(tag){params.push(tag);filter+=" AND ($2=ANY(o.specialties) OR $2=ANY(o.audiences))";}
+  const q=await pool.query(`SELECT o.id,o.title,o.description,o.offer_type,o.territory_key,o.price_amount,o.currency,o.booking_mode,o.specialties,o.audiences,p.name professional_name,p.verified,p.pro_type
+   FROM v31_pro_offers o JOIN v30_pro_profiles p ON p.id=o.professional_id
+   WHERE ${filter} ORDER BY p.verified DESC,o.updated_at DESC LIMIT 30`,params);
+  res.json({node:n.rows[0],tag:tag||null,offers:q.rows,travelerDecides:true,proposalOnly:true,automaticBooking:false});
+ }catch(e){res.status(500).json({error:e.message})}
+});
+v30Router.post('/v32/trip-draft/:draftId/select-scenario',async(req,res)=>{
+ try{
+  const key=req.body?.scenarioKey;
+  if(!['comfort','balanced','discovery'].includes(key))return res.status(400).json({error:'invalid_scenario'});
+  const d=await pool.query("SELECT id FROM v30_trip_drafts WHERE id=$1",[req.params.draftId]);
+  if(!d.rows[0])return res.status(404).json({error:'trip_draft_not_found'});
+  const current=await pool.query("SELECT id,active_scenario_key,updated_at FROM v30_trip_drafts WHERE id=$1",[d.rows[0].id]);
+  const wasSame=current.rows[0].active_scenario_key===key;
+  const s=wasSame
+    ? await pool.query("SELECT id,trip_draft_id,scenario_key,selected_at,metadata FROM v32_trip_scenario_selections WHERE trip_draft_id=$1 AND scenario_key=$2 ORDER BY selected_at DESC LIMIT 1",[d.rows[0].id,key])
+    : await pool.query("INSERT INTO v32_trip_scenario_selections(trip_draft_id,scenario_key,metadata) VALUES($1,$2,$3) RETURNING *",[d.rows[0].id,key,JSON.stringify({source:'globe',decision:'traveler_selected'})]);
+  const active=wasSame ? current : await pool.query("UPDATE v30_trip_drafts SET active_scenario_key=$1,updated_at=now() WHERE id=$2 RETURNING id,active_scenario_key,updated_at",[key,d.rows[0].id]);
+  res.status(wasSame?200:201).json({selection:s.rows[0]||null,activeScenario:active.rows[0],decisionChanged:!wasSame,reoptimizationSuggested:!wasSame,travelerDecides:true,automaticBooking:false});
+ }catch(e){res.status(500).json({error:e.message})}
+});
+v30Router.get('/v32/trip-draft/:draftId/scenarios',async(req,res)=>{
+ try{
+  const d=await pool.query("SELECT id,territory_key,active_scenario_key,transport,accommodation,experiences,health_safety FROM v30_trip_drafts WHERE id=$1",[req.params.draftId]);
+  if(!d.rows[0])return res.status(404).json({error:'trip_draft_not_found'});
+  const x=d.rows[0];
+  const q=await pool.query("SELECT o.id,o.title,o.offer_type,o.price_amount,o.currency,o.booking_mode,o.specialties,o.audiences,p.name professional_name,p.verified FROM v31_pro_offers o JOIN v30_pro_profiles p ON p.id=o.professional_id WHERE o.status='published' AND (o.territory_key=$1 OR o.territory_key IN (SELECT node_key FROM v32_geo_nodes WHERE parent_key=$1)) ORDER BY p.verified DESC,o.updated_at DESC LIMIT 60",[x.territory_key]);
+  const scenarios=[
+   {key:'comfort',name:'Confort',description:'Privilégie la qualité, la simplicité et les solutions vérifiées.'},
+   {key:'balanced',name:'Équilibre',description:'Cherche un compromis entre confort, diversité et maîtrise du coût.'},
+   {key:'discovery',name:'Découverte',description:'Privilégie la diversité des expériences et l’exploration du territoire.'}
+  ];
+  for(const s of scenarios){const offers=s.key==='comfort'?q.rows.filter(o=>o.verified).slice(0,8):s.key==='discovery'?q.rows.slice(0,12):q.rows.slice(0,10);s.candidates=offers.map(o=>({offerId:o.id,title:o.title,type:o.offer_type,professional:o.professional_name,verified:o.verified,price:o.price_amount,currency:o.currency,bookingMode:o.booking_mode}));}
+  res.json({tripDraftId:x.id,scenarios,travelerDecides:true,proposalOnly:true,automaticBooking:false});
+ }catch(e){res.status(500).json({error:e.message})}
+});
+v30Router.post('/v32/trip-draft/:draftId/recalculate',async(req,res)=>{
+ try{
+  const d=await pool.query("SELECT id,active_scenario_key,territory_key,transport,accommodation,experiences,health_safety,updated_at FROM v30_trip_drafts WHERE id=$1",[req.params.draftId]);
+  if(!d.rows[0])return res.status(404).json({error:'trip_draft_not_found'});
+  const x=d.rows[0];
+  const present=[Boolean(x.transport&&Object.keys(x.transport).length),Boolean(x.accommodation&&Object.keys(x.accommodation).length),Array.isArray(x.experiences)&&x.experiences.length>0,Array.isArray(x.health_safety)&&x.health_safety.length>0];
+  const score=Math.round(present.filter(Boolean).length/4*100);
+  const reason=req.body?.reason||'traveler_recalculation';
+  const event=await pool.query("INSERT INTO v32_trip_recalculation_events(trip_draft_id,scenario_key,score,reason,metadata) VALUES($1,$2,$3,$4,$5) RETURNING id,trip_draft_id,scenario_key,score,reason,created_at,metadata",[x.id,x.active_scenario_key,score,reason,JSON.stringify({source:'traveler_action',composition:{transport:present[0],accommodation:present[1],experiences:present[2],healthSafety:present[3]}})]);
+  const latestOptimization=await pool.query("SELECT created_at FROM v32_trip_optimization_snapshots WHERE trip_draft_id=$1 AND scenario_key IS NOT DISTINCT FROM $2 ORDER BY created_at DESC LIMIT 1",[x.id,x.active_scenario_key]);
+  const optimizationStale=Boolean(latestOptimization.rows[0]&&x.updated_at&&new Date(latestOptimization.rows[0].created_at)<new Date(x.updated_at));
+  res.json({tripDraftId:x.id,activeScenario:x.active_scenario_key,score,event:event.rows[0],optimizationStale,changedAt:new Date().toISOString(),recalculated:true,travelerDecides:true,proposalOnly:true,automaticBooking:false});
+ }catch(e){res.status(500).json({error:e.message})}
+});
+v30Router.get('/v32/trip-draft/:draftId/optimization',async(req,res)=>{
+ try{
+  const d=await pool.query("SELECT id,active_scenario_key,territory_key,transport,accommodation,experiences,health_safety FROM v30_trip_drafts WHERE id=$1",[req.params.draftId]);
+  if(!d.rows[0])return res.status(404).json({error:'trip_draft_not_found'});
+  const x=d.rows[0];
+  const p=await pool.query("SELECT p.age_group,p.mobility_level,p.party_type,p.budget_level,p.pace,p.duration_days,p.preferences,p.constraints FROM v30_traveler_profiles p JOIN v30_trip_drafts t ON t.session_id=p.session_id WHERE t.id=$1",[x.id]);
+  const profile=p.rows[0]||{};
+  const dimensions=[
+   {key:'profile',label:'Profil voyageur',weight:20,score:(profile.age_group||profile.mobility_level||profile.party_type)?100:40},
+   {key:'climate',label:'Climat et saison',weight:20,score:x.territory_key?100:0},
+   {key:'cost',label:'Budget / coût',weight:15,score:profile.budget_level?70:40},
+   {key:'duration',label:'Durée',weight:10,score:profile.duration_days?70:40},
+   {key:'comfort',label:'Confort / rythme',weight:10,score:profile.pace?70:40},
+   {key:'composition',label:'Composition du voyage',weight:15,score:Math.round([x.transport,x.accommodation,Array.isArray(x.experiences)&&x.experiences.length].filter(Boolean).length/3*100)},
+   {key:'healthSafety',label:'Santé & Sécurité',weight:10,score:Array.isArray(x.health_safety)&&x.health_safety.length?100:0}
+  ];
+  const scenarioWeights={comfort:{profile:25,climate:15,cost:10,duration:10,comfort:20,composition:10,healthSafety:10},balanced:{profile:20,climate:20,cost:15,duration:10,comfort:10,composition:15,healthSafety:10},discovery:{profile:15,climate:20,cost:10,duration:10,comfort:5,composition:25,healthSafety:15}};
+  const weights=scenarioWeights[x.active_scenario_key||'balanced'];
+  dimensions.forEach(d=>d.weight=weights[d.key]);
+  const memoryRows=await pool.query("SELECT proposal_key,decision,created_at FROM v32_trip_improvement_feedback WHERE trip_draft_id=$1 ORDER BY created_at DESC",[x.id]);
+  const latestMemory={};
+  for(const row of memoryRows.rows)if(!latestMemory[row.proposal_key])latestMemory[row.proposal_key]=row;
+  const memoryDimension={transport:'composition',accommodation:'composition',experiences:'composition',healthSafety:'healthSafety',health_safety:'healthSafety',budget:'cost',duration:'duration'};
+  for(const row of Object.values(latestMemory)){
+   const dimensionKey=memoryDimension[row.proposal_key];
+   const dimension=dimensions.find(item=>item.key===dimensionKey);
+   if(!dimension||row.decision==='deferred')continue;
+   const delta=row.decision==='accepted'?6:-6;
+   dimension.score=Math.max(0,Math.min(100,dimension.score+delta));
+  }
+  const decisionMemory=Object.values(latestMemory).map(row=>({proposalKey:row.proposal_key,decision:row.decision,lastAt:row.created_at}));
+  const score=Math.round(dimensions.reduce((s,d)=>s+d.score*d.weight/100,0));
+  const snapshotPayload=JSON.stringify(dimensions);
+  const previous=await pool.query("SELECT id,score,dimensions,created_at FROM v32_trip_optimization_snapshots WHERE trip_draft_id=$1 AND scenario_key IS NOT DISTINCT FROM $2 ORDER BY created_at DESC LIMIT 1",[x.id,x.active_scenario_key]);
+  const previousSame=previous.rows[0]&&Number(previous.rows[0].score)===score&&JSON.stringify(previous.rows[0].dimensions)===snapshotPayload;
+  const snapshot=previousSame?previous.rows[0]:(await pool.query("INSERT INTO v32_trip_optimization_snapshots(trip_draft_id,scenario_key,score,dimensions) VALUES($1,$2,$3,$4) RETURNING id,score,dimensions,created_at",[x.id,x.active_scenario_key,score,snapshotPayload])).rows[0];
+  res.json({tripDraftId:x.id,activeScenario:x.active_scenario_key,score,dimensions,decisionMemory,snapshotCreated:!previousSame,snapshot,profileSummary:{ageGroup:profile.age_group,mobility:profile.mobility_level,partyType:profile.party_type,budget:profile.budget_level,pace:profile.pace,durationDays:profile.duration_days},travelerDecides:true,proposalOnly:true,automaticBooking:false});
+ }catch(e){res.status(500).json({error:e.message})}
+});
+v30Router.get('/v32/trip-draft/:draftId/decision-brief',async(req,res)=>{
+ try{
+  const d=await pool.query("SELECT id,title,territory_key,active_scenario_key,updated_at FROM v30_trip_drafts WHERE id=$1",[req.params.draftId]);
+  if(!d.rows[0])return res.status(404).json({error:'trip_draft_not_found'});
+  const x=d.rows[0];
+  const p=await pool.query("SELECT p.traveler_type,p.age_group,p.mobility_level,p.party_type,p.party_size,p.budget_level,p.pace,p.duration_days,p.preferences,p.constraints FROM v30_traveler_profiles p JOIN v30_trip_drafts t ON t.session_id=p.session_id WHERE t.id=$1",[x.id]);
+  const profile=p.rows[0]||null;
+  const t=await pool.query("SELECT climate_zone,hemisphere,name FROM v30_territories WHERE territory_key=$1",[x.territory_key]);
+  if(!t.rows[0])return res.status(400).json({error:'territory_required'});
+  const rules=await pool.query("SELECT tourism_tag,preferred_months,weight,rationale_fr FROM v30_tourism_climate_rules WHERE climate_key=$1 AND hemisphere=$2 ORDER BY weight DESC",[t.rows[0].climate_zone,t.rows[0].hemisphere]);
+  const months=[...new Set(rules.rows.flatMap(r=>r.preferred_months||[]))].sort((a,b)=>a-b);
+  const signals=[];
+  if(profile?.budget_level)signals.push({key:'budget',label:'Budget à confronter aux prix réels des offres sélectionnées',priority:'medium'});
+  if(profile?.duration_days)signals.push({key:'duration',label:'Durée à confronter aux disponibilités et au nombre d’expériences',priority:'medium'});
+  if(profile?.pace)signals.push({key:'pace',label:'Rythme à confronter au programme choisi',priority:'medium'});
+  if(profile?.preferences?.length)signals.push({key:'preferences',label:'Préférences à confronter aux spécialités des offres',priority:'medium'});
+  const memory=await pool.query("SELECT proposal_key,decision,created_at AS last_at FROM v32_trip_improvement_feedback WHERE trip_draft_id=$1 ORDER BY created_at DESC",[x.id]);
+  const latestMemory={}; for(const row of memory.rows)if(!latestMemory[row.proposal_key])latestMemory[row.proposal_key]=row;
+  const optimization=await pool.query("SELECT score,dimensions,created_at FROM v32_trip_optimization_snapshots WHERE trip_draft_id=$1 ORDER BY created_at DESC LIMIT 1",[x.id]);
+  const latestOptimization=optimization.rows[0]||null;
+  const optimizationStale=Boolean(latestOptimization&&x.updated_at&&new Date(latestOptimization.created_at)<new Date(x.updated_at));
+  const decisionMemory=Object.values(latestMemory).map(row=>({...row,stale:Boolean(x.updated_at&&new Date(row.last_at)<new Date(x.updated_at))}));
+  res.json({tripDraft:x,activeScenario:x.active_scenario_key,territory:t.rows[0],travelerProfile:profile,recommendedMonths:months,travelRationales:rules.rows.slice(0,8),decisionSignals:signals,decisionMemory,latestOptimization,optimizationStale,decisionBoundary:{travelerDecides:true,proposalOnly:true,automaticBooking:false}});
+ }catch(e){res.status(500).json({error:e.message})}
+});
+v30Router.get('/v32/trip-draft/:draftId/recommended-dates',async(req,res)=>{
+ try{
+  const d=await pool.query("SELECT id,territory_key FROM v30_trip_drafts WHERE id=$1",[req.params.draftId]);
+  if(!d.rows[0]||!d.rows[0].territory_key)return res.status(400).json({error:'territory_required'});
+  const t=await pool.query("SELECT climate_zone,hemisphere FROM v30_territories WHERE territory_key=$1",[d.rows[0].territory_key]);
+  if(!t.rows[0])return res.status(404).json({error:'territory_not_found'});
+  const q=await pool.query("SELECT month_start,month_end,season_fr,tourism_context FROM v30_climate_seasons WHERE climate_key=$1 AND hemisphere=$2 ORDER BY month_start",[t.rows[0].climate_zone,t.rows[0].hemisphere]);
+  const rules=await pool.query("SELECT tourism_tag,preferred_months,weight,rationale_fr FROM v30_tourism_climate_rules WHERE climate_key=$1 AND hemisphere=$2 ORDER BY weight DESC",[t.rows[0].climate_zone,t.rows[0].hemisphere]);
+  const months=[...new Set(rules.rows.flatMap(r=>r.preferred_months||[]))].sort((a,b)=>a-b);
+  res.json({territoryKey:d.rows[0].territory_key,climate:t.rows[0].climate_zone,hemisphere:t.rows[0].hemisphere,seasonWindows:q.rows,recommendedMonths:months,travelTags:rules.rows.slice(0,12),travelerDecides:true,proposalOnly:true});
+ }catch(e){res.status(500).json({error:e.message})}
+});
+v30Router.get('/v32/globe/:nodeKey/overview',async(req,res)=>{
+ try{
+  const n=await pool.query("SELECT node_key,node_type,name,country_iso3,hemisphere,climate_keys,latitude,longitude,metadata FROM v32_geo_nodes WHERE node_key=$1 AND active=true",[req.params.nodeKey]);
+  if(!n.rows[0])return res.status(404).json({error:'geo_node_not_found'});
+  const x=n.rows[0];
+  const seasons=await pool.query("SELECT climate_key,season_key,month_start,month_end,tourism_tags,rationale_fr FROM v32_seasonal_windows WHERE climate_key=ANY($1::text[]) AND hemisphere IN ($2,'equatorial') ORDER BY month_start,climate_key",[x.climate_keys,x.hemisphere]);
+  const children=await pool.query("SELECT node_key,node_type,name,hemisphere,climate_keys,latitude,longitude FROM v32_geo_nodes WHERE parent_key=$1 AND active=true ORDER BY node_type,name",[x.node_key]);
+  const tags=await pool.query("SELECT DISTINCT tourism_tag FROM v30_tourism_climate_rules WHERE climate_key=ANY($1::text[]) AND hemisphere IN ($2,'equatorial') ORDER BY tourism_tag",[x.climate_keys,x.hemisphere]);
+  const month=Number(req.query.month)||new Date().getUTCMonth()+1;
+  const seasonalTags=await pool.query("SELECT DISTINCT tourism_tag FROM v30_tourism_climate_rules WHERE climate_key=ANY($1::text[]) AND hemisphere IN ($2,'equatorial') AND $3=ANY(preferred_months) ORDER BY tourism_tag",[x.climate_keys,x.hemisphere,month]);
+  res.json({node:x,seasonalWindows:seasons.rows,children:children.rows,tourismTags:tags.rows.map(r=>r.tourism_tag),seasonalTourismTags:seasonalTags.rows.map(r=>r.tourism_tag),month,signals:{climates:x.climate_keys||[],hemisphere:x.hemisphere,childCount:children.rowCount}});
+ }catch(e){res.status(500).json({error:e.message})}
+});
+v30Router.get('/v32/trip-draft/:draftId/recalculation-history',async(req,res)=>{
+ try{
+  const d=await pool.query("SELECT id,active_scenario_key FROM v30_trip_drafts WHERE id=$1",[req.params.draftId]);
+  if(!d.rows[0])return res.status(404).json({error:'trip_draft_not_found'});
+  const q=await pool.query("SELECT id,trip_draft_id,scenario_key,score,reason,created_at,metadata FROM v32_trip_recalculation_events WHERE trip_draft_id=$1 ORDER BY created_at DESC LIMIT 50",[d.rows[0].id]);
+  res.json({tripDraftId:d.rows[0].id,activeScenario:d.rows[0].active_scenario_key,events:q.rows,count:q.rowCount,travelerDecides:true});
+ }catch(e){res.status(500).json({error:e.message})}
+});
+v30Router.get('/v32/trip-draft/:draftId/optimization-history',async(req,res)=>{
+ try{
+  const d=await pool.query("SELECT id,active_scenario_key FROM v30_trip_drafts WHERE id=$1",[req.params.draftId]);
+  if(!d.rows[0])return res.status(404).json({error:'trip_draft_not_found'});
+  const q=await pool.query("SELECT id,trip_draft_id,scenario_key,score,dimensions,created_at FROM v32_trip_optimization_snapshots WHERE trip_draft_id=$1 ORDER BY created_at DESC LIMIT 50",[d.rows[0].id]);
+  const rows=q.rows.map((row,i)=>({...row,deltaFromPrevious:i===q.rows.length-1?null:row.score-q.rows[i+1].score}));
+  res.json({tripDraftId:d.rows[0].id,activeScenario:d.rows[0].active_scenario_key,snapshots:rows,count:rows.length,travelerDecides:true});
+ }catch(e){res.status(500).json({error:e.message})}
+});
+v30Router.get('/v32/trip-draft/:draftId/optimization-diff',async(req,res)=>{
+ try{
+  const d=await pool.query("SELECT id,active_scenario_key FROM v30_trip_drafts WHERE id=$1",[req.params.draftId]);
+  if(!d.rows[0])return res.status(404).json({error:'trip_draft_not_found'});
+  const q=await pool.query("SELECT score,dimensions,created_at FROM v32_trip_optimization_snapshots WHERE trip_draft_id=$1 ORDER BY created_at DESC LIMIT 2",[d.rows[0].id]);
+  if(q.rows.length<2)return res.json({tripDraftId:d.rows[0].id,activeScenario:d.rows[0].active_scenario_key,available:false,reason:'insufficient_snapshots',travelerDecides:true});
+  const current=q.rows[0],previous=q.rows[1];
+  const prevByKey=Object.fromEntries((previous.dimensions||[]).map(x=>[x.key,x]));
+  const dimensions=(current.dimensions||[]).map(x=>({...x,previousScore:prevByKey[x.key]?.score??null,delta:prevByKey[x.key]?x.score-prevByKey[x.key].score:null}));
+  res.json({tripDraftId:d.rows[0].id,activeScenario:d.rows[0].active_scenario_key,currentScore:current.score,previousScore:previous.score,scoreDelta:current.score-previous.score,currentAt:current.created_at,previousAt:previous.created_at,dimensions,available:true,travelerDecides:true});
+ }catch(e){res.status(500).json({error:e.message})}
+});
+v30Router.post('/v32/trip-draft/:draftId/improvement-feedback',async(req,res)=>{
+ try{
+  const proposalKey=String(req.body?.proposalKey||'').trim();
+  const decision=req.body?.decision;
+  if(!proposalKey||!['accepted','rejected','deferred'].includes(decision))return res.status(400).json({error:'invalid_feedback'});
+  const d=await pool.query("SELECT id FROM v30_trip_drafts WHERE id=$1",[req.params.draftId]);
+  if(!d.rows[0])return res.status(404).json({error:'trip_draft_not_found'});
+  const latest=await pool.query("SELECT * FROM v32_trip_improvement_feedback WHERE trip_draft_id=$1 AND proposal_key=$2 ORDER BY created_at DESC LIMIT 1",[d.rows[0].id,proposalKey]);
+  if(latest.rows[0]?.decision===decision)return res.status(200).json({feedback:latest.rows[0],scope:'trip_draft',feedbackChanged:false,reusableTravelerMemory:false,travelerDecides:true});
+  const q=await pool.query("INSERT INTO v32_trip_improvement_feedback(trip_draft_id,proposal_key,decision,metadata) VALUES($1,$2,$3,$4) RETURNING *",[d.rows[0].id,proposalKey,decision,JSON.stringify({source:'traveler_action'})]);
+  res.status(201).json({feedback:q.rows[0],scope:'trip_draft',feedbackChanged:true,reusableTravelerMemory:false,travelerDecides:true});
+ }catch(e){res.status(500).json({error:e.message})}
+});
+v30Router.get('/v32/trip-draft/:draftId/decision-memory',async(req,res)=>{
+ try{
+  const d=await pool.query("SELECT id,active_scenario_key FROM v30_trip_drafts WHERE id=$1",[req.params.draftId]);
+  if(!d.rows[0])return res.status(404).json({error:'trip_draft_not_found'});
+  const q=await pool.query("SELECT proposal_key,decision,COUNT(*)::int count,MAX(created_at) last_at FROM v32_trip_improvement_feedback WHERE trip_draft_id=$1 GROUP BY proposal_key,decision ORDER BY last_at DESC",[d.rows[0].id]);
+  res.json({tripDraftId:d.rows[0].id,activeScenario:d.rows[0].active_scenario_key,decisions:q.rows,scope:'trip_draft',reusableTravelerMemory:false});
+ }catch(e){res.status(500).json({error:e.message})}
+});
+v30Router.get('/health', (_req, res) => res.json({ ok: true, version: '30.2', router: 'v30-platform' }));
++(vals.length+1));vals.push(b[k])}; if(!sets.length)return res.status(400).json({error:'no_updates'}); vals.push(req.params.offerId); const q=await safeQuery(res,'UPDATE v31_pro_offers SET '+sets.join(',')+',updated_at=now() WHERE id=+(vals.length+1));vals.push(b[k])}; if(!sets.length)return res.status(400).json({error:'no_updates'}); vals.push(req.params.offerId); const q=await safeQuery(res,'UPDATE v31_pro_offers SET '+sets.join(',')+',updated_at=now() WHERE id=, (_req, res) => res.json({ ok: true, version: '30.2', router: 'v30-platform' }));
++vals.length+' RETURNING *',vals); if(q&&!q.rows[0])return res.status(404).json({error:'offer_not_found'}); if(q)res.json({offer:q.rows[0]}); });
+v30Router.post('/v31/offers/:offerId/availability', async (req,res)=>{ const b=req.body||{}; if(!b.availableFrom||!b.availableTo)return res.status(400).json({error:'availability_window_required'}); const q=await safeQuery(res,'INSERT INTO v31_offer_availability(offer_id,available_from,available_to,capacity,booked,status,metadata) VALUES($1,$2,$3,$4,0,$5,$6) RETURNING *',[req.params.offerId,b.availableFrom,b.availableTo,b.capacity||1,b.status||'open',b.metadata||{}]); if(q)res.status(201).json({availability:q.rows[0]}); });
+v30Router.get('/v31/offers/:offerId/availability', async (req,res)=>{ const q=await safeQuery(res,'SELECT * FROM v31_offer_availability WHERE offer_id=$1 ORDER BY available_from',[req.params.offerId]); if(q)res.json({offerId:Number(req.params.offerId),availability:q.rows}); });
+v30Router.get('/v31/session/:sessionId/offers', async (req,res)=>{ try{const s=await pool.query('SELECT * FROM v30_traveler_sessions WHERE id=$1',[req.params.sessionId]);if(!s.rows[0])return res.status(404).json({error:'session_not_found'});const session=s.rows[0],p=(await pool.query('SELECT * FROM v30_traveler_profiles WHERE session_id=$1',[req.params.sessionId])).rows[0]||{},intent=(await pool.query('SELECT intent FROM v30_traveler_intents WHERE session_id=$1 ORDER BY created_at DESC LIMIT 1',[req.params.sessionId])).rows[0]?.intent||{};const q=await pool.query(`SELECT o.*,p.name professional_name,p.verified,p.pro_type,COALESCE(a.next_available,NULL) next_available,(CASE WHEN o.territory_key=$2 THEN 25 ELSE 0 END+CASE WHEN o.audiences && $3::text[] THEN 20 ELSE 0 END+CASE WHEN o.specialties && $4::text[] THEN 25 ELSE 0 END+CASE WHEN o.status='published' THEN 15 ELSE 0 END+CASE WHEN p.verified THEN 10 ELSE 0 END) AS match_score FROM v31_pro_offers o JOIN v30_pro_profiles p ON p.id=o.professional_id LEFT JOIN LATERAL(SELECT MIN(available_from) next_available FROM v31_offer_availability av WHERE av.offer_id=o.id AND av.status='open' AND av.booked<av.capacity AND av.available_to>=now()) a ON true WHERE o.status='published' ORDER BY match_score DESC,o.updated_at DESC LIMIT 50`,[req.params.sessionId,session.territory_key,p.party_type?[p.party_type]:[],intent.activity?[intent.activity]:[]]);res.json({sessionId:Number(req.params.sessionId),territoryKey:session.territory_key,offers:q.rows,travelerDecides:true,proposalOnly:true});}catch(e){res.status(500).json({error:e.message})} });
+v30Router.post('/v31/session/:sessionId/reservations',async(req,res)=>{
+ try{
+  const s=await pool.query('SELECT id FROM v30_traveler_sessions WHERE id=$1',[req.params.sessionId]);if(!s.rows[0])return res.status(404).json({error:'session_not_found'});
+  const b=req.body||{},o=await pool.query("SELECT id FROM v31_pro_offers WHERE id=$1 AND status='published'",[b.offerId]);if(!o.rows[0])return res.status(404).json({error:'offer_not_found_or_not_published'});
+  const party=Math.max(1,Number(b.partySize)||1);
+  if(b.requestedFrom&&b.requestedTo&&new Date(b.requestedTo)<=new Date(b.requestedFrom))return res.status(400).json({error:'invalid_reservation_window'});
+  if(b.availabilityId){const av=await pool.query("SELECT id,offer_id,available_from,available_to,capacity,booked,status FROM v31_offer_availability WHERE id=$1",[b.availabilityId]);const a=av.rows[0];if(!a||Number(a.offer_id)!==Number(b.offerId))return res.status(400).json({error:'availability_offer_mismatch'});if(a.status!=='open'||Number(a.booked)+party>Number(a.capacity))return res.status(409).json({error:'capacity_unavailable'});if(b.requestedFrom&&new Date(b.requestedFrom)<new Date(a.available_from))return res.status(400).json({error:'outside_availability_window'});if(b.requestedTo&&new Date(b.requestedTo)>new Date(a.available_to))return res.status(400).json({error:'outside_availability_window'})}
+  const q=await pool.query('INSERT INTO v31_reservation_requests(traveler_session_id,offer_id,availability_id,requested_from,requested_to,party_size,traveler_note) VALUES($1,$2,$3,$4,$5,$6,$7) RETURNING *',[req.params.sessionId,b.offerId,b.availabilityId||null,b.requestedFrom||null,b.requestedTo||null,party,b.travelerNote||null]);
+  res.status(201).json({reservation:q.rows[0],status:'requested',travelerDecides:true,automaticBooking:false});
+ }catch(err){res.status(500).json({error:err.message})}
+});
+v30Router.get('/v31/session/:sessionId/reservations',async(req,res)=>{
+ const q=await safeQuery(res,'SELECT r.*,o.title offer_title,p.name professional_name FROM v31_reservation_requests r JOIN v31_pro_offers o ON o.id=r.offer_id JOIN v30_pro_profiles p ON p.id=o.professional_id WHERE r.traveler_session_id=$1 ORDER BY r.created_at DESC',[req.params.sessionId]);
+ if(q)res.json({reservations:q.rows,travelerDecides:true});
+});
+v30Router.get('/v31/professionals/:proId/reservations',async(req,res)=>{
+ const q=await safeQuery(res,'SELECT r.*,o.title offer_title,ts.country_iso3 FROM v31_reservation_requests r JOIN v31_pro_offers o ON o.id=r.offer_id JOIN v30_traveler_sessions ts ON ts.id=r.traveler_session_id WHERE o.professional_id=$1 ORDER BY r.created_at DESC',[req.params.proId]);
+ if(q)res.json({professionalId:Number(req.params.proId),reservations:q.rows});
+});
+v30Router.patch('/v31/reservations/:reservationId',async(req,res)=>{
+ if(req.body?.status!==undefined)return res.status(400).json({error:'status_transition_use_action_endpoint'});
+ const map={priceAmount:'price_amount',currency:'currency',professionalNote:'professional_note'},sets=[],vals=[];
+ for(const [k,col] of Object.entries(map))if(req.body?.[k]!==undefined){sets.push(col+'=$'+(vals.length+1));vals.push(req.body[k])}
+ if(!sets.length)return res.status(400).json({error:'no_updates'});
+ vals.push(req.params.reservationId);
+ const q=await safeQuery(res,'UPDATE v31_reservation_requests SET '+sets.join(',')+',updated_at=now() WHERE id=$'+vals.length+' AND status NOT IN ('+"'cancelled'"+','+"'expired'"+') RETURNING *',vals);
+ if(q&&!q.rows[0])return res.status(404).json({error:'reservation_not_found_or_closed'});if(q)res.json({reservation:q.rows[0]});
+});
+
+
+v30Router.post('/v31/reservations/:reservationId/confirm',async(req,res)=>{try{const c=await pool.connect();try{await c.query('BEGIN');const q=await c.query("SELECT r.* FROM v31_reservation_requests r WHERE r.id=$1 FOR UPDATE",[req.params.reservationId]);if(!q.rows[0]){await c.query('ROLLBACK');return res.status(404).json({error:'reservation_not_found'})}const x=q.rows[0];if(!['requested','proposed'].includes(x.status)){await c.query('ROLLBACK');return res.status(409).json({error:'reservation_not_confirmable',status:x.status})} if(x.requested_from&&x.requested_to&&new Date(x.requested_to)<=new Date(x.requested_from)){await c.query('ROLLBACK');return res.status(400).json({error:'invalid_reservation_window'})}if(x.availability_id){const a=(await c.query("SELECT * FROM v31_offer_availability WHERE id=$1 FOR UPDATE",[x.availability_id])).rows[0];if(!a||a.status!=='open'||Number(a.booked)+Number(x.party_size)>Number(a.capacity)){await c.query('ROLLBACK');return res.status(409).json({error:'capacity_unavailable'})}await c.query("UPDATE v31_offer_availability SET booked=booked+$1,status=CASE WHEN booked+$1>=capacity THEN 'sold_out' ELSE status END WHERE id=$2",[x.party_size,x.availability_id])}const u=await c.query("UPDATE v31_reservation_requests SET status='confirmed',updated_at=now() WHERE id=$1 RETURNING *",[x.id]);await c.query("INSERT INTO v31_reservation_events(reservation_id,from_status,to_status,actor_type,note) VALUES($1,$2,'confirmed','traveler',$3)",[x.id,x.status,req.body?.note||null]);await c.query('COMMIT');res.json({reservation:u.rows[0],status:'confirmed',capacityReserved:Boolean(x.availability_id),travelerDecides:true,automaticBooking:false});}catch(e){await c.query('ROLLBACK').catch(()=>{});throw e}finally{c.release()}}catch(e){res.status(500).json({error:e.message})}});
+v30Router.post('/v31/reservations/:reservationId/cancel',async(req,res)=>{try{const c=await pool.connect();try{await c.query('BEGIN');const q=await c.query("SELECT * FROM v31_reservation_requests WHERE id=$1 FOR UPDATE",[req.params.reservationId]);if(!q.rows[0]){await c.query('ROLLBACK');return res.status(404).json({error:'reservation_not_found'})}const x=q.rows[0];if(!['requested','proposed','confirmed'].includes(x.status)){await c.query('ROLLBACK');return res.status(409).json({error:'reservation_not_cancellable',status:x.status})}if(x.status==='confirmed'&&x.availability_id)await c.query("UPDATE v31_offer_availability SET booked=GREATEST(0,booked-$1),status=CASE WHEN booked-$1<capacity THEN 'open' ELSE status END WHERE id=$2",[x.party_size,x.availability_id]);const u=await c.query("UPDATE v31_reservation_requests SET status='cancelled',updated_at=now() WHERE id=$1 RETURNING *",[x.id]);await c.query("INSERT INTO v31_reservation_events(reservation_id,from_status,to_status,actor_type,note) VALUES($1,$2,'cancelled',$3,$4)",[x.id,x.status,req.body?.actorType==='professional'?'professional':'traveler',req.body?.note||null]);await c.query('COMMIT');res.json({reservation:u.rows[0],status:'cancelled',capacityReleased:x.status==='confirmed'&&Boolean(x.availability_id)});}catch(e){await c.query('ROLLBACK').catch(()=>{});throw e}finally{c.release()}}catch(e){res.status(500).json({error:e.message})}});
+
+v30Router.post('/v31/reservations/:reservationId/payment-intent',async(req,res)=>{
+ try{
+  const q=await pool.query("SELECT id,status,price_amount,currency FROM v31_reservation_requests WHERE id=$1",[req.params.reservationId]);
+  if(!q.rows[0])return res.status(404).json({error:'reservation_not_found'});
+  const x=q.rows[0];if(x.status!=='confirmed')return res.status(409).json({error:'reservation_not_confirmed',status:x.status});
+  const requestedAmount=req.body?.amount!==undefined?Number(req.body.amount):null;
+  const amount=x.price_amount!==null&&x.price_amount!==undefined?Number(x.price_amount):(requestedAmount??0);
+  const currency=x.currency||req.body?.currency;
+  if(x.price_amount!==null&&x.price_amount!==undefined&&requestedAmount!==null&&requestedAmount!==amount)return res.status(409).json({error:'payment_amount_mismatch',reservationAmount:amount});
+  if(x.currency&&req.body?.currency&&req.body.currency!==x.currency)return res.status(409).json({error:'payment_currency_mismatch',reservationCurrency:x.currency});
+  if(!currency)return res.status(400).json({error:'currency_required'});if(!Number.isFinite(amount)||amount<0)return res.status(400).json({error:'invalid_amount'});
+  const mode=['direct','escrow','external'].includes(req.body?.paymentMode)?req.body.paymentMode:'direct';
+  const i=await pool.query("INSERT INTO v31_transaction_intents(reservation_id,amount,currency,payment_mode,provider,metadata) VALUES($1,$2,$3,$4,$5,$6) ON CONFLICT(reservation_id) DO UPDATE SET amount=EXCLUDED.amount,currency=EXCLUDED.currency,payment_mode=EXCLUDED.payment_mode,provider=EXCLUDED.provider,updated_at=now() RETURNING *",[x.id,amount,currency,mode,req.body?.provider||null,req.body?.metadata||{}]);
+  res.status(201).json({paymentIntent:i.rows[0],paymentRequired:amount>0,automaticPayment:false,travelerDecides:true});
+ }catch(e){res.status(500).json({error:e.message})}
+});
+
+v30Router.post('/v32/globe/trip-draft/:draftId/select-component',async(req,res)=>{
+ try{
+  const type=req.body?.componentType,id=Number(req.body?.offerId);
+  if(!['transport','accommodation','experiences'].includes(type)||!Number.isInteger(id))return res.status(400).json({error:'invalid_selection'});
+  const d=await pool.query("SELECT id FROM v30_trip_drafts WHERE id=$1",[req.params.draftId]);
+  if(!d.rows[0])return res.status(404).json({error:'trip_draft_not_found'});
+  const o=await pool.query("SELECT id,title,offer_type,territory_key,price_amount,currency,booking_mode FROM v31_pro_offers WHERE id=$1 AND status='published'",[id]);
+  if(!o.rows[0])return res.status(404).json({error:'offer_not_found'});
+  const x=d.rows[0];
+  const col=type==='transport'?'transport':type==='accommodation'?'accommodation':'experiences';
+  const current=await pool.query(`SELECT ${col} FROM v30_trip_drafts WHERE id=$1`,[x.id]);
+  const currentValue=current.rows[0]?.[col];
+  const currentOfferId=type==='experiences'
+    ? (Array.isArray(currentValue)&&currentValue[0]?.id!=null?Number(currentValue[0].id):null)
+    : (currentValue?.id!=null?Number(currentValue.id):null);
+  const wasSame=currentOfferId===id;
+  const s=wasSame
+    ? await pool.query("SELECT * FROM v32_trip_component_selections WHERE trip_draft_id=$1 AND component_type=$2 AND offer_id=$3 ORDER BY selected_at DESC LIMIT 1",[x.id,type,id])
+    : await pool.query("INSERT INTO v32_trip_component_selections(trip_draft_id,component_type,offer_id,metadata) VALUES($1,$2,$3,$4) RETURNING *",[x.id,type,id,JSON.stringify(o.rows[0])]);
+  const value=type==='experiences'?[o.rows[0]]:o.rows[0];
+  const updated=wasSame
+    ? await pool.query(`SELECT id,${col},updated_at FROM v30_trip_drafts WHERE id=$1`,[x.id])
+    : await pool.query(`UPDATE v30_trip_drafts SET ${col}=$1::jsonb,updated_at=now() WHERE id=$2 RETURNING id,${col},updated_at`,[JSON.stringify(value),x.id]);
+  res.status(wasSame?200:201).json({selection:s.rows[0]||null,offer:o.rows[0],tripDraftUpdate:updated.rows[0],selectionChanged:!wasSame,reoptimizationSuggested:!wasSame,travelerDecides:true,automaticBooking:false});
+ }catch(e){res.status(500).json({error:e.message})}
+});
+v30Router.get('/v32/trip-draft/:draftId/readiness',async(req,res)=>{
+ try{
+  const d=await pool.query("SELECT id,title,status,territory_key,transport,accommodation,experiences,health_safety FROM v30_trip_drafts WHERE id=$1",[req.params.draftId]);
+  if(!d.rows[0])return res.status(404).json({error:'trip_draft_not_found'});
+  const x=d.rows[0],missing=[];
+  if(!x.territory_key)missing.push('territory');
+  if(!x.transport||!Object.keys(x.transport).length)missing.push('transport');
+  if(!x.accommodation||!Object.keys(x.accommodation).length)missing.push('accommodation');
+  if(!Array.isArray(x.experiences)||!x.experiences.length)missing.push('experiences');
+  if(!Array.isArray(x.health_safety)||!x.health_safety.length)missing.push('health_safety');
+  res.json({tripDraftId:x.id,missing,completeness:Math.round((5-missing.length)/5*100),readyForDecision:missing.length===0,travelerDecides:true,proposalOnly:true,automaticBooking:false});
+ }catch(e){res.status(500).json({error:e.message})}
+});
+v30Router.get('/v32/trip-draft/:draftId/preparation',async(req,res)=>{
+ try{
+  const d=await pool.query("SELECT id,title,status,territory_key,transport,accommodation,experiences,health_safety FROM v30_trip_drafts WHERE id=$1",[req.params.draftId]);
+  if(!d.rows[0])return res.status(404).json({error:'trip_draft_not_found'});
+  const x=d.rows[0];
+  const profile=await pool.query("SELECT p.traveler_type,p.age_group,p.mobility_level,p.party_type,p.party_size,p.budget_level,p.pace,p.duration_days,p.accessibility_needs,p.preferences,p.constraints FROM v30_traveler_profiles p JOIN v30_trip_drafts t ON t.session_id=p.session_id WHERE t.id=$1",[x.id]);
+  const travelerProfile=profile.rows[0]||null;
+  const fitSignals=[];
+  if(travelerProfile){if(travelerProfile.mobility_level&&travelerProfile.mobility_level!=='independent')fitSignals.push({key:'mobility',label:'Vérifier l’accessibilité des solutions',priority:'high'});if(travelerProfile.age_group==='senior')fitSignals.push({key:'senior',label:'Privilégier confort, rythme et périodes tempérées',priority:'medium'});if(travelerProfile.party_type==='family')fitSignals.push({key:'family',label:'Vérifier les solutions adaptées aux enfants',priority:'medium'});if(travelerProfile.constraints?.length)fitSignals.push({key:'constraints',label:'Prendre en compte les contraintes déclarées',priority:'high'});if(travelerProfile.budget_level)fitSignals.push({key:'budget',label:'Vérifier que le coût total reste dans le niveau de budget choisi',priority:'medium'});if(travelerProfile.duration_days)fitSignals.push({key:'duration',label:'Vérifier que les composants couvrent la durée prévue',priority:'medium'});if(travelerProfile.pace)fitSignals.push({key:'pace',label:'Vérifier la compatibilité entre le rythme souhaité et les expériences choisies',priority:'medium'});if(travelerProfile.preferences?.length)fitSignals.push({key:'preferences',label:'Comparer les offres avec les préférences déclarées',priority:'medium'});}
+  const s=await pool.query("SELECT component_type,COUNT(*)::int count FROM v32_trip_component_selections WHERE trip_draft_id=$1 GROUP BY component_type",[x.id]);
+  const counts={transport:0,accommodation:0,experiences:0};for(const row of s.rows)counts[row.component_type]=row.count;
+  const checklist=[
+   {key:'territory',label:'Territoire',done:Boolean(x.territory_key)},
+   {key:'transport',label:'Transport',done:Boolean(x.transport&&Object.keys(x.transport).length)||counts.transport>0},
+   {key:'accommodation',label:'Hébergement',done:Boolean(x.accommodation&&Object.keys(x.accommodation).length)||counts.accommodation>0},
+   {key:'experiences',label:'Expériences',done:Array.isArray(x.experiences)&&x.experiences.length>0||counts.experiences>0},
+   {key:'health_safety',label:'Santé & Sécurité',done:Array.isArray(x.health_safety)&&x.health_safety.length>0}
+  ];
+  const done=checklist.filter(i=>i.done).length;
+  res.json({tripDraft:x,travelerProfile,fitSignals,componentSelectionCounts:counts,checklist,completeness:Math.round(done/checklist.length*100),travelerDecides:true,proposalOnly:true,automaticBooking:false});
+ }catch(e){res.status(500).json({error:e.message})}
+});
+v30Router.get('/v32/trip-draft/:draftId/component-selections',async(req,res)=>{
+ try{
+  const d=await pool.query("SELECT id,title,status,territory_key,transport,accommodation,experiences,health_safety FROM v30_trip_drafts WHERE id=$1",[req.params.draftId]);
+  if(!d.rows[0])return res.status(404).json({error:'trip_draft_not_found'});
+  const q=await pool.query("SELECT id,component_type,offer_id,selected_at,metadata FROM v32_trip_component_selections WHERE trip_draft_id=$1 ORDER BY selected_at DESC",[d.rows[0].id]);
+  const grouped={transport:[],accommodation:[],experiences:[]};for(const x of q.rows)grouped[x.component_type].push(x);
+  res.json({tripDraft:d.rows[0],selections:q.rows,grouped,decisionBoundary:{travelerDecides:true,automaticBooking:false}});
+ }catch(e){res.status(500).json({error:e.message})}
+});
+v30Router.post('/v32/trip-draft/:draftId/revise-component',async(req,res)=>{
+ try{
+  const type=req.body?.componentType,id=Number(req.body?.offerId);
+  if(!['transport','accommodation','experiences'].includes(type)||!Number.isInteger(id))return res.status(400).json({error:'invalid_component'});
+  const d=await pool.query("SELECT id,transport,accommodation,experiences FROM v30_trip_drafts WHERE id=$1",[req.params.draftId]);
+  if(!d.rows[0])return res.status(404).json({error:'trip_draft_not_found'});
+  const o=await pool.query("SELECT id,title,offer_type,territory_key,price_amount,currency,booking_mode FROM v31_pro_offers WHERE id=$1 AND status='published'",[id]);
+  if(!o.rows[0])return res.status(404).json({error:'offer_not_found'});
+  const x=d.rows[0],col=type==='transport'?'transport':type==='accommodation'?'accommodation':'experiences';
+  const prev=x[col]; const next=type==='experiences'?[o.rows[0]]:o.rows[0];
+  const previousId=type==='experiences'?(Array.isArray(prev)&&prev[0]?.id||null):(prev?.id||null);
+  const wasSame=previousId===id;
+  if(wasSame){
+    const latest=await pool.query("SELECT * FROM v32_trip_component_revisions WHERE trip_draft_id=$1 AND component_type=$2 AND new_offer_id=$3 ORDER BY created_at DESC LIMIT 1",[x.id,type,id]);
+    return res.status(200).json({tripDraftId:x.id,componentType:type,previousOfferId:previousId,newOfferId:id,revision:latest.rows[0]||null,currentOffer:o.rows[0],revisionChanged:false,reoptimizationSuggested:false,travelerDecides:true,automaticBooking:false});
+  }
+  await pool.query(`UPDATE v30_trip_drafts SET ${col}=$1::jsonb,updated_at=now() WHERE id=$2`,[JSON.stringify(next),x.id]);
+  const revision=await pool.query("INSERT INTO v32_trip_component_revisions(trip_draft_id,component_type,previous_offer_id,new_offer_id,metadata) VALUES($1,$2,$3,$4,$5) RETURNING *",[x.id,type,previousId,id,JSON.stringify({source:'traveler_revision'})]);
+  res.status(200).json({tripDraftId:x.id,componentType:type,previousOfferId:previousId,newOfferId:id,revision:revision.rows[0],currentOffer:o.rows[0],revisionChanged:true,reoptimizationSuggested:true,travelerDecides:true,automaticBooking:false});
+ }catch(e){res.status(500).json({error:e.message})}
+});
+v30Router.get('/v32/globe/root',async(req,res)=>{
+ try{const q=await pool.query("SELECT node_key,node_type,name,hemisphere,climate_keys,latitude,longitude FROM v32_geo_nodes WHERE node_type='world' AND active=true ORDER BY name");res.json({zoomLevel:0,nodes:q.rows,navigation:'progressive'});}catch(e){res.status(500).json({error:e.message})}
+});
+v30Router.get('/v32/globe/:nodeKey',async(req,res)=>{
+ try{const node=await pool.query("SELECT * FROM v32_geo_nodes WHERE node_key=$1 AND active=true",[req.params.nodeKey]);if(!node.rows[0])return res.status(404).json({error:'geo_node_not_found'});const n=node.rows[0];const q=await pool.query("SELECT node_key,node_type,name,country_iso3,hemisphere,climate_keys,latitude,longitude FROM v32_geo_nodes WHERE parent_key=$1 AND active=true ORDER BY name",[n.node_key]);res.json({node:n,children:q.rows,zoomLevel:n.node_type==='world'?0:n.node_type==='continent'?1:n.node_type==='country'?2:n.node_type==='region'?3:n.node_type==='territory'?4:5,navigation:'progressive'});}catch(e){res.status(500).json({error:e.message})}
+});
+
+v30Router.get('/v32/globe/:nodeKey/geometry',async(req,res)=>{
+ try{
+  const n=await pool.query("SELECT g.node_key,g.node_type,g.name,g.country_iso3,r.source_dataset,r.source_key,r.geometry_type,r.geometry_ref FROM v32_geo_nodes g LEFT JOIN v32_geo_render_sources r ON r.node_key=g.node_key WHERE g.node_key=$1 AND g.active=true",[req.params.nodeKey]);
+  if(!n.rows[0])return res.status(404).json({error:'geo_node_not_found'});
+  const x=n.rows[0];
+  if(!x.source_key)return res.json({node:x,geometry:null,source:null,available:false});
+  const table=x.node_type==='country'?'ne_admin0_countries_v29_14':(x.node_type==='region'||x.node_type==='territory'?'ne_admin1_states_v29_14':null);
+  if(!table)return res.json({node:x,geometry:null,source:x.source_dataset,available:false});
+  const exists=await pool.query("SELECT to_regclass($1) IS NOT NULL AS ok",['public.'+table]);
+  if(!exists.rows[0]?.ok)return res.json({node:x,geometry:null,source:x.source_dataset,available:false});
+  const sql=x.node_type==='country'
+   ? "SELECT ST_AsGeoJSON(ST_SimplifyPreserveTopology(ST_Force2D(geom),0.08))::json AS geometry FROM ne_admin0_countries_v29_14 WHERE COALESCE(NULLIF(UPPER(iso_a3),'-'),NULLIF(UPPER(adm0_a3),'-'))=$1 LIMIT 1"
+   : "SELECT ST_AsGeoJSON(ST_SimplifyPreserveTopology(ST_Force2D(geom),0.03))::json AS geometry FROM ne_admin1_states_v29_14 WHERE gid_1=$1 OR adm1_code=$1 LIMIT 1";
+  const q=await pool.query(sql,[x.geometry_ref.replace(/^country:/,'').replace(/^admin1:/,'')]);
+  res.json({node:x,geometry:q.rows[0]?.geometry||null,source:x.source_dataset,available:true});
+ }catch(e){res.status(500).json({error:e.message})}
+});
+
+v30Router.get('/v32/globe/:nodeKey/render-profile',async(req,res)=>{
+ try{
+  const n=await pool.query("SELECT node_key,node_type,name,hemisphere,climate_keys FROM v32_geo_nodes WHERE node_key=$1 AND active=true",[req.params.nodeKey]);
+  if(!n.rows[0])return res.status(404).json({error:'geo_node_not_found'});
+  const x=n.rows[0];
+  const p=await pool.query("SELECT * FROM v32_globe_render_profiles WHERE node_type=$1",[x.node_type]);
+  if(!p.rows[0])return res.status(404).json({error:'render_profile_not_found'});
+  res.json({node:x,renderProfile:p.rows[0],navigation:'progressive'});
+ }catch(e){res.status(500).json({error:e.message})}
+});
+
+v30Router.get('/v32/globe/:nodeKey/climate',async(req,res)=>{
+ try{
+  const n=await pool.query("SELECT node_key,name,hemisphere,climate_keys FROM v32_geo_nodes WHERE node_key=$1 AND active=true",[req.params.nodeKey]);
+  if(!n.rows[0])return res.status(404).json({error:'geo_node_not_found'});
+  const x=n.rows[0],q=await pool.query("SELECT w.* FROM v32_seasonal_windows w WHERE w.climate_key=ANY($1::text[]) AND w.hemisphere IN ($2,'equatorial') ORDER BY w.climate_key,w.season_key",[x.climate_keys,x.hemisphere]);
+  res.json({node:x,seasons:q.rows,hemisphere:x.hemisphere});
+ }catch(e){res.status(500).json({error:e.message})}
+});
+
+v30Router.get('/v32/globe/:nodeKey/travel-components',async(req,res)=>{
+ try{
+  const n=await pool.query("SELECT node_key,name FROM v32_geo_nodes WHERE node_key=$1 AND active=true",[req.params.nodeKey]);
+  if(!n.rows[0])return res.status(404).json({error:'geo_node_not_found'});
+  const q=await pool.query("SELECT o.id,o.title,o.description,o.offer_type,o.price_amount,o.currency,o.booking_mode,o.territory_key,p.name professional_name,p.verified FROM v31_pro_offers o JOIN v30_pro_profiles p ON p.id=o.professional_id WHERE o.status='published' AND (o.territory_key=$1 OR o.territory_key IN (SELECT node_key FROM v32_geo_nodes WHERE parent_key=$1)) ORDER BY p.verified DESC,o.updated_at DESC LIMIT 60",[req.params.nodeKey]);
+  const groups={transport:[],accommodation:[],experiences:[]};
+  for(const row of q.rows){const t=String(row.offer_type||'').toLowerCase();const key=t.includes('transport')||t.includes('transfert')||t.includes('mobil')?'transport':t.includes('accommodation')||t.includes('hébergement')||t.includes('hotel')||t.includes('lodging')?'accommodation':'experiences';groups[key].push(row);}
+  res.json({node:n.rows[0],components:groups,travelerDecides:true,proposalOnly:true,automaticBooking:false});
+ }catch(e){res.status(500).json({error:e.message})}
+});
+v30Router.get('/v32/globe/:nodeKey/health-safety',async(req,res)=>{
+ try{
+  const n=await pool.query("SELECT node_key,name FROM v32_geo_nodes WHERE node_key=$1 AND active=true",[req.params.nodeKey]);
+  if(!n.rows[0])return res.status(404).json({error:'geo_node_not_found'});
+  const q=await pool.query("SELECT id,service_type,name,description,latitude,longitude,public_contact FROM v30_health_safety_points WHERE territory_key=$1 AND active=true ORDER BY service_type,name",[req.params.nodeKey]);
+  const counts=q.rows.reduce((a,x)=>(a[x.service_type]=(a[x.service_type]||0)+1,a),{});
+  res.json({node:n.rows[0],points:q.rows,counts,privacy:'public_service_data_only'});
+ }catch(e){res.status(500).json({error:e.message})}
+});
+v30Router.get('/v32/globe/:nodeKey/offers',async(req,res)=>{
+ try{
+  const n=await pool.query("SELECT node_key,name,climate_keys,hemisphere FROM v32_geo_nodes WHERE node_key=$1 AND active=true",[req.params.nodeKey]);
+  if(!n.rows[0])return res.status(404).json({error:'geo_node_not_found'});
+  const tag=(req.query.tag||'').trim();
+  const params=[req.params.nodeKey];
+  let filter="o.status='published' AND (o.territory_key=$1 OR o.territory_key IN (SELECT node_key FROM v32_geo_nodes WHERE parent_key=$1))";
+  if(tag){params.push(tag);filter+=" AND ($2=ANY(o.specialties) OR $2=ANY(o.audiences))";}
+  const q=await pool.query(`SELECT o.id,o.title,o.description,o.offer_type,o.territory_key,o.price_amount,o.currency,o.booking_mode,o.specialties,o.audiences,p.name professional_name,p.verified,p.pro_type
+   FROM v31_pro_offers o JOIN v30_pro_profiles p ON p.id=o.professional_id
+   WHERE ${filter} ORDER BY p.verified DESC,o.updated_at DESC LIMIT 30`,params);
+  res.json({node:n.rows[0],tag:tag||null,offers:q.rows,travelerDecides:true,proposalOnly:true,automaticBooking:false});
+ }catch(e){res.status(500).json({error:e.message})}
+});
+v30Router.post('/v32/trip-draft/:draftId/select-scenario',async(req,res)=>{
+ try{
+  const key=req.body?.scenarioKey;
+  if(!['comfort','balanced','discovery'].includes(key))return res.status(400).json({error:'invalid_scenario'});
+  const d=await pool.query("SELECT id FROM v30_trip_drafts WHERE id=$1",[req.params.draftId]);
+  if(!d.rows[0])return res.status(404).json({error:'trip_draft_not_found'});
+  const current=await pool.query("SELECT id,active_scenario_key,updated_at FROM v30_trip_drafts WHERE id=$1",[d.rows[0].id]);
+  const wasSame=current.rows[0].active_scenario_key===key;
+  const s=wasSame
+    ? await pool.query("SELECT id,trip_draft_id,scenario_key,selected_at,metadata FROM v32_trip_scenario_selections WHERE trip_draft_id=$1 AND scenario_key=$2 ORDER BY selected_at DESC LIMIT 1",[d.rows[0].id,key])
+    : await pool.query("INSERT INTO v32_trip_scenario_selections(trip_draft_id,scenario_key,metadata) VALUES($1,$2,$3) RETURNING *",[d.rows[0].id,key,JSON.stringify({source:'globe',decision:'traveler_selected'})]);
+  const active=wasSame ? current : await pool.query("UPDATE v30_trip_drafts SET active_scenario_key=$1,updated_at=now() WHERE id=$2 RETURNING id,active_scenario_key,updated_at",[key,d.rows[0].id]);
+  res.status(wasSame?200:201).json({selection:s.rows[0]||null,activeScenario:active.rows[0],decisionChanged:!wasSame,reoptimizationSuggested:!wasSame,travelerDecides:true,automaticBooking:false});
+ }catch(e){res.status(500).json({error:e.message})}
+});
+v30Router.get('/v32/trip-draft/:draftId/scenarios',async(req,res)=>{
+ try{
+  const d=await pool.query("SELECT id,territory_key,active_scenario_key,transport,accommodation,experiences,health_safety FROM v30_trip_drafts WHERE id=$1",[req.params.draftId]);
+  if(!d.rows[0])return res.status(404).json({error:'trip_draft_not_found'});
+  const x=d.rows[0];
+  const q=await pool.query("SELECT o.id,o.title,o.offer_type,o.price_amount,o.currency,o.booking_mode,o.specialties,o.audiences,p.name professional_name,p.verified FROM v31_pro_offers o JOIN v30_pro_profiles p ON p.id=o.professional_id WHERE o.status='published' AND (o.territory_key=$1 OR o.territory_key IN (SELECT node_key FROM v32_geo_nodes WHERE parent_key=$1)) ORDER BY p.verified DESC,o.updated_at DESC LIMIT 60",[x.territory_key]);
+  const scenarios=[
+   {key:'comfort',name:'Confort',description:'Privilégie la qualité, la simplicité et les solutions vérifiées.'},
+   {key:'balanced',name:'Équilibre',description:'Cherche un compromis entre confort, diversité et maîtrise du coût.'},
+   {key:'discovery',name:'Découverte',description:'Privilégie la diversité des expériences et l’exploration du territoire.'}
+  ];
+  for(const s of scenarios){const offers=s.key==='comfort'?q.rows.filter(o=>o.verified).slice(0,8):s.key==='discovery'?q.rows.slice(0,12):q.rows.slice(0,10);s.candidates=offers.map(o=>({offerId:o.id,title:o.title,type:o.offer_type,professional:o.professional_name,verified:o.verified,price:o.price_amount,currency:o.currency,bookingMode:o.booking_mode}));}
+  res.json({tripDraftId:x.id,scenarios,travelerDecides:true,proposalOnly:true,automaticBooking:false});
+ }catch(e){res.status(500).json({error:e.message})}
+});
+v30Router.post('/v32/trip-draft/:draftId/recalculate',async(req,res)=>{
+ try{
+  const d=await pool.query("SELECT id,active_scenario_key,territory_key,transport,accommodation,experiences,health_safety,updated_at FROM v30_trip_drafts WHERE id=$1",[req.params.draftId]);
+  if(!d.rows[0])return res.status(404).json({error:'trip_draft_not_found'});
+  const x=d.rows[0];
+  const present=[Boolean(x.transport&&Object.keys(x.transport).length),Boolean(x.accommodation&&Object.keys(x.accommodation).length),Array.isArray(x.experiences)&&x.experiences.length>0,Array.isArray(x.health_safety)&&x.health_safety.length>0];
+  const score=Math.round(present.filter(Boolean).length/4*100);
+  const reason=req.body?.reason||'traveler_recalculation';
+  const event=await pool.query("INSERT INTO v32_trip_recalculation_events(trip_draft_id,scenario_key,score,reason,metadata) VALUES($1,$2,$3,$4,$5) RETURNING id,trip_draft_id,scenario_key,score,reason,created_at,metadata",[x.id,x.active_scenario_key,score,reason,JSON.stringify({source:'traveler_action',composition:{transport:present[0],accommodation:present[1],experiences:present[2],healthSafety:present[3]}})]);
+  const latestOptimization=await pool.query("SELECT created_at FROM v32_trip_optimization_snapshots WHERE trip_draft_id=$1 AND scenario_key IS NOT DISTINCT FROM $2 ORDER BY created_at DESC LIMIT 1",[x.id,x.active_scenario_key]);
+  const optimizationStale=Boolean(latestOptimization.rows[0]&&x.updated_at&&new Date(latestOptimization.rows[0].created_at)<new Date(x.updated_at));
+  res.json({tripDraftId:x.id,activeScenario:x.active_scenario_key,score,event:event.rows[0],optimizationStale,changedAt:new Date().toISOString(),recalculated:true,travelerDecides:true,proposalOnly:true,automaticBooking:false});
+ }catch(e){res.status(500).json({error:e.message})}
+});
+v30Router.get('/v32/trip-draft/:draftId/optimization',async(req,res)=>{
+ try{
+  const d=await pool.query("SELECT id,active_scenario_key,territory_key,transport,accommodation,experiences,health_safety FROM v30_trip_drafts WHERE id=$1",[req.params.draftId]);
+  if(!d.rows[0])return res.status(404).json({error:'trip_draft_not_found'});
+  const x=d.rows[0];
+  const p=await pool.query("SELECT p.age_group,p.mobility_level,p.party_type,p.budget_level,p.pace,p.duration_days,p.preferences,p.constraints FROM v30_traveler_profiles p JOIN v30_trip_drafts t ON t.session_id=p.session_id WHERE t.id=$1",[x.id]);
+  const profile=p.rows[0]||{};
+  const dimensions=[
+   {key:'profile',label:'Profil voyageur',weight:20,score:(profile.age_group||profile.mobility_level||profile.party_type)?100:40},
+   {key:'climate',label:'Climat et saison',weight:20,score:x.territory_key?100:0},
+   {key:'cost',label:'Budget / coût',weight:15,score:profile.budget_level?70:40},
+   {key:'duration',label:'Durée',weight:10,score:profile.duration_days?70:40},
+   {key:'comfort',label:'Confort / rythme',weight:10,score:profile.pace?70:40},
+   {key:'composition',label:'Composition du voyage',weight:15,score:Math.round([x.transport,x.accommodation,Array.isArray(x.experiences)&&x.experiences.length].filter(Boolean).length/3*100)},
+   {key:'healthSafety',label:'Santé & Sécurité',weight:10,score:Array.isArray(x.health_safety)&&x.health_safety.length?100:0}
+  ];
+  const scenarioWeights={comfort:{profile:25,climate:15,cost:10,duration:10,comfort:20,composition:10,healthSafety:10},balanced:{profile:20,climate:20,cost:15,duration:10,comfort:10,composition:15,healthSafety:10},discovery:{profile:15,climate:20,cost:10,duration:10,comfort:5,composition:25,healthSafety:15}};
+  const weights=scenarioWeights[x.active_scenario_key||'balanced'];
+  dimensions.forEach(d=>d.weight=weights[d.key]);
+  const memoryRows=await pool.query("SELECT proposal_key,decision,created_at FROM v32_trip_improvement_feedback WHERE trip_draft_id=$1 ORDER BY created_at DESC",[x.id]);
+  const latestMemory={};
+  for(const row of memoryRows.rows)if(!latestMemory[row.proposal_key])latestMemory[row.proposal_key]=row;
+  const memoryDimension={transport:'composition',accommodation:'composition',experiences:'composition',healthSafety:'healthSafety',health_safety:'healthSafety',budget:'cost',duration:'duration'};
+  for(const row of Object.values(latestMemory)){
+   const dimensionKey=memoryDimension[row.proposal_key];
+   const dimension=dimensions.find(item=>item.key===dimensionKey);
+   if(!dimension||row.decision==='deferred')continue;
+   const delta=row.decision==='accepted'?6:-6;
+   dimension.score=Math.max(0,Math.min(100,dimension.score+delta));
+  }
+  const decisionMemory=Object.values(latestMemory).map(row=>({proposalKey:row.proposal_key,decision:row.decision,lastAt:row.created_at}));
+  const score=Math.round(dimensions.reduce((s,d)=>s+d.score*d.weight/100,0));
+  const snapshotPayload=JSON.stringify(dimensions);
+  const previous=await pool.query("SELECT id,score,dimensions,created_at FROM v32_trip_optimization_snapshots WHERE trip_draft_id=$1 AND scenario_key IS NOT DISTINCT FROM $2 ORDER BY created_at DESC LIMIT 1",[x.id,x.active_scenario_key]);
+  const previousSame=previous.rows[0]&&Number(previous.rows[0].score)===score&&JSON.stringify(previous.rows[0].dimensions)===snapshotPayload;
+  const snapshot=previousSame?previous.rows[0]:(await pool.query("INSERT INTO v32_trip_optimization_snapshots(trip_draft_id,scenario_key,score,dimensions) VALUES($1,$2,$3,$4) RETURNING id,score,dimensions,created_at",[x.id,x.active_scenario_key,score,snapshotPayload])).rows[0];
+  res.json({tripDraftId:x.id,activeScenario:x.active_scenario_key,score,dimensions,decisionMemory,snapshotCreated:!previousSame,snapshot,profileSummary:{ageGroup:profile.age_group,mobility:profile.mobility_level,partyType:profile.party_type,budget:profile.budget_level,pace:profile.pace,durationDays:profile.duration_days},travelerDecides:true,proposalOnly:true,automaticBooking:false});
+ }catch(e){res.status(500).json({error:e.message})}
+});
+v30Router.get('/v32/trip-draft/:draftId/decision-brief',async(req,res)=>{
+ try{
+  const d=await pool.query("SELECT id,title,territory_key,active_scenario_key,updated_at FROM v30_trip_drafts WHERE id=$1",[req.params.draftId]);
+  if(!d.rows[0])return res.status(404).json({error:'trip_draft_not_found'});
+  const x=d.rows[0];
+  const p=await pool.query("SELECT p.traveler_type,p.age_group,p.mobility_level,p.party_type,p.party_size,p.budget_level,p.pace,p.duration_days,p.preferences,p.constraints FROM v30_traveler_profiles p JOIN v30_trip_drafts t ON t.session_id=p.session_id WHERE t.id=$1",[x.id]);
+  const profile=p.rows[0]||null;
+  const t=await pool.query("SELECT climate_zone,hemisphere,name FROM v30_territories WHERE territory_key=$1",[x.territory_key]);
+  if(!t.rows[0])return res.status(400).json({error:'territory_required'});
+  const rules=await pool.query("SELECT tourism_tag,preferred_months,weight,rationale_fr FROM v30_tourism_climate_rules WHERE climate_key=$1 AND hemisphere=$2 ORDER BY weight DESC",[t.rows[0].climate_zone,t.rows[0].hemisphere]);
+  const months=[...new Set(rules.rows.flatMap(r=>r.preferred_months||[]))].sort((a,b)=>a-b);
+  const signals=[];
+  if(profile?.budget_level)signals.push({key:'budget',label:'Budget à confronter aux prix réels des offres sélectionnées',priority:'medium'});
+  if(profile?.duration_days)signals.push({key:'duration',label:'Durée à confronter aux disponibilités et au nombre d’expériences',priority:'medium'});
+  if(profile?.pace)signals.push({key:'pace',label:'Rythme à confronter au programme choisi',priority:'medium'});
+  if(profile?.preferences?.length)signals.push({key:'preferences',label:'Préférences à confronter aux spécialités des offres',priority:'medium'});
+  const memory=await pool.query("SELECT proposal_key,decision,created_at AS last_at FROM v32_trip_improvement_feedback WHERE trip_draft_id=$1 ORDER BY created_at DESC",[x.id]);
+  const latestMemory={}; for(const row of memory.rows)if(!latestMemory[row.proposal_key])latestMemory[row.proposal_key]=row;
+  const optimization=await pool.query("SELECT score,dimensions,created_at FROM v32_trip_optimization_snapshots WHERE trip_draft_id=$1 ORDER BY created_at DESC LIMIT 1",[x.id]);
+  const latestOptimization=optimization.rows[0]||null;
+  const optimizationStale=Boolean(latestOptimization&&x.updated_at&&new Date(latestOptimization.created_at)<new Date(x.updated_at));
+  const decisionMemory=Object.values(latestMemory).map(row=>({...row,stale:Boolean(x.updated_at&&new Date(row.last_at)<new Date(x.updated_at))}));
+  res.json({tripDraft:x,activeScenario:x.active_scenario_key,territory:t.rows[0],travelerProfile:profile,recommendedMonths:months,travelRationales:rules.rows.slice(0,8),decisionSignals:signals,decisionMemory,latestOptimization,optimizationStale,decisionBoundary:{travelerDecides:true,proposalOnly:true,automaticBooking:false}});
+ }catch(e){res.status(500).json({error:e.message})}
+});
+v30Router.get('/v32/trip-draft/:draftId/recommended-dates',async(req,res)=>{
+ try{
+  const d=await pool.query("SELECT id,territory_key FROM v30_trip_drafts WHERE id=$1",[req.params.draftId]);
+  if(!d.rows[0]||!d.rows[0].territory_key)return res.status(400).json({error:'territory_required'});
+  const t=await pool.query("SELECT climate_zone,hemisphere FROM v30_territories WHERE territory_key=$1",[d.rows[0].territory_key]);
+  if(!t.rows[0])return res.status(404).json({error:'territory_not_found'});
+  const q=await pool.query("SELECT month_start,month_end,season_fr,tourism_context FROM v30_climate_seasons WHERE climate_key=$1 AND hemisphere=$2 ORDER BY month_start",[t.rows[0].climate_zone,t.rows[0].hemisphere]);
+  const rules=await pool.query("SELECT tourism_tag,preferred_months,weight,rationale_fr FROM v30_tourism_climate_rules WHERE climate_key=$1 AND hemisphere=$2 ORDER BY weight DESC",[t.rows[0].climate_zone,t.rows[0].hemisphere]);
+  const months=[...new Set(rules.rows.flatMap(r=>r.preferred_months||[]))].sort((a,b)=>a-b);
+  res.json({territoryKey:d.rows[0].territory_key,climate:t.rows[0].climate_zone,hemisphere:t.rows[0].hemisphere,seasonWindows:q.rows,recommendedMonths:months,travelTags:rules.rows.slice(0,12),travelerDecides:true,proposalOnly:true});
+ }catch(e){res.status(500).json({error:e.message})}
+});
+v30Router.get('/v32/globe/:nodeKey/overview',async(req,res)=>{
+ try{
+  const n=await pool.query("SELECT node_key,node_type,name,country_iso3,hemisphere,climate_keys,latitude,longitude,metadata FROM v32_geo_nodes WHERE node_key=$1 AND active=true",[req.params.nodeKey]);
+  if(!n.rows[0])return res.status(404).json({error:'geo_node_not_found'});
+  const x=n.rows[0];
+  const seasons=await pool.query("SELECT climate_key,season_key,month_start,month_end,tourism_tags,rationale_fr FROM v32_seasonal_windows WHERE climate_key=ANY($1::text[]) AND hemisphere IN ($2,'equatorial') ORDER BY month_start,climate_key",[x.climate_keys,x.hemisphere]);
+  const children=await pool.query("SELECT node_key,node_type,name,hemisphere,climate_keys,latitude,longitude FROM v32_geo_nodes WHERE parent_key=$1 AND active=true ORDER BY node_type,name",[x.node_key]);
+  const tags=await pool.query("SELECT DISTINCT tourism_tag FROM v30_tourism_climate_rules WHERE climate_key=ANY($1::text[]) AND hemisphere IN ($2,'equatorial') ORDER BY tourism_tag",[x.climate_keys,x.hemisphere]);
+  const month=Number(req.query.month)||new Date().getUTCMonth()+1;
+  const seasonalTags=await pool.query("SELECT DISTINCT tourism_tag FROM v30_tourism_climate_rules WHERE climate_key=ANY($1::text[]) AND hemisphere IN ($2,'equatorial') AND $3=ANY(preferred_months) ORDER BY tourism_tag",[x.climate_keys,x.hemisphere,month]);
+  res.json({node:x,seasonalWindows:seasons.rows,children:children.rows,tourismTags:tags.rows.map(r=>r.tourism_tag),seasonalTourismTags:seasonalTags.rows.map(r=>r.tourism_tag),month,signals:{climates:x.climate_keys||[],hemisphere:x.hemisphere,childCount:children.rowCount}});
+ }catch(e){res.status(500).json({error:e.message})}
+});
+v30Router.get('/v32/trip-draft/:draftId/recalculation-history',async(req,res)=>{
+ try{
+  const d=await pool.query("SELECT id,active_scenario_key FROM v30_trip_drafts WHERE id=$1",[req.params.draftId]);
+  if(!d.rows[0])return res.status(404).json({error:'trip_draft_not_found'});
+  const q=await pool.query("SELECT id,trip_draft_id,scenario_key,score,reason,created_at,metadata FROM v32_trip_recalculation_events WHERE trip_draft_id=$1 ORDER BY created_at DESC LIMIT 50",[d.rows[0].id]);
+  res.json({tripDraftId:d.rows[0].id,activeScenario:d.rows[0].active_scenario_key,events:q.rows,count:q.rowCount,travelerDecides:true});
+ }catch(e){res.status(500).json({error:e.message})}
+});
+v30Router.get('/v32/trip-draft/:draftId/optimization-history',async(req,res)=>{
+ try{
+  const d=await pool.query("SELECT id,active_scenario_key FROM v30_trip_drafts WHERE id=$1",[req.params.draftId]);
+  if(!d.rows[0])return res.status(404).json({error:'trip_draft_not_found'});
+  const q=await pool.query("SELECT id,trip_draft_id,scenario_key,score,dimensions,created_at FROM v32_trip_optimization_snapshots WHERE trip_draft_id=$1 ORDER BY created_at DESC LIMIT 50",[d.rows[0].id]);
+  const rows=q.rows.map((row,i)=>({...row,deltaFromPrevious:i===q.rows.length-1?null:row.score-q.rows[i+1].score}));
+  res.json({tripDraftId:d.rows[0].id,activeScenario:d.rows[0].active_scenario_key,snapshots:rows,count:rows.length,travelerDecides:true});
+ }catch(e){res.status(500).json({error:e.message})}
+});
+v30Router.get('/v32/trip-draft/:draftId/optimization-diff',async(req,res)=>{
+ try{
+  const d=await pool.query("SELECT id,active_scenario_key FROM v30_trip_drafts WHERE id=$1",[req.params.draftId]);
+  if(!d.rows[0])return res.status(404).json({error:'trip_draft_not_found'});
+  const q=await pool.query("SELECT score,dimensions,created_at FROM v32_trip_optimization_snapshots WHERE trip_draft_id=$1 ORDER BY created_at DESC LIMIT 2",[d.rows[0].id]);
+  if(q.rows.length<2)return res.json({tripDraftId:d.rows[0].id,activeScenario:d.rows[0].active_scenario_key,available:false,reason:'insufficient_snapshots',travelerDecides:true});
+  const current=q.rows[0],previous=q.rows[1];
+  const prevByKey=Object.fromEntries((previous.dimensions||[]).map(x=>[x.key,x]));
+  const dimensions=(current.dimensions||[]).map(x=>({...x,previousScore:prevByKey[x.key]?.score??null,delta:prevByKey[x.key]?x.score-prevByKey[x.key].score:null}));
+  res.json({tripDraftId:d.rows[0].id,activeScenario:d.rows[0].active_scenario_key,currentScore:current.score,previousScore:previous.score,scoreDelta:current.score-previous.score,currentAt:current.created_at,previousAt:previous.created_at,dimensions,available:true,travelerDecides:true});
+ }catch(e){res.status(500).json({error:e.message})}
+});
+v30Router.post('/v32/trip-draft/:draftId/improvement-feedback',async(req,res)=>{
+ try{
+  const proposalKey=String(req.body?.proposalKey||'').trim();
+  const decision=req.body?.decision;
+  if(!proposalKey||!['accepted','rejected','deferred'].includes(decision))return res.status(400).json({error:'invalid_feedback'});
+  const d=await pool.query("SELECT id FROM v30_trip_drafts WHERE id=$1",[req.params.draftId]);
+  if(!d.rows[0])return res.status(404).json({error:'trip_draft_not_found'});
+  const latest=await pool.query("SELECT * FROM v32_trip_improvement_feedback WHERE trip_draft_id=$1 AND proposal_key=$2 ORDER BY created_at DESC LIMIT 1",[d.rows[0].id,proposalKey]);
+  if(latest.rows[0]?.decision===decision)return res.status(200).json({feedback:latest.rows[0],scope:'trip_draft',feedbackChanged:false,reusableTravelerMemory:false,travelerDecides:true});
+  const q=await pool.query("INSERT INTO v32_trip_improvement_feedback(trip_draft_id,proposal_key,decision,metadata) VALUES($1,$2,$3,$4) RETURNING *",[d.rows[0].id,proposalKey,decision,JSON.stringify({source:'traveler_action'})]);
+  res.status(201).json({feedback:q.rows[0],scope:'trip_draft',feedbackChanged:true,reusableTravelerMemory:false,travelerDecides:true});
+ }catch(e){res.status(500).json({error:e.message})}
+});
+v30Router.get('/v32/trip-draft/:draftId/decision-memory',async(req,res)=>{
+ try{
+  const d=await pool.query("SELECT id,active_scenario_key FROM v30_trip_drafts WHERE id=$1",[req.params.draftId]);
+  if(!d.rows[0])return res.status(404).json({error:'trip_draft_not_found'});
+  const q=await pool.query("SELECT proposal_key,decision,COUNT(*)::int count,MAX(created_at) last_at FROM v32_trip_improvement_feedback WHERE trip_draft_id=$1 GROUP BY proposal_key,decision ORDER BY last_at DESC",[d.rows[0].id]);
+  res.json({tripDraftId:d.rows[0].id,activeScenario:d.rows[0].active_scenario_key,decisions:q.rows,scope:'trip_draft',reusableTravelerMemory:false});
+ }catch(e){res.status(500).json({error:e.message})}
+});
+v30Router.get('/health', (_req, res) => res.json({ ok: true, version: '30.2', router: 'v30-platform' }));
++vals.length+' RETURNING *',vals); if(q&&!q.rows[0])return res.status(404).json({error:'offer_not_found'}); if(q)res.json({offer:q.rows[0]}); });
 +(vals.length+1));vals.push(b[k])}; if(!sets.length)return res.status(400).json({error:'no_updates'}); vals.push(req.params.offerId); const q=await safeQuery(res,'UPDATE v31_pro_offers SET '+sets.join(',')+',updated_at=now() WHERE id=, (_req, res) => res.json({ ok: true, version: '30.2', router: 'v30-platform' }));
 +vals.length+' RETURNING *',vals); if(q&&!q.rows[0])return res.status(404).json({error:'offer_not_found'}); if(q)res.json({offer:q.rows[0]}); });
 v30Router.post('/v31/offers/:offerId/availability', async (req,res)=>{ const b=req.body||{}; if(!b.availableFrom||!b.availableTo)return res.status(400).json({error:'availability_window_required'}); const q=await safeQuery(res,'INSERT INTO v31_offer_availability(offer_id,available_from,available_to,capacity,booked,status,metadata) VALUES($1,$2,$3,$4,0,$5,$6) RETURNING *',[req.params.offerId,b.availableFrom,b.availableTo,b.capacity||1,b.status||'open',b.metadata||{}]); if(q)res.status(201).json({availability:q.rows[0]}); });
