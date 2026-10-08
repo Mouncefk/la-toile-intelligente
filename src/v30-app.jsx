@@ -13,6 +13,12 @@ const fallbackTerritories=[
 
 const scopeLabel={local:'Local',regional:'Régional',national:'National',international:'International',global:'Mondial'};
 async function v30fetch(url,options){const r=await fetch(url,options);const d=await r.json().catch(()=>({}));if(!r.ok)throw new Error(d.error||'Service V30 indisponible');return d}
+function TripDecisionBrief({draftId}){
+ const [data,setData]=useState(null);
+ useEffect(()=>{if(!draftId)return;v30fetch('/api/platform/v30/v32/trip-draft/'+draftId+'/decision-brief').then(setData).catch(()=>setData(null))},[draftId]);
+ if(!data)return null;
+ return <div className="v32DecisionBrief"><small>BRIEF POUR LA DÉCISION</small><b>{data.territory?.name||'Territoire'}</b><span>{data.territory?.climate_zone} · {data.territory?.hemisphere}</span>{data.recommendedMonths?.length>0&&<div><strong>Mois favorables</strong><p>{data.recommendedMonths.join(' · ')}</p></div>}{data.travelRationales?.slice(0,4).map((r,i)=><div key={i}><strong>{r.tourism_tag}</strong><p>{r.rationale_fr}</p></div>)}{data.decisionSignals?.length>0&&<section><strong>À vérifier</strong>{data.decisionSignals.map(s=><p key={s.key}>• {s.label}</p>)}</section>}<em>Proposition uniquement — décision du voyageur.</em></div>
+}
 function TripPreparationPanel({draftId}){
  const [data,setData]=useState(null);
  useEffect(()=>{if(!draftId)return;v30fetch('/api/platform/v30/v32/trip-draft/'+draftId+'/preparation').then(setData).catch(()=>setData(null))},[draftId]);
