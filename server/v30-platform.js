@@ -819,6 +819,24 @@ v30Router.get('/v32/trip-draft/:draftId/readiness',async(req,res)=>{
   res.json({tripDraftId:x.id,missing,completeness:Math.round((5-missing.length)/5*100),readyForDecision:missing.length===0,travelerDecides:true,proposalOnly:true,automaticBooking:false});
  }catch(e){res.status(500).json({error:e.message})}
 });
+v30Router.get('/v32/trip-draft/:draftId/preparation',async(req,res)=>{
+ try{
+  const d=await pool.query("SELECT id,title,status,territory_key,transport,accommodation,experiences,health_safety FROM v30_trip_drafts WHERE id=$1",[req.params.draftId]);
+  if(!d.rows[0])return res.status(404).json({error:'trip_draft_not_found'});
+  const x=d.rows[0];
+  const s=await pool.query("SELECT component_type,COUNT(*)::int count FROM v32_trip_component_selections WHERE trip_draft_id=$1 GROUP BY component_type",[x.id]);
+  const counts={transport:0,accommodation:0,experiences:0};for(const row of s.rows)counts[row.component_type]=row.count;
+  const checklist=[
+   {key:'territory',label:'Territoire',done:Boolean(x.territory_key)},
+   {key:'transport',label:'Transport',done:Boolean(x.transport&&Object.keys(x.transport).length)||counts.transport>0},
+   {key:'accommodation',label:'Hébergement',done:Boolean(x.accommodation&&Object.keys(x.accommodation).length)||counts.accommodation>0},
+   {key:'experiences',label:'Expériences',done:Array.isArray(x.experiences)&&x.experiences.length>0||counts.experiences>0},
+   {key:'health_safety',label:'Santé & Sécurité',done:Array.isArray(x.health_safety)&&x.health_safety.length>0}
+  ];
+  const done=checklist.filter(i=>i.done).length;
+  res.json({tripDraft:x,componentSelectionCounts:counts,checklist,completeness:Math.round(done/checklist.length*100),travelerDecides:true,proposalOnly:true});
+ }catch(e){res.status(500).json({error:e.message})}
+});
 v30Router.get('/v32/trip-draft/:draftId/component-selections',async(req,res)=>{
  try{
   const d=await pool.query("SELECT id,title,status,territory_key,transport,accommodation,experiences,health_safety FROM v30_trip_drafts WHERE id=$1",[req.params.draftId]);
