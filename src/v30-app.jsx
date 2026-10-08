@@ -14,7 +14,11 @@ const fallbackTerritories=[
 const scopeLabel={local:'Local',regional:'Régional',national:'National',international:'International',global:'Mondial'};
 async function v30fetch(url,options){const r=await fetch(url,options);const d=await r.json().catch(()=>({}));if(!r.ok)throw new Error(d.error||'Service V30 indisponible');return d}
 function GlobeNavigator(){
- const [node,setNode]=useState(null),[children,setChildren]=useState([]),[trail,setTrail]=useState([]),[climate,setClimate]=useState(null),[geometry,setGeometry]=useState(null),[loading,setLoading]=useState(true),[error,setError]=useState('');
+ const [node,setNode]=useState(null),[children,setChildren]=useState([]),[trail,setTrail]=useState([]),[climate,setClimate]=useState(null),[geometry,setGeometry]=useState(null),[loading,setLoading]=useState(true),[error,setError]=useState(''),[rotation,setRotation]=useState(0),[zoom,setZoom]=useState(1);
+ const drag=useRef(null);
+ const pointerDown=e=>{drag.current=e.clientX};
+ const pointerMove=e=>{if(drag.current===null)return;setRotation(v=>v+(e.clientX-drag.current)*.35);drag.current=e.clientX};
+ const pointerUp=()=>{drag.current=null};
  const project=(lon,lat)=>({x:50+(lon/180)*38,y:50-(lat/90)*38});
  const geometryPaths=useMemo(()=>{
   const walk=(coords)=>coords.map(ring=>ring.map(([lon,lat],i)=>{const p=project(lon,lat);return (i?'L':'M')+p.x.toFixed(2)+' '+p.y.toFixed(2)}).join(' ')+' Z').join(' ');
@@ -38,7 +42,8 @@ function GlobeNavigator(){
  return <section className="v32GlobeNavigator">
   <div className="v32GlobeVisual">
    <div className="v32Glow"></div>
-   <div className="v32Sphere3D" aria-label="Globe interactif La Toile">
+   <div className="v32GlobeControls"><button onClick={()=>setZoom(z=>Math.min(1.35,z+.1))}>＋</button><button onClick={()=>setZoom(z=>Math.max(.82,z-.1))}>−</button></div>
+   <div className="v32Sphere3D" aria-label="Globe interactif La Toile" onPointerDown={pointerDown} onPointerMove={pointerMove} onPointerUp={pointerUp} onPointerLeave={pointerUp} style={{transform:`perspective(900px) rotateX(3deg) rotateY(${rotation}deg) scale(${zoom})`}}>
     <div className="v32Latitude l1"></div><div className="v32Latitude l2"></div><div className="v32Latitude l3"></div>
     <div className="v32Longitude g1"></div><div className="v32Longitude g2"></div><div className="v32Longitude g3"></div>
     <div className="v32LandHint"></div>{geometryPaths.map((d,i)=><svg key={i} className="v32RealGeometry" viewBox="0 0 100 100" aria-hidden="true"><path d={d}/></svg>)}
