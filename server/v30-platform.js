@@ -928,6 +928,18 @@ v30Router.get('/v32/globe/:nodeKey/offers',async(req,res)=>{
   res.json({node:n.rows[0],tag:tag||null,offers:q.rows,travelerDecides:true,proposalOnly:true,automaticBooking:false});
  }catch(e){res.status(500).json({error:e.message})}
 });
+v30Router.get('/v32/trip-draft/:draftId/recommended-dates',async(req,res)=>{
+ try{
+  const d=await pool.query("SELECT id,territory_key FROM v30_trip_drafts WHERE id=$1",[req.params.draftId]);
+  if(!d.rows[0]||!d.rows[0].territory_key)return res.status(400).json({error:'territory_required'});
+  const t=await pool.query("SELECT climate_zone,hemisphere FROM v30_territories WHERE territory_key=$1",[d.rows[0].territory_key]);
+  if(!t.rows[0])return res.status(404).json({error:'territory_not_found'});
+  const q=await pool.query("SELECT month_start,month_end,season_fr,tourism_context FROM v30_climate_seasons WHERE climate_key=$1 AND hemisphere=$2 ORDER BY month_start",[t.rows[0].climate_zone,t.rows[0].hemisphere]);
+  const rules=await pool.query("SELECT tourism_tag,preferred_months,weight,rationale_fr FROM v30_tourism_climate_rules WHERE climate_key=$1 AND hemisphere=$2 ORDER BY weight DESC",[t.rows[0].climate_zone,t.rows[0].hemisphere]);
+  const months=[...new Set(rules.rows.flatMap(r=>r.preferred_months||[]))].sort((a,b)=>a-b);
+  res.json({territoryKey:d.rows[0].territory_key,climate:t.rows[0].climate_zone,hemisphere:t.rows[0].hemisphere,seasonWindows:q.rows,recommendedMonths:months,travelTags:rules.rows.slice(0,12),travelerDecides:true,proposalOnly:true});
+ }catch(e){res.status(500).json({error:e.message})}
+});
 v30Router.get('/v32/globe/:nodeKey/overview',async(req,res)=>{
  try{
   const n=await pool.query("SELECT node_key,node_type,name,country_iso3,hemisphere,climate_keys,latitude,longitude,metadata FROM v32_geo_nodes WHERE node_key=$1 AND active=true",[req.params.nodeKey]);
