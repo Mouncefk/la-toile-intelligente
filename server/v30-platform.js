@@ -801,6 +801,28 @@ v30Router.get('/v32/globe/:nodeKey',async(req,res)=>{
  try{const node=await pool.query("SELECT * FROM v32_geo_nodes WHERE node_key=$1 AND active=true",[req.params.nodeKey]);if(!node.rows[0])return res.status(404).json({error:'geo_node_not_found'});const n=node.rows[0];const q=await pool.query("SELECT node_key,node_type,name,country_iso3,hemisphere,climate_keys,latitude,longitude FROM v32_geo_nodes WHERE parent_key=$1 AND active=true ORDER BY name",[n.node_key]);res.json({node:n,children:q.rows,zoomLevel:n.node_type==='world'?0:n.node_type==='continent'?1:n.node_type==='country'?2:n.node_type==='region'?3:n.node_type==='territory'?4:5,navigation:'progressive'});}catch(e){res.status(500).json({error:e.message})}
 });
 
+v30Router.get('/v32/globe/:nodeKey/geometry',async(req,res)=>{
+ try{
+  const n=await pool.query("SELECT node_key,node_type,name,country_iso3 FROM v32_geo_nodes WHERE node_key=$1 AND active=true",[req.params.nodeKey]);
+  if(!n.rows[0])return res.status(404).json({error:'geo_node_not_found'});
+  const x=n.rows[0];
+  const available=await pool.query("SELECT to_regclass('public.ne_admin0_countries_v29_14') IS NOT NULL AS admin0,to_regclass('public.ne_admin1_states_v29_14') IS NOT NULL AS admin1");
+  const has0=available.rows[0]?.admin0,has1=available.rows[0]?.admin1;
+  if((x.node_type==='country'||x.node_type==='world')&&!has0)return res.json({node:x,geometry:null,source:'Natural Earth 10m',available:false});
+  if(x.node_type==='country'){
+   const q=await pool.query("SELECT ST_AsGeoJSON(ST_SimplifyPreserveTopology(ST_Force2D(geom),0.08))::json AS geometry FROM ne_admin0_countries_v29_14 WHERE COALESCE(NULLIF(UPPER(iso_a3),'-'),NULLIF(UPPER(adm0_a3),'-'))=$1 LIMIT 1",[x.country_iso3]);
+   return res.json({node:x,geometry:q.rows[0]?.geometry||null,source:'Natural Earth 10m',available:true});
+  }
+  if(x.node_type==='region'||x.node_type==='territory'){
+   if(!has1)return res.json({node:x,geometry:null,source:'Natural Earth 10m',available:false});
+   const key=x.metadata?.admin1_code||x.metadata?.gid_1||null;
+   const q=key?await pool.query("SELECT ST_AsGeoJSON(ST_SimplifyPreserveTopology(ST_Force2D(geom),0.03))::json AS geometry FROM ne_admin1_states_v29_14 WHERE gid_1=$1 OR adm1_code=$1 LIMIT 1",[key]):{rows:[]};
+   return res.json({node:x,geometry:q.rows[0]?.geometry||null,source:'Natural Earth 10m',available:true});
+  }
+  res.json({node:x,geometry:null,source:'Natural Earth 10m',available:has0});
+ }catch(e){res.status(500).json({error:e.message})}
+});
+
 v30Router.get('/v32/globe/:nodeKey/render-profile',async(req,res)=>{
  try{
   const n=await pool.query("SELECT node_key,node_type,name,hemisphere,climate_keys FROM v32_geo_nodes WHERE node_key=$1 AND active=true",[req.params.nodeKey]);
