@@ -801,4 +801,13 @@ v30Router.get('/v32/globe/:nodeKey',async(req,res)=>{
  try{const node=await pool.query("SELECT * FROM v32_geo_nodes WHERE node_key=$1 AND active=true",[req.params.nodeKey]);if(!node.rows[0])return res.status(404).json({error:'geo_node_not_found'});const n=node.rows[0];const q=await pool.query("SELECT node_key,node_type,name,country_iso3,hemisphere,climate_keys,latitude,longitude FROM v32_geo_nodes WHERE parent_key=$1 AND active=true ORDER BY name",[n.node_key]);res.json({node:n,children:q.rows,zoomLevel:n.node_type==='world'?0:n.node_type==='continent'?1:n.node_type==='country'?2:n.node_type==='region'?3:n.node_type==='territory'?4:5,navigation:'progressive'});}catch(e){res.status(500).json({error:e.message})}
 });
 
+v30Router.get('/v32/globe/:nodeKey/climate',async(req,res)=>{
+ try{
+  const n=await pool.query("SELECT node_key,name,hemisphere,climate_keys FROM v32_geo_nodes WHERE node_key=$1 AND active=true",[req.params.nodeKey]);
+  if(!n.rows[0])return res.status(404).json({error:'geo_node_not_found'});
+  const x=n.rows[0],q=await pool.query("SELECT w.* FROM v32_seasonal_windows w WHERE w.climate_key=ANY($1::text[]) AND w.hemisphere IN ($2,'equatorial') ORDER BY w.climate_key,w.season_key",[x.climate_keys,x.hemisphere]);
+  res.json({node:x,seasons:q.rows,hemisphere:x.hemisphere});
+ }catch(e){res.status(500).json({error:e.message})}
+});
+
 v30Router.get('/health', (_req, res) => res.json({ ok: true, version: '30.2', router: 'v30-platform' }));
