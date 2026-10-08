@@ -1053,7 +1053,7 @@ v30Router.get('/v32/trip-draft/:draftId/optimization',async(req,res)=>{
 });
 v30Router.get('/v32/trip-draft/:draftId/decision-brief',async(req,res)=>{
  try{
-  const d=await pool.query("SELECT id,title,territory_key,active_scenario_key FROM v30_trip_drafts WHERE id=$1",[req.params.draftId]);
+  const d=await pool.query("SELECT id,title,territory_key,active_scenario_key,updated_at FROM v30_trip_drafts WHERE id=$1",[req.params.draftId]);
   if(!d.rows[0])return res.status(404).json({error:'trip_draft_not_found'});
   const x=d.rows[0];
   const p=await pool.query("SELECT p.traveler_type,p.age_group,p.mobility_level,p.party_type,p.party_size,p.budget_level,p.pace,p.duration_days,p.preferences,p.constraints FROM v30_traveler_profiles p JOIN v30_trip_drafts t ON t.session_id=p.session_id WHERE t.id=$1",[x.id]);
@@ -1067,7 +1067,7 @@ v30Router.get('/v32/trip-draft/:draftId/decision-brief',async(req,res)=>{
   if(profile?.duration_days)signals.push({key:'duration',label:'Durée à confronter aux disponibilités et au nombre d’expériences',priority:'medium'});
   if(profile?.pace)signals.push({key:'pace',label:'Rythme à confronter au programme choisi',priority:'medium'});
   if(profile?.preferences?.length)signals.push({key:'preferences',label:'Préférences à confronter aux spécialités des offres',priority:'medium'});
-  const memory=await pool.query("SELECT proposal_key,decision,MAX(created_at) last_at FROM v32_trip_improvement_feedback WHERE trip_draft_id=$1 GROUP BY proposal_key,decision ORDER BY last_at DESC",[x.id]);
+  const memory=await pool.query("SELECT proposal_key,decision,created_at AS last_at FROM v32_trip_improvement_feedback WHERE trip_draft_id=$1 ORDER BY created_at DESC",[x.id]);
   const latestMemory={}; for(const row of memory.rows)if(!latestMemory[row.proposal_key])latestMemory[row.proposal_key]=row;
   const optimization=await pool.query("SELECT score,dimensions,created_at FROM v32_trip_optimization_snapshots WHERE trip_draft_id=$1 ORDER BY created_at DESC LIMIT 1",[x.id]);
   const latestOptimization=optimization.rows[0]||null;
