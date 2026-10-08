@@ -257,3 +257,9 @@ if(!v31p.includes('FOR UPDATE')) throw new Error('V33.29 reservation locking mis
 if(!v31p.includes("reservation_not_confirmable")) throw new Error('V33.29 repeated confirmation guard missing');
 if(!v31p.includes('ON CONFLICT(reservation_id) DO UPDATE')) throw new Error('V33.29 payment intent uniqueness missing');
 console.log('V33.29 reservation/payment concurrency contract: ok');
+
+/* V33.30 payment contract integrity */
+if(!v31p.includes('payment_amount_mismatch')) throw new Error('V33.30 payment amount integrity missing');
+if(!v31p.includes('payment_currency_mismatch')) throw new Error('V33.30 payment currency integrity missing');
+if(!v31p.includes('reservationAmount:amount')) throw new Error('V33.30 reservation amount binding missing');
+console.log('V33.30 payment contract integrity: ok');
