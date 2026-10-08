@@ -1100,6 +1100,17 @@ v30Router.get('/v32/trip-draft/:draftId/optimization-diff',async(req,res)=>{
   res.json({tripDraftId:d.rows[0].id,activeScenario:d.rows[0].active_scenario_key,currentScore:current.score,previousScore:previous.score,scoreDelta:current.score-previous.score,currentAt:current.created_at,previousAt:previous.created_at,dimensions,available:true,travelerDecides:true});
  }catch(e){res.status(500).json({error:e.message})}
 });
+v30Router.post('/v32/trip-draft/:draftId/improvement-feedback',async(req,res)=>{
+ try{
+  const proposalKey=String(req.body?.proposalKey||'').trim();
+  const decision=req.body?.decision;
+  if(!proposalKey||!['accepted','rejected','deferred'].includes(decision))return res.status(400).json({error:'invalid_feedback'});
+  const d=await pool.query("SELECT id FROM v30_trip_drafts WHERE id=$1",[req.params.draftId]);
+  if(!d.rows[0])return res.status(404).json({error:'trip_draft_not_found'});
+  const q=await pool.query("INSERT INTO v32_trip_improvement_feedback(trip_draft_id,proposal_key,decision,metadata) VALUES($1,$2,$3,$4) RETURNING *",[d.rows[0].id,proposalKey,decision,JSON.stringify({source:'traveler_action'})]);
+  res.status(201).json({feedback:q.rows[0],scope:'trip_draft',reusableTravelerMemory:false,travelerDecides:true});
+ }catch(e){res.status(500).json({error:e.message})}
+});
 v30Router.get('/v32/trip-draft/:draftId/decision-memory',async(req,res)=>{
  try{
   const d=await pool.query("SELECT id,active_scenario_key FROM v30_trip_drafts WHERE id=$1",[req.params.draftId]);
