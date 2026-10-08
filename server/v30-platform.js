@@ -976,7 +976,7 @@ v30Router.get('/v32/trip-draft/:draftId/scenarios',async(req,res)=>{
 });
 v30Router.post('/v32/trip-draft/:draftId/recalculate',async(req,res)=>{
  try{
-  const d=await pool.query("SELECT id,active_scenario_key,territory_key,transport,accommodation,experiences,health_safety FROM v30_trip_drafts WHERE id=$1",[req.params.draftId]);
+  const d=await pool.query("SELECT id,active_scenario_key,territory_key,transport,accommodation,experiences,health_safety,updated_at FROM v30_trip_drafts WHERE id=$1",[req.params.draftId]);
   if(!d.rows[0])return res.status(404).json({error:'trip_draft_not_found'});
   const x=d.rows[0];
   const present=[Boolean(x.transport&&Object.keys(x.transport).length),Boolean(x.accommodation&&Object.keys(x.accommodation).length),Array.isArray(x.experiences)&&x.experiences.length>0,Array.isArray(x.health_safety)&&x.health_safety.length>0];
@@ -984,7 +984,7 @@ v30Router.post('/v32/trip-draft/:draftId/recalculate',async(req,res)=>{
   const reason=req.body?.reason||'traveler_recalculation';
   const event=await pool.query("INSERT INTO v32_trip_recalculation_events(trip_draft_id,scenario_key,score,reason,metadata) VALUES($1,$2,$3,$4,$5) RETURNING id,trip_draft_id,scenario_key,score,reason,created_at,metadata",[x.id,x.active_scenario_key,score,reason,JSON.stringify({source:'traveler_action',composition:{transport:present[0],accommodation:present[1],experiences:present[2],healthSafety:present[3]}})]);
   const latestOptimization=await pool.query("SELECT created_at FROM v32_trip_optimization_snapshots WHERE trip_draft_id=$1 AND scenario_key IS NOT DISTINCT FROM $2 ORDER BY created_at DESC LIMIT 1",[x.id,x.active_scenario_key]);
-  const optimizationStale=Boolean(latestOptimization.rows[0]);
+  const optimizationStale=Boolean(latestOptimization.rows[0]&&x.updated_at&&new Date(latestOptimization.rows[0].created_at)<new Date(x.updated_at));
   res.json({tripDraftId:x.id,activeScenario:x.active_scenario_key,score,event:event.rows[0],optimizationStale,changedAt:new Date().toISOString(),recalculated:true,travelerDecides:true,proposalOnly:true,automaticBooking:false});
  }catch(e){res.status(500).json({error:e.message})}
 });
