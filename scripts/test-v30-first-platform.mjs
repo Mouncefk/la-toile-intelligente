@@ -251,3 +251,9 @@ if(!v31p.includes('revisionChanged:false')) throw new Error('V33.27 revision ide
 if(!v31p.includes('feedbackChanged:false')) throw new Error('V33.27 feedback idempotency missing');
 if(!v31p.includes('feedbackChanged:true')) throw new Error('V33.27 feedback change contract missing');
 console.log('V33.27 revision and feedback idempotency contract: ok');
+
+/* V33.29 reservation/payment concurrency contract */
+if(!v31p.includes('FOR UPDATE')) throw new Error('V33.29 reservation locking missing');
+if(!v31p.includes("reservation_not_confirmable")) throw new Error('V33.29 repeated confirmation guard missing');
+if(!v31p.includes('ON CONFLICT(reservation_id) DO UPDATE')) throw new Error('V33.29 payment intent uniqueness missing');
+console.log('V33.29 reservation/payment concurrency contract: ok');
