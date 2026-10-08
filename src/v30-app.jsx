@@ -13,6 +13,12 @@ const fallbackTerritories=[
 
 const scopeLabel={local:'Local',regional:'Régional',national:'National',international:'International',global:'Mondial'};
 async function v30fetch(url,options){const r=await fetch(url,options);const d=await r.json().catch(()=>({}));if(!r.ok)throw new Error(d.error||'Service V30 indisponible');return d}
+function TripOptimizationPanel({draftId}){
+ const [data,setData]=useState(null);
+ useEffect(()=>{if(!draftId)return;v30fetch('/api/platform/v30/v32/trip-draft/'+draftId+'/optimization').then(setData).catch(()=>setData(null))},[draftId]);
+ if(!data)return null;
+ return <div className="v32Optimization"><small>OPTIMISATION DU VOYAGE</small><b>{data.score}%</b>{data.criteria?.map(c=><div key={c.key}><strong>{c.label}</strong><span>{c.weight}%</span><p>{c.signal}</p></div>)}{data.recommendations?.length>0&&<section><strong>À améliorer</strong>{data.recommendations.map(x=><p key={x}>• {x}</p>)}</section>}<em>Proposition explicable — décision du voyageur.</em></div>
+}
 function TripDecisionBrief({draftId}){
  const [data,setData]=useState(null);
  useEffect(()=>{if(!draftId)return;v30fetch('/api/platform/v30/v32/trip-draft/'+draftId+'/decision-brief').then(setData).catch(()=>setData(null))},[draftId]);
