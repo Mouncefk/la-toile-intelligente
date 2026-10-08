@@ -874,10 +874,15 @@ v30Router.post('/v32/trip-draft/:draftId/revise-component',async(req,res)=>{
   if(!o.rows[0])return res.status(404).json({error:'offer_not_found'});
   const x=d.rows[0],col=type==='transport'?'transport':type==='accommodation'?'accommodation':'experiences';
   const prev=x[col]; const next=type==='experiences'?[o.rows[0]]:o.rows[0];
-  await pool.query(`UPDATE v30_trip_drafts SET ${col}=$1::jsonb,updated_at=now() WHERE id=$2`,[JSON.stringify(next),x.id]);
   const previousId=type==='experiences'?(Array.isArray(prev)&&prev[0]?.id||null):(prev?.id||null);
+  const wasSame=previousId===id;
+  if(wasSame){
+    const latest=await pool.query("SELECT * FROM v32_trip_component_revisions WHERE trip_draft_id=$1 AND component_type=$2 AND new_offer_id=$3 ORDER BY created_at DESC LIMIT 1",[x.id,type,id]);
+    return res.status(200).json({tripDraftId:x.id,componentType:type,previousOfferId:previousId,newOfferId:id,revision:latest.rows[0]||null,currentOffer:o.rows[0],revisionChanged:false,reoptimizationSuggested:false,travelerDecides:true,automaticBooking:false});
+  }
+  await pool.query(`UPDATE v30_trip_drafts SET ${col}=$1::jsonb,updated_at=now() WHERE id=$2`,[JSON.stringify(next),x.id]);
   const revision=await pool.query("INSERT INTO v32_trip_component_revisions(trip_draft_id,component_type,previous_offer_id,new_offer_id,metadata) VALUES($1,$2,$3,$4,$5) RETURNING *",[x.id,type,previousId,id,JSON.stringify({source:'traveler_revision'})]);
-  res.json({tripDraftId:x.id,componentType:type,previousOfferId:previousId,newOfferId:id,revision:revision.rows[0],currentOffer:o.rows[0],reoptimizationSuggested:true,travelerDecides:true,automaticBooking:false});
+  res.status(200).json({tripDraftId:x.id,componentType:type,previousOfferId:previousId,newOfferId:id,revision:revision.rows[0],currentOffer:o.rows[0],revisionChanged:true,reoptimizationSuggested:true,travelerDecides:true,automaticBooking:false});
  }catch(e){res.status(500).json({error:e.message})}
 });
 v30Router.get('/v32/globe/root',async(req,res)=>{
@@ -1127,8 +1132,10 @@ v30Router.post('/v32/trip-draft/:draftId/improvement-feedback',async(req,res)=>{
   if(!proposalKey||!['accepted','rejected','deferred'].includes(decision))return res.status(400).json({error:'invalid_feedback'});
   const d=await pool.query("SELECT id FROM v30_trip_drafts WHERE id=$1",[req.params.draftId]);
   if(!d.rows[0])return res.status(404).json({error:'trip_draft_not_found'});
+  const latest=await pool.query("SELECT * FROM v32_trip_improvement_feedback WHERE trip_draft_id=$1 AND proposal_key=$2 ORDER BY created_at DESC LIMIT 1",[d.rows[0].id,proposalKey]);
+  if(latest.rows[0]?.decision===decision)return res.status(200).json({feedback:latest.rows[0],scope:'trip_draft',feedbackChanged:false,reusableTravelerMemory:false,travelerDecides:true});
   const q=await pool.query("INSERT INTO v32_trip_improvement_feedback(trip_draft_id,proposal_key,decision,metadata) VALUES($1,$2,$3,$4) RETURNING *",[d.rows[0].id,proposalKey,decision,JSON.stringify({source:'traveler_action'})]);
-  res.status(201).json({feedback:q.rows[0],scope:'trip_draft',reusableTravelerMemory:false,travelerDecides:true});
+  res.status(201).json({feedback:q.rows[0],scope:'trip_draft',feedbackChanged:true,reusableTravelerMemory:false,travelerDecides:true});
  }catch(e){res.status(500).json({error:e.message})}
 });
 v30Router.get('/v32/trip-draft/:draftId/decision-memory',async(req,res)=>{
