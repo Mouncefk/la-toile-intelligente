@@ -1,6 +1,7 @@
 name: V30 First Living Tourism Platform Validation
 
 on:
+  workflow_dispatch:
   push:
     branches:
       - v30-first-living-tourism-platform
