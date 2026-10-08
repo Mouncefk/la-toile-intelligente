@@ -263,3 +263,9 @@ if(!v31p.includes('payment_amount_mismatch')) throw new Error('V33.30 payment am
 if(!v31p.includes('payment_currency_mismatch')) throw new Error('V33.30 payment currency integrity missing');
 if(!v31p.includes('reservationAmount:amount')) throw new Error('V33.30 reservation amount binding missing');
 console.log('V33.30 payment contract integrity: ok');
+
+/* V33.32 decision brief freshness contract */
+if(!v31p.includes('SELECT id,title,territory_key,active_scenario_key,updated_at FROM v30_trip_drafts')) throw new Error('V33.32 decision brief updated_at missing');
+if(!v31p.includes("ORDER BY created_at DESC")) throw new Error('V33.32 latest decision ordering missing');
+if(!v31p.includes('optimizationStale')) throw new Error('V33.32 optimization freshness missing');
+console.log('V33.32 decision brief freshness contract: ok');
