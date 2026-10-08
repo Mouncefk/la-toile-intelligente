@@ -17,7 +17,7 @@ function TripPreparationPanel({draftId}){
  const [data,setData]=useState(null);
  useEffect(()=>{if(!draftId)return;v30fetch('/api/platform/v30/v32/trip-draft/'+draftId+'/preparation').then(setData).catch(()=>setData(null))},[draftId]);
  if(!data)return null;
- return <div className="v32Preparation"><small>PRÉPARER LE VOYAGE</small><b>{data.completeness}%</b>{data.checklist.map(i=><div key={i.key} className={i.done?'done':''}><span>{i.done?'✓':'○'}</span>{i.label}</div>)}<em>Le voyageur conserve la décision finale.</em></div>
+ return <div className="v32Preparation"><small>PRÉPARER LE VOYAGE</small><b>{data.completeness}%</b>{data.checklist.map(i=><div key={i.key} className={i.done?'done':''}><span>{i.done?'✓':'○'}</span>{i.label}</div>)}{data.fitSignals?.length>0&&<section className="v32FitSignals"><small>À VÉRIFIER POUR CE VOYAGEUR</small>{data.fitSignals.map(s=><div key={s.key}><b>{s.priority==='high'?'!':'·'}</b>{s.label}</div>)}</section>}<em>Le voyageur conserve la décision finale.</em></div>
 }
 function TripReadinessPanel({draftId}){
  const [data,setData]=useState(null);
