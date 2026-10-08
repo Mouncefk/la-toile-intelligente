@@ -866,8 +866,8 @@ v30Router.post('/v32/trip-draft/:draftId/revise-component',async(req,res)=>{
   const prev=x[col]; const next=type==='experiences'?[o.rows[0]]:o.rows[0];
   await pool.query(`UPDATE v30_trip_drafts SET ${col}=$1::jsonb,updated_at=now() WHERE id=$2`,[JSON.stringify(next),x.id]);
   const previousId=type==='experiences'?(Array.isArray(prev)&&prev[0]?.id||null):(prev?.id||null);
-  await pool.query("INSERT INTO v32_trip_component_revisions(trip_draft_id,component_type,previous_offer_id,new_offer_id,metadata) VALUES($1,$2,$3,$4,$5)",[x.id,type,previousId,id,JSON.stringify({source:'traveler_revision'})]);
-  res.json({tripDraftId:x.id,componentType:type,previousOfferId:previousId,newOfferId:id,reoptimizationSuggested:true,travelerDecides:true,automaticBooking:false});
+  const revision=await pool.query("INSERT INTO v32_trip_component_revisions(trip_draft_id,component_type,previous_offer_id,new_offer_id,metadata) VALUES($1,$2,$3,$4,$5) RETURNING *",[x.id,type,previousId,id,JSON.stringify({source:'traveler_revision'})]);
+  res.json({tripDraftId:x.id,componentType:type,previousOfferId:previousId,newOfferId:id,revision:revision.rows[0],currentOffer:o.rows[0],reoptimizationSuggested:true,travelerDecides:true,automaticBooking:false});
  }catch(e){res.status(500).json({error:e.message})}
 });
 v30Router.get('/v32/globe/root',async(req,res)=>{
