@@ -839,4 +839,14 @@ v30Router.get('/v32/globe/:nodeKey/climate',async(req,res)=>{
  }catch(e){res.status(500).json({error:e.message})}
 });
 
+v30Router.get('/v32/globe/:nodeKey/overview',async(req,res)=>{
+ try{
+  const n=await pool.query("SELECT node_key,node_type,name,country_iso3,hemisphere,climate_keys,latitude,longitude,metadata FROM v32_geo_nodes WHERE node_key=$1 AND active=true",[req.params.nodeKey]);
+  if(!n.rows[0])return res.status(404).json({error:'geo_node_not_found'});
+  const x=n.rows[0];
+  const seasons=await pool.query("SELECT climate_key,season_key,month_start,month_end,tourism_tags,rationale_fr FROM v32_seasonal_windows WHERE climate_key=ANY($1::text[]) AND hemisphere IN ($2,'equatorial') ORDER BY month_start,climate_key",[x.climate_keys,x.hemisphere]);
+  const children=await pool.query("SELECT node_key,node_type,name,hemisphere,climate_keys,latitude,longitude FROM v32_geo_nodes WHERE parent_key=$1 AND active=true ORDER BY node_type,name",[x.node_key]);
+  res.json({node:x,seasonalWindows:seasons.rows,children:children.rows,signals:{climates:x.climate_keys||[],hemisphere:x.hemisphere,childCount:children.rowCount}});
+ }catch(e){res.status(500).json({error:e.message})}
+});
 v30Router.get('/health', (_req, res) => res.json({ ok: true, version: '30.2', router: 'v30-platform' }));
