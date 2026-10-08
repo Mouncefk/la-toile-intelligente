@@ -1048,4 +1048,12 @@ v30Router.get('/v32/globe/:nodeKey/overview',async(req,res)=>{
   res.json({node:x,seasonalWindows:seasons.rows,children:children.rows,tourismTags:tags.rows.map(r=>r.tourism_tag),seasonalTourismTags:seasonalTags.rows.map(r=>r.tourism_tag),month,signals:{climates:x.climate_keys||[],hemisphere:x.hemisphere,childCount:children.rowCount}});
  }catch(e){res.status(500).json({error:e.message})}
 });
+v30Router.get('/v32/trip-draft/:draftId/decision-memory',async(req,res)=>{
+ try{
+  const d=await pool.query("SELECT id,active_scenario_key FROM v30_trip_drafts WHERE id=$1",[req.params.draftId]);
+  if(!d.rows[0])return res.status(404).json({error:'trip_draft_not_found'});
+  const q=await pool.query("SELECT proposal_key,decision,COUNT(*)::int count,MAX(created_at) last_at FROM v32_trip_improvement_feedback WHERE trip_draft_id=$1 GROUP BY proposal_key,decision ORDER BY last_at DESC",[d.rows[0].id]);
+  res.json({tripDraftId:d.rows[0].id,activeScenario:d.rows[0].active_scenario_key,decisions:q.rows,scope:'trip_draft',reusableTravelerMemory:false});
+ }catch(e){res.status(500).json({error:e.message})}
+});
 v30Router.get('/health', (_req, res) => res.json({ ok: true, version: '30.2', router: 'v30-platform' }));
