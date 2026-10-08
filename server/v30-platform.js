@@ -806,6 +806,15 @@ v30Router.post('/v32/globe/trip-draft/:draftId/select-component',async(req,res)=
   res.status(201).json({selection:s.rows[0],offer:o.rows[0],travelerDecides:true,automaticBooking:false});
  }catch(e){res.status(500).json({error:e.message})}
 });
+v30Router.get('/v32/trip-draft/:draftId/component-selections',async(req,res)=>{
+ try{
+  const d=await pool.query("SELECT id,title,status,territory_key,transport,accommodation,experiences,health_safety FROM v30_trip_drafts WHERE id=$1",[req.params.draftId]);
+  if(!d.rows[0])return res.status(404).json({error:'trip_draft_not_found'});
+  const q=await pool.query("SELECT id,component_type,offer_id,selected_at,metadata FROM v32_trip_component_selections WHERE trip_draft_id=$1 ORDER BY selected_at DESC",[d.rows[0].id]);
+  const grouped={transport:[],accommodation:[],experiences:[]};for(const x of q.rows)grouped[x.component_type].push(x);
+  res.json({tripDraft:d.rows[0],selections:q.rows,grouped,decisionBoundary:{travelerDecides:true,automaticBooking:false}});
+ }catch(e){res.status(500).json({error:e.message})}
+});
 v30Router.get('/v32/globe/root',async(req,res)=>{
  try{const q=await pool.query("SELECT node_key,node_type,name,hemisphere,climate_keys,latitude,longitude FROM v32_geo_nodes WHERE node_type='world' AND active=true ORDER BY name");res.json({zoomLevel:0,nodes:q.rows,navigation:'progressive'});}catch(e){res.status(500).json({error:e.message})}
 });
