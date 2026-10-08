@@ -17,7 +17,7 @@ function TripScenariosPanel({draftId}){
  const [data,setData]=useState(null);
  useEffect(()=>{if(!draftId)return;v30fetch('/api/platform/v30/v32/trip-draft/'+draftId+'/scenarios').then(setData).catch(()=>setData(null))},[draftId]);
  if(!data)return null;
- return <div className="v32Scenarios"><small>SCÉNARIOS PROPOSÉS</small>{data.scenarios.map(s=><section key={s.key}><b>{s.name}</b><span>{s.description}</span><em>{s.candidates?.length||0} solution(s) candidates</em></section>)}<i>Comparaison uniquement — aucune réservation automatique.</i></div>
+ return <div className="v32Scenarios"><small>SCÉNARIOS PROPOSÉS</small>{data.scenarios.map(s=><section key={s.key}><b>{s.name}</b><span>{s.description}</span><em>{s.candidates?.length||0} solution(s) candidates</em><button onClick={async()=>{if(window.v30TripDraftId)try{await v30fetch('/api/platform/v30/v32/trip-draft/'+window.v30TripDraftId+'/select-scenario',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({scenarioKey:s.key})})}catch(_){}}}>Choisir ce scénario</button></section>)}<i>Comparaison uniquement — aucune réservation automatique.</i></div>
 }
 function TripOptimizationPanel({draftId}){
  const [data,setData]=useState(null);
