@@ -29,10 +29,15 @@ function GlobeNavigator(){
  const back=()=>{const prev=trail[trail.length-1];setTrail(t=>t.slice(0,-1));load(prev?.node_key||null)};
  return <section className="v32GlobeNavigator">
   <div className="v32GlobeVisual">
-   <div className="v32Glow"></div><div className="v32Wire"></div>
-   <div className="v32GlobeLabel">LA TOILE</div>
-   <div className="v32GlobeSub">GLOBE VIVANT · V32</div>
-   {children.slice(0,24).map((n,i)=><button key={n.node_key} className={"v32Dot d"+(i%12)} title={n.name} onClick={()=>open(n)}>{n.name}</button>)}
+   <div className="v32Glow"></div>
+   <div className="v32Sphere3D" aria-label="Globe interactif La Toile">
+    <div className="v32Latitude l1"></div><div className="v32Latitude l2"></div><div className="v32Latitude l3"></div>
+    <div className="v32Longitude g1"></div><div className="v32Longitude g2"></div><div className="v32Longitude g3"></div>
+    <div className="v32LandHint"></div>
+    {children.slice(0,24).map((n,i)=><button key={n.node_key} className={"v32Dot d"+(i%12)} title={n.name} onClick={()=>open(n)}>{n.name}</button>)}
+    <div className="v32GlobeLabel">LA TOILE</div>
+   </div>
+   <div className="v32GlobeSub">GLOBE VIVANT · EXPLORATION PROGRESSIVE</div>
   </div>
   <div className="v32GlobePanel">
    <div className="v32Eyebrow">EXPLORATION PROGRESSIVE</div>
