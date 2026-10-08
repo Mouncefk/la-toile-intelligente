@@ -806,6 +806,19 @@ v30Router.post('/v32/globe/trip-draft/:draftId/select-component',async(req,res)=
   res.status(201).json({selection:s.rows[0],offer:o.rows[0],travelerDecides:true,automaticBooking:false});
  }catch(e){res.status(500).json({error:e.message})}
 });
+v30Router.get('/v32/trip-draft/:draftId/readiness',async(req,res)=>{
+ try{
+  const d=await pool.query("SELECT id,title,status,territory_key,transport,accommodation,experiences,health_safety FROM v30_trip_drafts WHERE id=$1",[req.params.draftId]);
+  if(!d.rows[0])return res.status(404).json({error:'trip_draft_not_found'});
+  const x=d.rows[0],missing=[];
+  if(!x.territory_key)missing.push('territory');
+  if(!x.transport||!Object.keys(x.transport).length)missing.push('transport');
+  if(!x.accommodation||!Object.keys(x.accommodation).length)missing.push('accommodation');
+  if(!Array.isArray(x.experiences)||!x.experiences.length)missing.push('experiences');
+  if(!Array.isArray(x.health_safety)||!x.health_safety.length)missing.push('health_safety');
+  res.json({tripDraftId:x.id,missing,completeness:Math.round((5-missing.length)/5*100),readyForDecision:missing.length===0,travelerDecides:true,proposalOnly:true,automaticBooking:false});
+ }catch(e){res.status(500).json({error:e.message})}
+});
 v30Router.get('/v32/trip-draft/:draftId/component-selections',async(req,res)=>{
  try{
   const d=await pool.query("SELECT id,title,status,territory_key,transport,accommodation,experiences,health_safety FROM v30_trip_drafts WHERE id=$1",[req.params.draftId]);
