@@ -269,3 +269,10 @@ if(!v31p.includes('SELECT id,title,territory_key,active_scenario_key,updated_at 
 if(!v31p.includes("ORDER BY created_at DESC")) throw new Error('V33.32 latest decision ordering missing');
 if(!v31p.includes('optimizationStale')) throw new Error('V33.32 optimization freshness missing');
 console.log('V33.32 decision brief freshness contract: ok');
+
+/* V33.34 Living Graph propagation contract */
+if(!v31p.includes("UPDATE v30_matches m SET reasons")) throw new Error('V33.34 graph match invalidation missing');
+if(!v31p.includes("INSERT INTO v30_recalculation_queue")) throw new Error('V33.34 recalculation propagation missing');
+if(!v31p.includes('FOR UPDATE SKIP LOCKED')) throw new Error('V33.34 queue concurrency guard missing');
+if(!v31p.includes("status='processing'")) throw new Error('V33.34 queue processing state missing');
+console.log('V33.34 Living Graph propagation contract: ok');
