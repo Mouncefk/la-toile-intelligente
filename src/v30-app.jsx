@@ -14,13 +14,21 @@ const fallbackTerritories=[
 const scopeLabel={local:'Local',regional:'Régional',national:'National',international:'International',global:'Mondial'};
 async function v30fetch(url,options){const r=await fetch(url,options);const d=await r.json().catch(()=>({}));if(!r.ok)throw new Error(d.error||'Service V30 indisponible');return d}
 function GlobeNavigator(){
- const [node,setNode]=useState(null),[children,setChildren]=useState([]),[trail,setTrail]=useState([]),[climate,setClimate]=useState(null),[loading,setLoading]=useState(true),[error,setError]=useState('');
+ const [node,setNode]=useState(null),[children,setChildren]=useState([]),[trail,setTrail]=useState([]),[climate,setClimate]=useState(null),[geometry,setGeometry]=useState(null),[loading,setLoading]=useState(true),[error,setError]=useState('');
+ const project=(lon,lat)=>({x:50+(lon/180)*38,y:50-(lat/90)*38});
+ const geometryPaths=useMemo(()=>{
+  const walk=(coords)=>coords.map(ring=>ring.map(([lon,lat],i)=>{const p=project(lon,lat);return (i?'L':'M')+p.x.toFixed(2)+' '+p.y.toFixed(2)}).join(' ')+' Z').join(' ');
+  if(!geometry)return [];
+  if(geometry.type==='Polygon')return [walk(geometry.coordinates)];
+  if(geometry.type==='MultiPolygon')return geometry.coordinates.flatMap(p=>p.map(ring=>walk([ring])));
+  return [];
+ },[geometry]);
  const load=async key=>{
   setLoading(true);setError('');
   try{
    const d=await v30fetch(key?'/api/platform/v30/v32/globe/'+encodeURIComponent(key):'/api/platform/v30/v32/globe/root');
-   setNode(key?d.node:d.nodes?.[0]||null);setChildren(d.children||[]);
-   if(key){try{setClimate(await v30fetch('/api/platform/v30/v32/globe/'+encodeURIComponent(key)+'/climate'))}catch(_){setClimate(null)}}
+   setNode(key?d.node:d.nodes?.[0]||null);setChildren(d.children||[]);setGeometry(null);
+   if(key){try{setClimate(await v30fetch('/api/platform/v30/v32/globe/'+encodeURIComponent(key)+'/climate'))}catch(_){setClimate(null)} try{const g=await v30fetch('/api/platform/v30/v32/globe/'+encodeURIComponent(key)+'/geometry');setGeometry(g.geometry||null)}catch(_){setGeometry(null)}}
    else setClimate(null);
   }catch(e){setError(e.message||'Globe indisponible')}finally{setLoading(false)}
  };
@@ -33,7 +41,7 @@ function GlobeNavigator(){
    <div className="v32Sphere3D" aria-label="Globe interactif La Toile">
     <div className="v32Latitude l1"></div><div className="v32Latitude l2"></div><div className="v32Latitude l3"></div>
     <div className="v32Longitude g1"></div><div className="v32Longitude g2"></div><div className="v32Longitude g3"></div>
-    <div className="v32LandHint"></div>
+    <div className="v32LandHint"></div>{geometryPaths.map((d,i)=><svg key={i} className="v32RealGeometry" viewBox="0 0 100 100" aria-hidden="true"><path d={d}/></svg>)}
     {children.slice(0,24).map((n,i)=><button key={n.node_key} className={"v32Dot d"+(i%12)} title={n.name} onClick={()=>open(n)}>{n.name}</button>)}
     <div className="v32GlobeLabel">LA TOILE</div>
    </div>
