@@ -173,3 +173,9 @@ console.log('V33.01 decision brief state contract: ok');
 if(!v31p.includes('optimizationStale')) throw new Error('V33.03 optimization freshness signal missing');
 if(!v31p.includes("stale:Boolean(x.updated_at&&new Date(row.last_at)<new Date(x.updated_at))")) throw new Error('V33.03 decision memory freshness signal missing');
 console.log('V33.03 decision brief freshness contract: ok');
+
+/* V33.05 idempotent optimization snapshot contract */
+if(!v31p.includes('snapshotCreated')) throw new Error('V33.05 snapshot creation state missing');
+if(!v31p.includes('previousSame')) throw new Error('V33.05 duplicate snapshot guard missing');
+if(!v31p.includes('IS NOT DISTINCT FROM')) throw new Error('V33.05 scenario null-safe comparison missing');
+console.log('V33.05 optimization snapshot idempotency contract: ok');
