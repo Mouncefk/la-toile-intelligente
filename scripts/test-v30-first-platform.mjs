@@ -150,3 +150,9 @@ if(!v31p.includes('decisionMemory')) throw new Error('V32.95 optimization decisi
 if(!v31p.includes("memoryDimension")) throw new Error('V32.95 memory-to-dimension mapping missing');
 if(!v31p.includes("row.decision==='accepted'?6:-6")) throw new Error('V32.95 accepted/rejected optimization adjustment missing');
 console.log('V32.94-V32.95 trip decision memory contract: ok');
+
+/* V32.97 recalculation event persistence contract */
+if(!v31p.includes("'/v32/trip-draft/:draftId/recalculate'")) throw new Error('V32.97 recalculation endpoint missing');
+if(!v31p.includes('v32_trip_recalculation_events')) throw new Error('V32.97 recalculation event persistence missing');
+if(!v31p.includes('traveler_action')) throw new Error('V32.97 traveler recalculation source missing');
+console.log('V32.97 recalculation event contract: ok');
