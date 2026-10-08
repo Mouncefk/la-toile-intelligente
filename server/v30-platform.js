@@ -982,27 +982,22 @@ v30Router.post('/v32/trip-draft/:draftId/recalculate',async(req,res)=>{
 });
 v30Router.get('/v32/trip-draft/:draftId/optimization',async(req,res)=>{
  try{
-  const d=await pool.query("SELECT id,territory_key,transport,accommodation,experiences,health_safety FROM v30_trip_drafts WHERE id=$1",[req.params.draftId]);
+  const d=await pool.query("SELECT id,active_scenario_key,territory_key,transport,accommodation,experiences,health_safety FROM v30_trip_drafts WHERE id=$1",[req.params.draftId]);
   if(!d.rows[0])return res.status(404).json({error:'trip_draft_not_found'});
   const x=d.rows[0];
   const p=await pool.query("SELECT p.age_group,p.mobility_level,p.party_type,p.budget_level,p.pace,p.duration_days,p.preferences,p.constraints FROM v30_traveler_profiles p JOIN v30_trip_drafts t ON t.session_id=p.session_id WHERE t.id=$1",[x.id]);
   const profile=p.rows[0]||{};
-  const current={transport:Boolean(x.transport&&Object.keys(x.transport).length),accommodation:Boolean(x.accommodation&&Object.keys(x.accommodation).length),experiences:Array.isArray(x.experiences)&&x.experiences.length>0,healthSafety:Array.isArray(x.health_safety)&&x.health_safety.length>0};
-  const criteria=[
-   {key:'profile',label:'Adéquation au profil voyageur',weight:30,signal:profile.age_group||profile.mobility_level||profile.party_type?'profile_data_available':'profile_incomplete'},
-   {key:'season',label:'Cohérence climatique et saisonnière',weight:25,signal:x.territory_key?'territory_available':'territory_missing'},
-   {key:'composition',label:'Équilibre transport / hébergement / expériences',weight:25,signal:Object.values(current).filter(Boolean).length+'/4'},
-   {key:'constraints',label:'Prise en compte des contraintes',weight:20,signal:profile.constraints?.length?'constraints_declared':'none_declared'}
+  const dimensions=[
+   {key:'profile',label:'Profil voyageur',weight:20,score:(profile.age_group||profile.mobility_level||profile.party_type)?100:40},
+   {key:'climate',label:'Climat et saison',weight:20,score:x.territory_key?100:0},
+   {key:'cost',label:'Budget / coût',weight:15,score:profile.budget_level?70:40},
+   {key:'duration',label:'Durée',weight:10,score:profile.duration_days?70:40},
+   {key:'comfort',label:'Confort / rythme',weight:10,score:profile.pace?70:40},
+   {key:'composition',label:'Composition du voyage',weight:15,score:Math.round([x.transport,x.accommodation,Array.isArray(x.experiences)&&x.experiences.length].filter(Boolean).length/3*100)},
+   {key:'healthSafety',label:'Santé & Sécurité',weight:10,score:Array.isArray(x.health_safety)&&x.health_safety.length?100:0}
   ];
-  const base=criteria.reduce((s,c)=>s+(c.signal.endsWith('missing')||c.signal==='profile_incomplete'?0:c.weight),0);
-  const adjustmentProposals=[];
-  if(!current.transport)adjustmentProposals.push({key:'transport',action:'add',label:'Ajouter une solution de transport avant validation finale'});
-  if(!current.accommodation)adjustmentProposals.push({key:'accommodation',action:'add',label:'Ajouter un hébergement compatible avec le territoire et le profil'});
-  if(!current.experiences)adjustmentProposals.push({key:'experiences',action:'add',label:'Ajouter au moins une expérience correspondant au type de tourisme recherché'});
-  if(!current.healthSafety)adjustmentProposals.push({key:'healthSafety',action:'review',label:'Vérifier les solutions Santé & Sécurité à proximité'});
-  if(profile.budget_level)adjustmentProposals.push({key:'budget',action:'verify',label:'Comparer le coût cumulé au niveau de budget déclaré'});
-  if(profile.duration_days)adjustmentProposals.push({key:'duration',action:'verify',label:'Vérifier que les composants couvrent la durée souhaitée'});
-  res.json({tripDraftId:x.id,activeScenario:x.active_scenario_key,score:base,criteria,current,profileSummary:{ageGroup:profile.age_group,mobility:profile.mobility_level,partyType:profile.party_type,budget:profile.budget_level,pace:profile.pace,durationDays:profile.duration_days},recommendations:criteria.filter(c=>c.signal.endsWith('missing')||c.signal==='profile_incomplete').map(c=>c.label),adjustmentProposals,travelerDecides:true,proposalOnly:true,automaticBooking:false});
+  const score=Math.round(dimensions.reduce((s,d)=>s+d.score*d.weight/100,0));
+  res.json({tripDraftId:x.id,activeScenario:x.active_scenario_key,score,dimensions,profileSummary:{ageGroup:profile.age_group,mobility:profile.mobility_level,partyType:profile.party_type,budget:profile.budget_level,pace:profile.pace,durationDays:profile.duration_days},travelerDecides:true,proposalOnly:true,automaticBooking:false});
  }catch(e){res.status(500).json({error:e.message})}
 });
 v30Router.get('/v32/trip-draft/:draftId/decision-brief',async(req,res)=>{
