@@ -1000,6 +1000,7 @@ v30Router.get('/v32/trip-draft/:draftId/optimization',async(req,res)=>{
   const weights=scenarioWeights[x.active_scenario_key||'balanced'];
   dimensions.forEach(d=>d.weight=weights[d.key]);
   const score=Math.round(dimensions.reduce((s,d)=>s+d.score*d.weight/100,0));
+  await pool.query("INSERT INTO v32_trip_optimization_snapshots(trip_draft_id,scenario_key,score,dimensions) VALUES($1,$2,$3,$4)",[x.id,x.active_scenario_key,score,JSON.stringify(dimensions)]);
   res.json({tripDraftId:x.id,activeScenario:x.active_scenario_key,score,dimensions,profileSummary:{ageGroup:profile.age_group,mobility:profile.mobility_level,partyType:profile.party_type,budget:profile.budget_level,pace:profile.pace,durationDays:profile.duration_days},travelerDecides:true,proposalOnly:true,automaticBooking:false});
  }catch(e){res.status(500).json({error:e.message})}
 });
