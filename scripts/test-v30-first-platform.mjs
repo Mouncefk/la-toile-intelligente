@@ -245,3 +245,9 @@ if(!v31p.includes('currentOfferId')) throw new Error('V33.25 current component g
 if(!v31p.includes('selectionChanged:!wasSame')) throw new Error('V33.25 selection idempotency missing');
 if(!v31p.includes('reoptimizationSuggested:!wasSame')) throw new Error('V33.25 reoptimization idempotency missing');
 console.log('V33.25 idempotent component selection contract: ok');
+
+/* V33.27 revision + feedback idempotency contract */
+if(!v31p.includes('revisionChanged:false')) throw new Error('V33.27 revision idempotency missing');
+if(!v31p.includes('feedbackChanged:false')) throw new Error('V33.27 feedback idempotency missing');
+if(!v31p.includes('feedbackChanged:true')) throw new Error('V33.27 feedback change contract missing');
+console.log('V33.27 revision and feedback idempotency contract: ok');
