@@ -13,6 +13,12 @@ const fallbackTerritories=[
 
 const scopeLabel={local:'Local',regional:'Régional',national:'National',international:'International',global:'Mondial'};
 async function v30fetch(url,options){const r=await fetch(url,options);const d=await r.json().catch(()=>({}));if(!r.ok)throw new Error(d.error||'Service V30 indisponible');return d}
+function TripOptimizationHistoryPanel({draftId}){
+ const [data,setData]=useState(null);
+ useEffect(()=>{if(!draftId)return;v30fetch('/api/platform/v30/v32/trip-draft/'+draftId+'/optimization-history').then(setData).catch(()=>setData(null))},[draftId]);
+ if(!data||!data.snapshots?.length)return null;
+ return <div className="v32OptHistory"><small>ÉVOLUTION DE L’OPTIMISATION</small>{data.snapshots.slice(0,8).map(s=><div key={s.id}><b>{s.score}%</b><span>{s.scenario_key||'—'}</span><em>{s.deltaFromPrevious===null?'état initial':(s.deltaFromPrevious>0?'+':'')+s.deltaFromPrevious+' pt'}</em></div>)}<i>Les écarts montrent l’effet des modifications ; le voyageur reste décisionnaire.</i></div>
+}
 function TripHistoryPanel({draftId}){
  const [data,setData]=useState(null);
  useEffect(()=>{if(!draftId)return;v30fetch('/api/platform/v30/v32/trip-draft/'+draftId+'/recalculation-history').then(setData).catch(()=>setData(null))},[draftId]);
