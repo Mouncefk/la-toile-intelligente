@@ -839,6 +839,16 @@ v30Router.get('/v32/globe/:nodeKey/climate',async(req,res)=>{
  }catch(e){res.status(500).json({error:e.message})}
 });
 
+v30Router.get('/v32/globe/:nodeKey/travel-components',async(req,res)=>{
+ try{
+  const n=await pool.query("SELECT node_key,name FROM v32_geo_nodes WHERE node_key=$1 AND active=true",[req.params.nodeKey]);
+  if(!n.rows[0])return res.status(404).json({error:'geo_node_not_found'});
+  const q=await pool.query("SELECT o.id,o.title,o.description,o.offer_type,o.price_amount,o.currency,o.booking_mode,o.territory_key,p.name professional_name,p.verified FROM v31_pro_offers o JOIN v30_pro_profiles p ON p.id=o.professional_id WHERE o.status='published' AND (o.territory_key=$1 OR o.territory_key IN (SELECT node_key FROM v32_geo_nodes WHERE parent_key=$1)) ORDER BY p.verified DESC,o.updated_at DESC LIMIT 60",[req.params.nodeKey]);
+  const groups={transport:[],accommodation:[],experiences:[]};
+  for(const row of q.rows){const t=String(row.offer_type||'').toLowerCase();const key=t.includes('transport')||t.includes('transfert')||t.includes('mobil')?'transport':t.includes('accommodation')||t.includes('hébergement')||t.includes('hotel')||t.includes('lodging')?'accommodation':'experiences';groups[key].push(row);}
+  res.json({node:n.rows[0],components:groups,travelerDecides:true,proposalOnly:true,automaticBooking:false});
+ }catch(e){res.status(500).json({error:e.message})}
+});
 v30Router.get('/v32/globe/:nodeKey/health-safety',async(req,res)=>{
  try{
   const n=await pool.query("SELECT node_key,name FROM v32_geo_nodes WHERE node_key=$1 AND active=true",[req.params.nodeKey]);
