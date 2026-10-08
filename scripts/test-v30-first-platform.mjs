@@ -131,3 +131,14 @@ const v31_2_platform=fs.readFileSync(new URL('../server/v30-platform.js',import.
 for(const x of ["'/v31/session/:sessionId/reservations'","'/v31/professionals/:proId/reservations'","'/v31/reservations/:reservationId'"])if(!v31_2_platform.includes(x))throw new Error('V31.2 endpoint missing: '+x);
 if(!v31_2_platform.includes('automaticBooking:false'))throw new Error('V31.2 automatic booking boundary missing');
 console.log('V31.2 reservation lifecycle contract: ok');
+
+/* V31 reservation lifecycle contracts */
+const v31e=fs.readFileSync(new URL('../database/seed/40_v31_reservation_events.sql',import.meta.url),'utf8');
+if(!v31e.includes('v31_reservation_events'))throw new Error('V31 events schema missing');
+const v31p=fs.readFileSync(new URL('../server/v30-platform.js',import.meta.url),'utf8');
+for(const x of ["'/v31/reservations/:reservationId/confirm'","'/v31/reservations/:reservationId/cancel'","'/v31/reservations/:reservationId/payment-intent'"])if(!v31p.includes(x))throw new Error('V31 route missing: '+x);
+if(!v31p.includes('capacity_unavailable'))throw new Error('V31 capacity guard missing');
+if(!v31p.includes('status_transition_use_action_endpoint'))throw new Error('V31 transition guard missing');
+const v31t=fs.readFileSync(new URL('../database/seed/41_v31_transactions.sql',import.meta.url),'utf8');
+if(!v31t.includes('v31_transaction_intents'))throw new Error('V31 transaction schema missing');
+console.log('V31 reservation lifecycle contracts: ok');
