@@ -943,7 +943,14 @@ v30Router.get('/v32/trip-draft/:draftId/optimization',async(req,res)=>{
    {key:'constraints',label:'Prise en compte des contraintes',weight:20,signal:profile.constraints?.length?'constraints_declared':'none_declared'}
   ];
   const base=criteria.reduce((s,c)=>s+(c.signal.endsWith('missing')||c.signal==='profile_incomplete'?0:c.weight),0);
-  res.json({tripDraftId:x.id,score:base,criteria,current,profileSummary:{ageGroup:profile.age_group,mobility:profile.mobility_level,partyType:profile.party_type,budget:profile.budget_level,pace:profile.pace,durationDays:profile.duration_days},recommendations:criteria.filter(c=>c.signal.endsWith('missing')||c.signal==='profile_incomplete').map(c=>c.label),travelerDecides:true,proposalOnly:true,automaticBooking:false});
+  const adjustmentProposals=[];
+  if(!current.transport)adjustmentProposals.push({key:'transport',action:'add',label:'Ajouter une solution de transport avant validation finale'});
+  if(!current.accommodation)adjustmentProposals.push({key:'accommodation',action:'add',label:'Ajouter un hébergement compatible avec le territoire et le profil'});
+  if(!current.experiences)adjustmentProposals.push({key:'experiences',action:'add',label:'Ajouter au moins une expérience correspondant au type de tourisme recherché'});
+  if(!current.healthSafety)adjustmentProposals.push({key:'healthSafety',action:'review',label:'Vérifier les solutions Santé & Sécurité à proximité'});
+  if(profile.budget_level)adjustmentProposals.push({key:'budget',action:'verify',label:'Comparer le coût cumulé au niveau de budget déclaré'});
+  if(profile.duration_days)adjustmentProposals.push({key:'duration',action:'verify',label:'Vérifier que les composants couvrent la durée souhaitée'});
+  res.json({tripDraftId:x.id,score:base,criteria,current,profileSummary:{ageGroup:profile.age_group,mobility:profile.mobility_level,partyType:profile.party_type,budget:profile.budget_level,pace:profile.pace,durationDays:profile.duration_days},recommendations:criteria.filter(c=>c.signal.endsWith('missing')||c.signal==='profile_incomplete').map(c=>c.label),adjustmentProposals,travelerDecides:true,proposalOnly:true,automaticBooking:false});
  }catch(e){res.status(500).json({error:e.message})}
 });
 v30Router.get('/v32/trip-draft/:draftId/decision-brief',async(req,res)=>{
