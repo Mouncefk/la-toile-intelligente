@@ -13,6 +13,12 @@ const fallbackTerritories=[
 
 const scopeLabel={local:'Local',regional:'Régional',national:'National',international:'International',global:'Mondial'};
 async function v30fetch(url,options){const r=await fetch(url,options);const d=await r.json().catch(()=>({}));if(!r.ok)throw new Error(d.error||'Service V30 indisponible');return d}
+function TripReadinessPanel({draftId}){
+ const [data,setData]=useState(null);
+ useEffect(()=>{if(!draftId)return;v30fetch('/api/platform/v30/v32/trip-draft/'+draftId+'/readiness').then(setData).catch(()=>setData(null))},[draftId]);
+ if(!data)return null;
+ return <div className="v32Readiness"><small>BILAN DE PRÉPARATION</small><b>{data.completeness}%</b><span>{data.readyForDecision?'Prêt pour décision du voyageur':'Éléments encore nécessaires'}</span>{data.missing?.length>0&&<div>{data.missing.map(x=><i key={x}>{x}</i>)}</div>}</div>
+}
 function GlobeNavigator(){
  const [node,setNode]=useState(null),[children,setChildren]=useState([]),[trail,setTrail]=useState([]),[climate,setClimate]=useState(null),[overview,setOverview]=useState(null),[offers,setOffers]=useState([]),[healthSafety,setHealthSafety]=useState(null),[travelComponents,setTravelComponents]=useState(null),[selectedSafety,setSelectedSafety]=useState(null),[selectedComponent,setSelectedComponent]=useState(null),[geometry,setGeometry]=useState(null),[loading,setLoading]=useState(true),[error,setError]=useState(''),[rotation,setRotation]=useState(0),[zoom,setZoom]=useState(1);
  const drag=useRef(null);
