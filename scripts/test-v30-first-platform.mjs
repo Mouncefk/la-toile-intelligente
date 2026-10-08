@@ -185,3 +185,17 @@ if(!v31p.includes("'/v32/trip-draft/:draftId/improvement-feedback'")) throw new 
 if(!v31p.includes("['accepted','rejected','deferred']")) throw new Error('V33.07 feedback decision validation missing');
 if(!v31p.includes("reusableTravelerMemory:false")) throw new Error('V33.07 trip-only feedback boundary missing');
 console.log('V33.07 improvement feedback action contract: ok');
+
+/* V33.09 current V32-V33 route coverage contract */
+for(const x of [
+ "'/v32/globe/root'","'/v32/globe/:nodeKey'","'/v32/globe/:nodeKey/geometry'","'/v32/globe/:nodeKey/climate'",
+ "'/v32/globe/:nodeKey/travel-components'","'/v32/globe/:nodeKey/health-safety'","'/v32/globe/:nodeKey/offers'",
+ "'/v32/trip-draft/:draftId/readiness'","'/v32/trip-draft/:draftId/preparation'","'/v32/trip-draft/:draftId/scenarios'",
+ "'/v32/trip-draft/:draftId/select-scenario'","'/v32/trip-draft/:draftId/revise-component'",
+ "'/v32/trip-draft/:draftId/recalculate'","'/v32/trip-draft/:draftId/optimization'",
+ "'/v32/trip-draft/:draftId/decision-brief'","'/v32/trip-draft/:draftId/recommended-dates'",
+ "'/v32/trip-draft/:draftId/recalculation-history'","'/v32/trip-draft/:draftId/optimization-history'",
+ "'/v32/trip-draft/:draftId/optimization-diff'","'/v32/trip-draft/:draftId/improvement-feedback'",
+ "'/v32/trip-draft/:draftId/decision-memory'"
+]) if(!v31p.includes(x)) throw new Error('V33.09 current route missing: '+x);
+console.log('V33.09 current V32-V33 route coverage contract: ok');
