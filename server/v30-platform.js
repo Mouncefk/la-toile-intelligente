@@ -1034,7 +1034,11 @@ v30Router.get('/v32/trip-draft/:draftId/decision-brief',async(req,res)=>{
   if(profile?.duration_days)signals.push({key:'duration',label:'Durée à confronter aux disponibilités et au nombre d’expériences',priority:'medium'});
   if(profile?.pace)signals.push({key:'pace',label:'Rythme à confronter au programme choisi',priority:'medium'});
   if(profile?.preferences?.length)signals.push({key:'preferences',label:'Préférences à confronter aux spécialités des offres',priority:'medium'});
-  res.json({tripDraft:x,activeScenario:x.active_scenario_key,territory:t.rows[0],travelerProfile:profile,recommendedMonths:months,travelRationales:rules.rows.slice(0,8),decisionSignals:signals,decisionBoundary:{travelerDecides:true,proposalOnly:true,automaticBooking:false}});
+  const memory=await pool.query("SELECT proposal_key,decision,MAX(created_at) last_at FROM v32_trip_improvement_feedback WHERE trip_draft_id=$1 GROUP BY proposal_key,decision ORDER BY last_at DESC",[x.id]);
+  const latestMemory={}; for(const row of memory.rows)if(!latestMemory[row.proposal_key])latestMemory[row.proposal_key]=row;
+  const optimization=await pool.query("SELECT score,dimensions,created_at FROM v32_trip_optimization_snapshots WHERE trip_draft_id=$1 ORDER BY created_at DESC LIMIT 1",[x.id]);
+  const latestOptimization=optimization.rows[0]||null;
+  res.json({tripDraft:x,activeScenario:x.active_scenario_key,territory:t.rows[0],travelerProfile:profile,recommendedMonths:months,travelRationales:rules.rows.slice(0,8),decisionSignals:signals,decisionMemory:Object.values(latestMemory),latestOptimization,decisionBoundary:{travelerDecides:true,proposalOnly:true,automaticBooking:false}});
  }catch(e){res.status(500).json({error:e.message})}
 });
 v30Router.get('/v32/trip-draft/:draftId/recommended-dates',async(req,res)=>{
