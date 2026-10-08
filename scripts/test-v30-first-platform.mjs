@@ -228,3 +228,7 @@ console.log('V33.16 scenario decision freshness contract: ok');
 if(!v31p.includes('optimizationStale')) throw new Error('V33.18 optimization freshness signal missing after recalculation');
 if(!v31p.includes('latestOptimization')) throw new Error('V33.18 latest optimization lookup missing');
 console.log('V33.18 recalculation freshness contract: ok');
+
+/* V33.20 freshness comparison contract */
+if(!v31p.includes("new Date(latestOptimization.rows[0].created_at)<new Date(x.updated_at)")) throw new Error('V33.20 stale comparison is not timestamp-based');
+console.log('V33.20 freshness comparison contract: ok');
