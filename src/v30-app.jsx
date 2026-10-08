@@ -34,7 +34,7 @@ function TripOptimizationPanel({draftId}){
  const [data,setData]=useState(null);
  useEffect(()=>{if(!draftId)return;v30fetch('/api/platform/v30/v32/trip-draft/'+draftId+'/optimization').then(setData).catch(()=>setData(null))},[draftId]);
  if(!data)return null;
- return <div className="v32Optimization"><small>OPTIMISATION DU VOYAGE</small><b>{data.score}%</b>{data.criteria?.map(c=><div key={c.key}><strong>{c.label}</strong><span>{c.weight}%</span><p>{c.signal}</p></div>)}{data.recommendations?.length>0&&<section><strong>À améliorer</strong>{data.recommendations.map(x=><p key={x}>• {x}</p>)}</section>}<em>Proposition explicable — décision du voyageur.</em></div>
+ return <div className="v32Optimization"><small>OPTIMISATION DU VOYAGE</small><b>{data.score}%</b>{data.dimensions?.map(c=><div key={c.key}><strong>{c.label}</strong><span>{c.score}% · poids {c.weight}%</span><p>{c.score>=80?'Bon niveau':c.score>=50?'À vérifier':'À améliorer'}</p></div>)}{data.recommendations?.length>0&&<section><strong>À améliorer</strong>{data.recommendations.map(x=><p key={x}>• {x}</p>)}</section>}<em>Proposition explicable — décision du voyageur.</em></div>
 }
 function TripDecisionBrief({draftId}){
  const [data,setData]=useState(null);
