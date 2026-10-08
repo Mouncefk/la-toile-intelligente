@@ -239,3 +239,9 @@ if(!v31p.includes('wasSame')) throw new Error('V33.22 same-scenario guard missin
 if(!v31p.includes('decisionChanged:!wasSame')) throw new Error('V33.22 scenario decision idempotency missing');
 if(!v31p.includes('reoptimizationSuggested:!wasSame')) throw new Error('V33.22 scenario reoptimization idempotency missing');
 console.log('V33.22 idempotent scenario selection contract: ok');
+
+/* V33.25 idempotent component selection contract */
+if(!v31p.includes('currentOfferId')) throw new Error('V33.25 current component guard missing');
+if(!v31p.includes('selectionChanged:!wasSame')) throw new Error('V33.25 selection idempotency missing');
+if(!v31p.includes('reoptimizationSuggested:!wasSame')) throw new Error('V33.25 reoptimization idempotency missing');
+console.log('V33.25 idempotent component selection contract: ok');
