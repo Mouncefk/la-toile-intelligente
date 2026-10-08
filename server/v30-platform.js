@@ -999,9 +999,21 @@ v30Router.get('/v32/trip-draft/:draftId/optimization',async(req,res)=>{
   const scenarioWeights={comfort:{profile:25,climate:15,cost:10,duration:10,comfort:20,composition:10,healthSafety:10},balanced:{profile:20,climate:20,cost:15,duration:10,comfort:10,composition:15,healthSafety:10},discovery:{profile:15,climate:20,cost:10,duration:10,comfort:5,composition:25,healthSafety:15}};
   const weights=scenarioWeights[x.active_scenario_key||'balanced'];
   dimensions.forEach(d=>d.weight=weights[d.key]);
+  const memoryRows=await pool.query("SELECT proposal_key,decision,created_at FROM v32_trip_improvement_feedback WHERE trip_draft_id=$1 ORDER BY created_at DESC",[x.id]);
+  const latestMemory={};
+  for(const row of memoryRows.rows)if(!latestMemory[row.proposal_key])latestMemory[row.proposal_key]=row;
+  const memoryDimension={transport:'composition',accommodation:'composition',experiences:'composition',healthSafety:'healthSafety',health_safety:'healthSafety',budget:'cost',duration:'duration'};
+  for(const row of Object.values(latestMemory)){
+   const dimensionKey=memoryDimension[row.proposal_key];
+   const dimension=dimensions.find(item=>item.key===dimensionKey);
+   if(!dimension||row.decision==='deferred')continue;
+   const delta=row.decision==='accepted'?6:-6;
+   dimension.score=Math.max(0,Math.min(100,dimension.score+delta));
+  }
+  const decisionMemory=Object.values(latestMemory).map(row=>({proposalKey:row.proposal_key,decision:row.decision,lastAt:row.created_at}));
   const score=Math.round(dimensions.reduce((s,d)=>s+d.score*d.weight/100,0));
   await pool.query("INSERT INTO v32_trip_optimization_snapshots(trip_draft_id,scenario_key,score,dimensions) VALUES($1,$2,$3,$4)",[x.id,x.active_scenario_key,score,JSON.stringify(dimensions)]);
-  res.json({tripDraftId:x.id,activeScenario:x.active_scenario_key,score,dimensions,profileSummary:{ageGroup:profile.age_group,mobility:profile.mobility_level,partyType:profile.party_type,budget:profile.budget_level,pace:profile.pace,durationDays:profile.duration_days},travelerDecides:true,proposalOnly:true,automaticBooking:false});
+  res.json({tripDraftId:x.id,activeScenario:x.active_scenario_key,score,dimensions,decisionMemory,profileSummary:{ageGroup:profile.age_group,mobility:profile.mobility_level,partyType:profile.party_type,budget:profile.budget_level,pace:profile.pace,durationDays:profile.duration_days},travelerDecides:true,proposalOnly:true,automaticBooking:false});
  }catch(e){res.status(500).json({error:e.message})}
 });
 v30Router.get('/v32/trip-draft/:draftId/decision-brief',async(req,res)=>{
