@@ -824,6 +824,10 @@ v30Router.get('/v32/trip-draft/:draftId/preparation',async(req,res)=>{
   const d=await pool.query("SELECT id,title,status,territory_key,transport,accommodation,experiences,health_safety FROM v30_trip_drafts WHERE id=$1",[req.params.draftId]);
   if(!d.rows[0])return res.status(404).json({error:'trip_draft_not_found'});
   const x=d.rows[0];
+  const profile=await pool.query("SELECT p.traveler_type,p.age_group,p.mobility_level,p.party_type,p.party_size,p.budget_level,p.pace,p.duration_days,p.accessibility_needs,p.preferences,p.constraints FROM v30_traveler_profiles p JOIN v30_trip_drafts t ON t.session_id=p.session_id WHERE t.id=$1",[x.id]);
+  const travelerProfile=profile.rows[0]||null;
+  const fitSignals=[];
+  if(travelerProfile){if(travelerProfile.mobility_level&&travelerProfile.mobility_level!=='independent')fitSignals.push({key:'mobility',label:'Vérifier l’accessibilité des solutions',priority:'high'});if(travelerProfile.age_group==='senior')fitSignals.push({key:'senior',label:'Privilégier confort, rythme et périodes tempérées',priority:'medium'});if(travelerProfile.party_type==='family')fitSignals.push({key:'family',label:'Vérifier les solutions adaptées aux enfants',priority:'medium'});if(travelerProfile.constraints?.length)fitSignals.push({key:'constraints',label:'Prendre en compte les contraintes déclarées',priority:'high'});}
   const s=await pool.query("SELECT component_type,COUNT(*)::int count FROM v32_trip_component_selections WHERE trip_draft_id=$1 GROUP BY component_type",[x.id]);
   const counts={transport:0,accommodation:0,experiences:0};for(const row of s.rows)counts[row.component_type]=row.count;
   const checklist=[
@@ -834,7 +838,7 @@ v30Router.get('/v32/trip-draft/:draftId/preparation',async(req,res)=>{
    {key:'health_safety',label:'Santé & Sécurité',done:Array.isArray(x.health_safety)&&x.health_safety.length>0}
   ];
   const done=checklist.filter(i=>i.done).length;
-  res.json({tripDraft:x,componentSelectionCounts:counts,checklist,completeness:Math.round(done/checklist.length*100),travelerDecides:true,proposalOnly:true});
+  res.json({tripDraft:x,travelerProfile,fitSignals,componentSelectionCounts:counts,checklist,completeness:Math.round(done/checklist.length*100),travelerDecides:true,proposalOnly:true,automaticBooking:false});
  }catch(e){res.status(500).json({error:e.message})}
 });
 v30Router.get('/v32/trip-draft/:draftId/component-selections',async(req,res)=>{
