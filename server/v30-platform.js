@@ -787,7 +787,12 @@ v30Router.post('/v31/reservations/:reservationId/payment-intent',async(req,res)=
   const q=await pool.query("SELECT id,status,price_amount,currency FROM v31_reservation_requests WHERE id=$1",[req.params.reservationId]);
   if(!q.rows[0])return res.status(404).json({error:'reservation_not_found'});
   const x=q.rows[0];if(x.status!=='confirmed')return res.status(409).json({error:'reservation_not_confirmed',status:x.status});
-  const amount=req.body?.amount!==undefined?Number(req.body.amount):Number(x.price_amount||0);const currency=req.body?.currency||x.currency;if(!currency)return res.status(400).json({error:'currency_required'});if(!Number.isFinite(amount)||amount<0)return res.status(400).json({error:'invalid_amount'});
+  const requestedAmount=req.body?.amount!==undefined?Number(req.body.amount):null;
+  const amount=x.price_amount!==null&&x.price_amount!==undefined?Number(x.price_amount):(requestedAmount??0);
+  const currency=x.currency||req.body?.currency;
+  if(x.price_amount!==null&&x.price_amount!==undefined&&requestedAmount!==null&&requestedAmount!==amount)return res.status(409).json({error:'payment_amount_mismatch',reservationAmount:amount});
+  if(x.currency&&req.body?.currency&&req.body.currency!==x.currency)return res.status(409).json({error:'payment_currency_mismatch',reservationCurrency:x.currency});
+  if(!currency)return res.status(400).json({error:'currency_required'});if(!Number.isFinite(amount)||amount<0)return res.status(400).json({error:'invalid_amount'});
   const mode=['direct','escrow','external'].includes(req.body?.paymentMode)?req.body.paymentMode:'direct';
   const i=await pool.query("INSERT INTO v31_transaction_intents(reservation_id,amount,currency,payment_mode,provider,metadata) VALUES($1,$2,$3,$4,$5,$6) ON CONFLICT(reservation_id) DO UPDATE SET amount=EXCLUDED.amount,currency=EXCLUDED.currency,payment_mode=EXCLUDED.payment_mode,provider=EXCLUDED.provider,updated_at=now() RETURNING *",[x.id,amount,currency,mode,req.body?.provider||null,req.body?.metadata||{}]);
   res.status(201).json({paymentIntent:i.rows[0],paymentRequired:amount>0,automaticPayment:false,travelerDecides:true});
