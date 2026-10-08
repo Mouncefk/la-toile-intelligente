@@ -935,7 +935,8 @@ v30Router.post('/v32/trip-draft/:draftId/select-scenario',async(req,res)=>{
   const d=await pool.query("SELECT id FROM v30_trip_drafts WHERE id=$1",[req.params.draftId]);
   if(!d.rows[0])return res.status(404).json({error:'trip_draft_not_found'});
   const s=await pool.query("INSERT INTO v32_trip_scenario_selections(trip_draft_id,scenario_key,metadata) VALUES($1,$2,$3) RETURNING *",[d.rows[0].id,key,JSON.stringify({source:'globe',decision:'traveler_selected'})]);
-  res.status(201).json({selection:s.rows[0],travelerDecides:true,automaticBooking:false});
+  const active=await pool.query("UPDATE v30_trip_drafts SET active_scenario_key=$1,updated_at=now() WHERE id=$2 RETURNING id,active_scenario_key",[key,d.rows[0].id]);
+  res.status(201).json({selection:s.rows[0],activeScenario:active.rows[0],travelerDecides:true,automaticBooking:false});
  }catch(e){res.status(500).json({error:e.message})}
 });
 v30Router.get('/v32/trip-draft/:draftId/scenarios',async(req,res)=>{
