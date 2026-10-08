@@ -13,6 +13,12 @@ const fallbackTerritories=[
 
 const scopeLabel={local:'Local',regional:'Régional',national:'National',international:'International',global:'Mondial'};
 async function v30fetch(url,options){const r=await fetch(url,options);const d=await r.json().catch(()=>({}));if(!r.ok)throw new Error(d.error||'Service V30 indisponible');return d}
+function TripScenariosPanel({draftId}){
+ const [data,setData]=useState(null);
+ useEffect(()=>{if(!draftId)return;v30fetch('/api/platform/v30/v32/trip-draft/'+draftId+'/scenarios').then(setData).catch(()=>setData(null))},[draftId]);
+ if(!data)return null;
+ return <div className="v32Scenarios"><small>SCÉNARIOS PROPOSÉS</small>{data.scenarios.map(s=><section key={s.key}><b>{s.name}</b><span>{s.description}</span><em>{s.candidates?.length||0} solution(s) candidates</em></section>)}<i>Comparaison uniquement — aucune réservation automatique.</i></div>
+}
 function TripOptimizationPanel({draftId}){
  const [data,setData]=useState(null);
  useEffect(()=>{if(!draftId)return;v30fetch('/api/platform/v30/v32/trip-draft/'+draftId+'/optimization').then(setData).catch(()=>setData(null))},[draftId]);
