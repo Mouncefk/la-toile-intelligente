@@ -152,3 +152,7 @@
 .v32Sphere3D .v32Dot{z-index:5}.v32GlobeSub{position:absolute;bottom:24px;left:26px;color:rgba(220,235,255,.55);font-size:11px;letter-spacing:.16em}
 .v32Sphere3D .d0{left:29%;top:36%}.v32Sphere3D .d1{left:44%;top:27%}.v32Sphere3D .d2{left:61%;top:34%}.v32Sphere3D .d3{left:71%;top:46%}.v32Sphere3D .d4{left:59%;top:58%}.v32Sphere3D .d5{left:43%;top:67%}.v32Sphere3D .d6{left:29%;top:58%}.v32Sphere3D .d7{left:23%;top:45%}.v32Sphere3D .d8{left:53%;top:44%}.v32Sphere3D .d9{left:39%;top:48%}.v32Sphere3D .d10{left:67%;top:64%}.v32Sphere3D .d11{left:35%;top:72%}
 @media(max-width:600px){.v32Sphere3D{width:76%}}
+
+.v32RealGeometry{position:absolute;inset:0;width:100%;height:100%;z-index:2;pointer-events:none;overflow:visible}
+.v32RealGeometry path{fill:rgba(88,168,116,.12);stroke:rgba(170,224,255,.78);stroke-width:.34;vector-effect:non-scaling-stroke;filter:drop-shadow(0 0 2px rgba(100,190,255,.45))}
+.v32Sphere3D .v32Dot{z-index:6}
