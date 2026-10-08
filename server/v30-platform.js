@@ -846,7 +846,10 @@ v30Router.get('/v32/globe/:nodeKey/overview',async(req,res)=>{
   const x=n.rows[0];
   const seasons=await pool.query("SELECT climate_key,season_key,month_start,month_end,tourism_tags,rationale_fr FROM v32_seasonal_windows WHERE climate_key=ANY($1::text[]) AND hemisphere IN ($2,'equatorial') ORDER BY month_start,climate_key",[x.climate_keys,x.hemisphere]);
   const children=await pool.query("SELECT node_key,node_type,name,hemisphere,climate_keys,latitude,longitude FROM v32_geo_nodes WHERE parent_key=$1 AND active=true ORDER BY node_type,name",[x.node_key]);
-  res.json({node:x,seasonalWindows:seasons.rows,children:children.rows,signals:{climates:x.climate_keys||[],hemisphere:x.hemisphere,childCount:children.rowCount}});
+  const tags=await pool.query("SELECT DISTINCT tourism_tag FROM v30_tourism_climate_rules WHERE climate_key=ANY($1::text[]) AND hemisphere IN ($2,'equatorial') ORDER BY tourism_tag",[x.climate_keys,x.hemisphere]);
+  const month=Number(req.query.month)||new Date().getUTCMonth()+1;
+  const seasonalTags=await pool.query("SELECT DISTINCT tourism_tag FROM v30_tourism_climate_rules WHERE climate_key=ANY($1::text[]) AND hemisphere IN ($2,'equatorial') AND $3=ANY(preferred_months) ORDER BY tourism_tag",[x.climate_keys,x.hemisphere,month]);
+  res.json({node:x,seasonalWindows:seasons.rows,children:children.rows,tourismTags:tags.rows.map(r=>r.tourism_tag),seasonalTourismTags:seasonalTags.rows.map(r=>r.tourism_tag),month,signals:{climates:x.climate_keys||[],hemisphere:x.hemisphere,childCount:children.rowCount}});
  }catch(e){res.status(500).json({error:e.message})}
 });
 v30Router.get('/health', (_req, res) => res.json({ ok: true, version: '30.2', router: 'v30-platform' }));
