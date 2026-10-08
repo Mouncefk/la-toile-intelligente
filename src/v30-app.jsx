@@ -13,6 +13,12 @@ const fallbackTerritories=[
 
 const scopeLabel={local:'Local',regional:'Régional',national:'National',international:'International',global:'Mondial'};
 async function v30fetch(url,options){const r=await fetch(url,options);const d=await r.json().catch(()=>({}));if(!r.ok)throw new Error(d.error||'Service V30 indisponible');return d}
+function TripImprovementPanel({draftId}){
+ const [data,setData]=useState(null);
+ useEffect(()=>{if(!draftId)return;v30fetch('/api/platform/v30/v32/trip-draft/'+draftId+'/improvement-proposals').then(setData).catch(()=>setData(null))},[draftId]);
+ if(!data?.proposals?.length)return null;
+ return <div className="v32Improvements"><small>AMÉLIORATIONS PROPOSÉES</small>{data.proposals.map(p=><div key={p.key}><b>{p.priority}</b><strong>{p.action}</strong><span>{p.reason}</span><em>{p.expectedImpact.join(' · ')}</em></div>)}<i>Propositions uniquement — le voyageur décide.</i></div>
+}
 function TripOptimizationDiffPanel({draftId}){
  const [data,setData]=useState(null);
  useEffect(()=>{if(!draftId)return;v30fetch('/api/platform/v30/v32/trip-draft/'+draftId+'/optimization-diff').then(setData).catch(()=>setData(null))},[draftId]);
