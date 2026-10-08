@@ -38,6 +38,8 @@ jobs:
 
       - name: V30 syntax check
         run: npm run check:v30
+      - name: V33 syntax check
+        run: npm run check:v33
       - name: V30 production build
         run: npm run build
       - name: Apply database seeds
