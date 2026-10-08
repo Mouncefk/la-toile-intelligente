@@ -928,6 +928,24 @@ v30Router.get('/v32/globe/:nodeKey/offers',async(req,res)=>{
   res.json({node:n.rows[0],tag:tag||null,offers:q.rows,travelerDecides:true,proposalOnly:true,automaticBooking:false});
  }catch(e){res.status(500).json({error:e.message})}
 });
+v30Router.get('/v32/trip-draft/:draftId/optimization',async(req,res)=>{
+ try{
+  const d=await pool.query("SELECT id,territory_key,transport,accommodation,experiences,health_safety FROM v30_trip_drafts WHERE id=$1",[req.params.draftId]);
+  if(!d.rows[0])return res.status(404).json({error:'trip_draft_not_found'});
+  const x=d.rows[0];
+  const p=await pool.query("SELECT p.age_group,p.mobility_level,p.party_type,p.budget_level,p.pace,p.duration_days,p.preferences,p.constraints FROM v30_traveler_profiles p JOIN v30_trip_drafts t ON t.session_id=p.session_id WHERE t.id=$1",[x.id]);
+  const profile=p.rows[0]||{};
+  const current={transport:Boolean(x.transport&&Object.keys(x.transport).length),accommodation:Boolean(x.accommodation&&Object.keys(x.accommodation).length),experiences:Array.isArray(x.experiences)&&x.experiences.length>0,healthSafety:Array.isArray(x.health_safety)&&x.health_safety.length>0};
+  const criteria=[
+   {key:'profile',label:'Adéquation au profil voyageur',weight:30,signal:profile.age_group||profile.mobility_level||profile.party_type?'profile_data_available':'profile_incomplete'},
+   {key:'season',label:'Cohérence climatique et saisonnière',weight:25,signal:x.territory_key?'territory_available':'territory_missing'},
+   {key:'composition',label:'Équilibre transport / hébergement / expériences',weight:25,signal:Object.values(current).filter(Boolean).length+'/4'},
+   {key:'constraints',label:'Prise en compte des contraintes',weight:20,signal:profile.constraints?.length?'constraints_declared':'none_declared'}
+  ];
+  const base=criteria.reduce((s,c)=>s+(c.signal.endsWith('missing')||c.signal==='profile_incomplete'?0:c.weight),0);
+  res.json({tripDraftId:x.id,score:base,criteria,current,profileSummary:{ageGroup:profile.age_group,mobility:profile.mobility_level,partyType:profile.party_type,budget:profile.budget_level,pace:profile.pace,durationDays:profile.duration_days},recommendations:criteria.filter(c=>c.signal.endsWith('missing')||c.signal==='profile_incomplete').map(c=>c.label),travelerDecides:true,proposalOnly:true,automaticBooking:false});
+ }catch(e){res.status(500).json({error:e.message})}
+});
 v30Router.get('/v32/trip-draft/:draftId/decision-brief',async(req,res)=>{
  try{
   const d=await pool.query("SELECT id,title,territory_key FROM v30_trip_drafts WHERE id=$1",[req.params.draftId]);
