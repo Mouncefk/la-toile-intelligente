@@ -983,7 +983,9 @@ v30Router.post('/v32/trip-draft/:draftId/recalculate',async(req,res)=>{
   const score=Math.round(present.filter(Boolean).length/4*100);
   const reason=req.body?.reason||'traveler_recalculation';
   const event=await pool.query("INSERT INTO v32_trip_recalculation_events(trip_draft_id,scenario_key,score,reason,metadata) VALUES($1,$2,$3,$4,$5) RETURNING id,trip_draft_id,scenario_key,score,reason,created_at,metadata",[x.id,x.active_scenario_key,score,reason,JSON.stringify({source:'traveler_action',composition:{transport:present[0],accommodation:present[1],experiences:present[2],healthSafety:present[3]}})]);
-  res.json({tripDraftId:x.id,activeScenario:x.active_scenario_key,score,event:event.rows[0],changedAt:new Date().toISOString(),recalculated:true,travelerDecides:true,proposalOnly:true,automaticBooking:false});
+  const latestOptimization=await pool.query("SELECT created_at FROM v32_trip_optimization_snapshots WHERE trip_draft_id=$1 AND scenario_key IS NOT DISTINCT FROM $2 ORDER BY created_at DESC LIMIT 1",[x.id,x.active_scenario_key]);
+  const optimizationStale=Boolean(latestOptimization.rows[0]);
+  res.json({tripDraftId:x.id,activeScenario:x.active_scenario_key,score,event:event.rows[0],optimizationStale,changedAt:new Date().toISOString(),recalculated:true,travelerDecides:true,proposalOnly:true,automaticBooking:false});
  }catch(e){res.status(500).json({error:e.message})}
 });
 v30Router.get('/v32/trip-draft/:draftId/optimization',async(req,res)=>{
