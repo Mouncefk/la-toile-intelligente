@@ -803,11 +803,21 @@ v30Router.post('/v32/globe/trip-draft/:draftId/select-component',async(req,res)=
   const o=await pool.query("SELECT id,title,offer_type,territory_key,price_amount,currency,booking_mode FROM v31_pro_offers WHERE id=$1 AND status='published'",[id]);
   if(!o.rows[0])return res.status(404).json({error:'offer_not_found'});
   const x=d.rows[0];
-  const s=await pool.query("INSERT INTO v32_trip_component_selections(trip_draft_id,component_type,offer_id,metadata) VALUES($1,$2,$3,$4) RETURNING *",[x.id,type,id,JSON.stringify(o.rows[0])]);
   const col=type==='transport'?'transport':type==='accommodation'?'accommodation':'experiences';
+  const current=await pool.query(`SELECT ${col} FROM v30_trip_drafts WHERE id=$1`,[x.id]);
+  const currentValue=current.rows[0]?.[col];
+  const currentOfferId=type==='experiences'
+    ? (Array.isArray(currentValue)&&currentValue[0]?.id!=null?Number(currentValue[0].id):null)
+    : (currentValue?.id!=null?Number(currentValue.id):null);
+  const wasSame=currentOfferId===id;
+  const s=wasSame
+    ? await pool.query("SELECT * FROM v32_trip_component_selections WHERE trip_draft_id=$1 AND component_type=$2 AND offer_id=$3 ORDER BY selected_at DESC LIMIT 1",[x.id,type,id])
+    : await pool.query("INSERT INTO v32_trip_component_selections(trip_draft_id,component_type,offer_id,metadata) VALUES($1,$2,$3,$4) RETURNING *",[x.id,type,id,JSON.stringify(o.rows[0])]);
   const value=type==='experiences'?[o.rows[0]]:o.rows[0];
-  const updated=await pool.query(`UPDATE v30_trip_drafts SET ${col}=$1::jsonb,updated_at=now() WHERE id=$2 RETURNING id,${col},updated_at`,[JSON.stringify(value),x.id]);
-  res.status(201).json({selection:s.rows[0],offer:o.rows[0],tripDraftUpdate:updated.rows[0],reoptimizationSuggested:true,travelerDecides:true,automaticBooking:false});
+  const updated=wasSame
+    ? await pool.query(`SELECT id,${col},updated_at FROM v30_trip_drafts WHERE id=$1`,[x.id])
+    : await pool.query(`UPDATE v30_trip_drafts SET ${col}=$1::jsonb,updated_at=now() WHERE id=$2 RETURNING id,${col},updated_at`,[JSON.stringify(value),x.id]);
+  res.status(wasSame?200:201).json({selection:s.rows[0]||null,offer:o.rows[0],tripDraftUpdate:updated.rows[0],selectionChanged:!wasSame,reoptimizationSuggested:!wasSame,travelerDecides:true,automaticBooking:false});
  }catch(e){res.status(500).json({error:e.message})}
 });
 v30Router.get('/v32/trip-draft/:draftId/readiness',async(req,res)=>{
