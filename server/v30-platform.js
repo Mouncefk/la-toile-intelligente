@@ -1038,7 +1038,9 @@ v30Router.get('/v32/trip-draft/:draftId/decision-brief',async(req,res)=>{
   const latestMemory={}; for(const row of memory.rows)if(!latestMemory[row.proposal_key])latestMemory[row.proposal_key]=row;
   const optimization=await pool.query("SELECT score,dimensions,created_at FROM v32_trip_optimization_snapshots WHERE trip_draft_id=$1 ORDER BY created_at DESC LIMIT 1",[x.id]);
   const latestOptimization=optimization.rows[0]||null;
-  res.json({tripDraft:x,activeScenario:x.active_scenario_key,territory:t.rows[0],travelerProfile:profile,recommendedMonths:months,travelRationales:rules.rows.slice(0,8),decisionSignals:signals,decisionMemory:Object.values(latestMemory),latestOptimization,decisionBoundary:{travelerDecides:true,proposalOnly:true,automaticBooking:false}});
+  const optimizationStale=Boolean(latestOptimization&&x.updated_at&&new Date(latestOptimization.created_at)<new Date(x.updated_at));
+  const decisionMemory=Object.values(latestMemory).map(row=>({...row,stale:Boolean(x.updated_at&&new Date(row.last_at)<new Date(x.updated_at))}));
+  res.json({tripDraft:x,activeScenario:x.active_scenario_key,territory:t.rows[0],travelerProfile:profile,recommendedMonths:months,travelRationales:rules.rows.slice(0,8),decisionSignals:signals,decisionMemory,latestOptimization,optimizationStale,decisionBoundary:{travelerDecides:true,proposalOnly:true,automaticBooking:false}});
  }catch(e){res.status(500).json({error:e.message})}
 });
 v30Router.get('/v32/trip-draft/:draftId/recommended-dates',async(req,res)=>{
