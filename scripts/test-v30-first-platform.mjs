@@ -199,3 +199,9 @@ for(const x of [
  "'/v32/trip-draft/:draftId/decision-memory'"
 ]) if(!v31p.includes(x)) throw new Error('V33.09 current route missing: '+x);
 console.log('V33.09 current V32-V33 route coverage contract: ok');
+
+/* V33.10 installation integrity contract */
+const v33_10_guard=fs.readFileSync(new URL('../database/seed/61_v33_installation_integrity.sql',import.meta.url),'utf8');
+for(const x of ['v32_geo_nodes','v32_seasonal_windows','v32_trip_recalculation_events','v32_trip_optimization_snapshots','v32_trip_improvement_feedback']) if(!v33_10_guard.includes(x)) throw new Error('V33.10 installation guard missing table: '+x);
+if(!v33_10_guard.includes('RAISE EXCEPTION')) throw new Error('V33.10 installation guard does not fail explicitly');
+console.log('V33.10 installation integrity contract: ok');
