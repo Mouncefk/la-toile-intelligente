@@ -850,6 +850,22 @@ v30Router.get('/v32/trip-draft/:draftId/component-selections',async(req,res)=>{
   res.json({tripDraft:d.rows[0],selections:q.rows,grouped,decisionBoundary:{travelerDecides:true,automaticBooking:false}});
  }catch(e){res.status(500).json({error:e.message})}
 });
+v30Router.post('/v32/trip-draft/:draftId/revise-component',async(req,res)=>{
+ try{
+  const type=req.body?.componentType,id=Number(req.body?.offerId);
+  if(!['transport','accommodation','experiences'].includes(type)||!Number.isInteger(id))return res.status(400).json({error:'invalid_component'});
+  const d=await pool.query("SELECT id,transport,accommodation,experiences FROM v30_trip_drafts WHERE id=$1",[req.params.draftId]);
+  if(!d.rows[0])return res.status(404).json({error:'trip_draft_not_found'});
+  const o=await pool.query("SELECT id,title,offer_type,territory_key,price_amount,currency,booking_mode FROM v31_pro_offers WHERE id=$1 AND status='published'",[id]);
+  if(!o.rows[0])return res.status(404).json({error:'offer_not_found'});
+  const x=d.rows[0],col=type==='transport'?'transport':type==='accommodation'?'accommodation':'experiences';
+  const prev=x[col]; const next=type==='experiences'?[o.rows[0]]:o.rows[0];
+  await pool.query(`UPDATE v30_trip_drafts SET ${col}=$1::jsonb,updated_at=now() WHERE id=$2`,[JSON.stringify(next),x.id]);
+  const previousId=type==='experiences'?(Array.isArray(prev)&&prev[0]?.id||null):(prev?.id||null);
+  await pool.query("INSERT INTO v32_trip_component_revisions(trip_draft_id,component_type,previous_offer_id,new_offer_id,metadata) VALUES($1,$2,$3,$4,$5)",[x.id,type,previousId,id,JSON.stringify({source:'traveler_revision'})]);
+  res.json({tripDraftId:x.id,componentType:type,previousOfferId:previousId,newOfferId:id,reoptimizationSuggested:true,travelerDecides:true,automaticBooking:false});
+ }catch(e){res.status(500).json({error:e.message})}
+});
 v30Router.get('/v32/globe/root',async(req,res)=>{
  try{const q=await pool.query("SELECT node_key,node_type,name,hemisphere,climate_keys,latitude,longitude FROM v32_geo_nodes WHERE node_type='world' AND active=true ORDER BY name");res.json({zoomLevel:0,nodes:q.rows,navigation:'progressive'});}catch(e){res.status(500).json({error:e.message})}
 });
