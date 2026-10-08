@@ -970,6 +970,16 @@ v30Router.get('/v32/trip-draft/:draftId/scenarios',async(req,res)=>{
   res.json({tripDraftId:x.id,scenarios,travelerDecides:true,proposalOnly:true,automaticBooking:false});
  }catch(e){res.status(500).json({error:e.message})}
 });
+v30Router.post('/v32/trip-draft/:draftId/recalculate',async(req,res)=>{
+ try{
+  const d=await pool.query("SELECT id,active_scenario_key,territory_key,transport,accommodation,experiences,health_safety FROM v30_trip_drafts WHERE id=$1",[req.params.draftId]);
+  if(!d.rows[0])return res.status(404).json({error:'trip_draft_not_found'});
+  const x=d.rows[0];
+  const present=[Boolean(x.transport&&Object.keys(x.transport).length),Boolean(x.accommodation&&Object.keys(x.accommodation).length),Array.isArray(x.experiences)&&x.experiences.length>0,Array.isArray(x.health_safety)&&x.health_safety.length>0];
+  const score=Math.round(present.filter(Boolean).length/4*100);
+  res.json({tripDraftId:x.id,activeScenario:x.active_scenario_key,score,changedAt:new Date().toISOString(),recalculated:true,travelerDecides:true,proposalOnly:true,automaticBooking:false});
+ }catch(e){res.status(500).json({error:e.message})}
+});
 v30Router.get('/v32/trip-draft/:draftId/optimization',async(req,res)=>{
  try{
   const d=await pool.query("SELECT id,territory_key,transport,accommodation,experiences,health_safety FROM v30_trip_drafts WHERE id=$1",[req.params.draftId]);
