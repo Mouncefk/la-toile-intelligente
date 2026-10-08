@@ -217,3 +217,9 @@ if(!v31p.includes("'/v32/trip-draft/:draftId/revise-component'")) throw new Erro
 if(!v31p.includes('revision:revision.rows[0]')) throw new Error('V33.14 revision record missing');
 if(!v31p.includes('currentOffer:o.rows[0]')) throw new Error('V33.14 current offer state missing');
 console.log('V33.14 component revision state contract: ok');
+
+/* V33.16 scenario decision freshness contract */
+if(!v31p.includes("'/v32/trip-draft/:draftId/select-scenario'")) throw new Error('V33.16 scenario selection endpoint missing');
+if(!v31p.includes('decisionChanged:true')) throw new Error('V33.16 scenario decision state missing');
+if(!v31p.includes('reoptimizationSuggested:true')) throw new Error('V33.16 scenario reoptimization signal missing');
+console.log('V33.16 scenario decision freshness contract: ok');
