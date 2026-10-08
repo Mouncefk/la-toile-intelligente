@@ -205,3 +205,9 @@ const v33_10_guard=fs.readFileSync(new URL('../database/seed/61_v33_installation
 for(const x of ['v32_geo_nodes','v32_seasonal_windows','v32_trip_recalculation_events','v32_trip_optimization_snapshots','v32_trip_improvement_feedback']) if(!v33_10_guard.includes(x)) throw new Error('V33.10 installation guard missing table: '+x);
 if(!v33_10_guard.includes('RAISE EXCEPTION')) throw new Error('V33.10 installation guard does not fail explicitly');
 console.log('V33.10 installation integrity contract: ok');
+
+/* V33.12 component selection synchronization contract */
+if(!v31p.includes("'/v32/globe/trip-draft/:draftId/select-component'")) throw new Error('V33.12 component selection endpoint missing');
+if(!v31p.includes('tripDraftUpdate')) throw new Error('V33.12 trip draft synchronization response missing');
+if(!v31p.includes('reoptimizationSuggested:true')) throw new Error('V33.12 reoptimization signal missing');
+console.log('V33.12 component selection synchronization contract: ok');
