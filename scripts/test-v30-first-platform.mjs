@@ -211,3 +211,9 @@ if(!v31p.includes("'/v32/globe/trip-draft/:draftId/select-component'")) throw ne
 if(!v31p.includes('tripDraftUpdate')) throw new Error('V33.12 trip draft synchronization response missing');
 if(!v31p.includes('reoptimizationSuggested:true')) throw new Error('V33.12 reoptimization signal missing');
 console.log('V33.12 component selection synchronization contract: ok');
+
+/* V33.14 component revision state contract */
+if(!v31p.includes("'/v32/trip-draft/:draftId/revise-component'")) throw new Error('V33.14 revision endpoint missing');
+if(!v31p.includes('revision:revision.rows[0]')) throw new Error('V33.14 revision record missing');
+if(!v31p.includes('currentOffer:o.rows[0]')) throw new Error('V33.14 current offer state missing');
+console.log('V33.14 component revision state contract: ok');
