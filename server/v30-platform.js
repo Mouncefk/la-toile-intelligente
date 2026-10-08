@@ -941,7 +941,7 @@ v30Router.post('/v32/trip-draft/:draftId/select-scenario',async(req,res)=>{
 });
 v30Router.get('/v32/trip-draft/:draftId/scenarios',async(req,res)=>{
  try{
-  const d=await pool.query("SELECT id,territory_key,transport,accommodation,experiences,health_safety FROM v30_trip_drafts WHERE id=$1",[req.params.draftId]);
+  const d=await pool.query("SELECT id,territory_key,active_scenario_key,transport,accommodation,experiences,health_safety FROM v30_trip_drafts WHERE id=$1",[req.params.draftId]);
   if(!d.rows[0])return res.status(404).json({error:'trip_draft_not_found'});
   const x=d.rows[0];
   const q=await pool.query("SELECT o.id,o.title,o.offer_type,o.price_amount,o.currency,o.booking_mode,o.specialties,o.audiences,p.name professional_name,p.verified FROM v31_pro_offers o JOIN v30_pro_profiles p ON p.id=o.professional_id WHERE o.status='published' AND (o.territory_key=$1 OR o.territory_key IN (SELECT node_key FROM v32_geo_nodes WHERE parent_key=$1)) ORDER BY p.verified DESC,o.updated_at DESC LIMIT 60",[x.territory_key]);
@@ -976,12 +976,12 @@ v30Router.get('/v32/trip-draft/:draftId/optimization',async(req,res)=>{
   if(!current.healthSafety)adjustmentProposals.push({key:'healthSafety',action:'review',label:'Vérifier les solutions Santé & Sécurité à proximité'});
   if(profile.budget_level)adjustmentProposals.push({key:'budget',action:'verify',label:'Comparer le coût cumulé au niveau de budget déclaré'});
   if(profile.duration_days)adjustmentProposals.push({key:'duration',action:'verify',label:'Vérifier que les composants couvrent la durée souhaitée'});
-  res.json({tripDraftId:x.id,score:base,criteria,current,profileSummary:{ageGroup:profile.age_group,mobility:profile.mobility_level,partyType:profile.party_type,budget:profile.budget_level,pace:profile.pace,durationDays:profile.duration_days},recommendations:criteria.filter(c=>c.signal.endsWith('missing')||c.signal==='profile_incomplete').map(c=>c.label),adjustmentProposals,travelerDecides:true,proposalOnly:true,automaticBooking:false});
+  res.json({tripDraftId:x.id,activeScenario:x.active_scenario_key,score:base,criteria,current,profileSummary:{ageGroup:profile.age_group,mobility:profile.mobility_level,partyType:profile.party_type,budget:profile.budget_level,pace:profile.pace,durationDays:profile.duration_days},recommendations:criteria.filter(c=>c.signal.endsWith('missing')||c.signal==='profile_incomplete').map(c=>c.label),adjustmentProposals,travelerDecides:true,proposalOnly:true,automaticBooking:false});
  }catch(e){res.status(500).json({error:e.message})}
 });
 v30Router.get('/v32/trip-draft/:draftId/decision-brief',async(req,res)=>{
  try{
-  const d=await pool.query("SELECT id,title,territory_key FROM v30_trip_drafts WHERE id=$1",[req.params.draftId]);
+  const d=await pool.query("SELECT id,title,territory_key,active_scenario_key FROM v30_trip_drafts WHERE id=$1",[req.params.draftId]);
   if(!d.rows[0])return res.status(404).json({error:'trip_draft_not_found'});
   const x=d.rows[0];
   const p=await pool.query("SELECT p.traveler_type,p.age_group,p.mobility_level,p.party_type,p.party_size,p.budget_level,p.pace,p.duration_days,p.preferences,p.constraints FROM v30_traveler_profiles p JOIN v30_trip_drafts t ON t.session_id=p.session_id WHERE t.id=$1",[x.id]);
@@ -995,7 +995,7 @@ v30Router.get('/v32/trip-draft/:draftId/decision-brief',async(req,res)=>{
   if(profile?.duration_days)signals.push({key:'duration',label:'Durée à confronter aux disponibilités et au nombre d’expériences',priority:'medium'});
   if(profile?.pace)signals.push({key:'pace',label:'Rythme à confronter au programme choisi',priority:'medium'});
   if(profile?.preferences?.length)signals.push({key:'preferences',label:'Préférences à confronter aux spécialités des offres',priority:'medium'});
-  res.json({tripDraft:x,territory:t.rows[0],travelerProfile:profile,recommendedMonths:months,travelRationales:rules.rows.slice(0,8),decisionSignals:signals,decisionBoundary:{travelerDecides:true,proposalOnly:true,automaticBooking:false}});
+  res.json({tripDraft:x,activeScenario:x.active_scenario_key,territory:t.rows[0],travelerProfile:profile,recommendedMonths:months,travelRationales:rules.rows.slice(0,8),decisionSignals:signals,decisionBoundary:{travelerDecides:true,proposalOnly:true,automaticBooking:false}});
  }catch(e){res.status(500).json({error:e.message})}
 });
 v30Router.get('/v32/trip-draft/:draftId/recommended-dates',async(req,res)=>{
