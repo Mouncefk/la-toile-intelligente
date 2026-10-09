@@ -23,12 +23,23 @@ Prérequis : Node.js/npm et Docker avec Docker Compose.
    ```bash
    npm run dev
    ```
-5. Ouvrir l’adresse locale affichée par Vite (par défaut `http://localhost:5173`). L’API écoute par défaut sur le port `4300` et Vite transmet les requêtes `/api` vers cette API.
+5. Ouvrir l’adresse V30 explicitement : `http://localhost:5173/?v30=1` (sans `?v30=1`, l’entrée actuelle affiche encore l’interface historique V27). L’API écoute par défaut sur le port `4300` et Vite transmet les requêtes `/api` vers cette API.
 
 ### Vérifications rapides
 
 - Santé de l’API : `http://localhost:4300/api/health`
 - Parcours V30 : `http://localhost:4300/api/platform/v30/flow`
+- Interface V30 : `http://localhost:5173/?v30=1`
+
+### Scénario de recette manuelle
+
+1. Ouvrir l’interface V30 et vérifier que les territoires se chargent sans erreur API.
+2. Choisir un territoire pilote et vérifier que les solutions, le contexte climatique et Santé & Sécurité se mettent à jour.
+3. Saisir une intention, puis explorer les propositions disponibles.
+4. Comparer jusqu’à trois possibilités et vérifier que les raisons de compatibilité et les indicateurs Santé & Sécurité sont visibles.
+5. Créer un projet de voyage, enregistrer des dates ou une fenêtre flexible, puis lancer l’analyse de préparation.
+6. Vérifier que transport et hébergement manquants sont signalés, et qu’aucune réservation n’est créée automatiquement.
+7. Répéter au minimum pour un territoire marocain et un territoire français. Signaler tout écran vide, erreur API ou donnée manifestement incohérente.
 - Compilation de production : `npm run build`
 - Test du parcours V30 (nécessite une base initialisée et accessible) : `npm run test:v30:first-platform`
 
