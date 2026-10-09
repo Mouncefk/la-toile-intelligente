@@ -34,6 +34,20 @@ async function post(path, payload) {
   return body;
 }
 
+async function put(path, payload, expectedStatus = 200) {
+  const response = await fetch(base + path, {
+    method: 'PUT',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(payload),
+    signal: AbortSignal.timeout(8000)
+  });
+  const body = await response.json().catch(() => ({}));
+  if (response.status !== expectedStatus) {
+    throw new Error(`${path} returned HTTP ${response.status}, expected ${expectedStatus}: ${JSON.stringify(body)}`);
+  }
+  return body;
+}
+
 async function waitForHealth() {
   const deadline = Date.now() + 25000;
   let lastError;
@@ -175,9 +189,47 @@ try {
     throw new Error('Trip draft readiness must flag missing transport and accommodation');
   }
   const draftSummary = await get(`/api/platform/v30/trip-draft/${draftId}/summary`);
-  if (draftSummary.travelerDecides !== true && draftSummary.proposalOnly !== true) {
-    throw new Error('Trip draft summary does not preserve traveler decision');
+  if (draftSummary.proposalOnly !== true) {
+    throw new Error('Trip draft summary must remain proposal-only');
   }
+
+  await put(`/api/platform/v30/trip-draft/${draftId}/dates`, {
+    startDate: '2027-04-12',
+    endDate: '2027-04-17',
+    flexibleDays: 3,
+    durationDays: 5
+  });
+  const dateWindows = await get(`/api/platform/v30/trip-draft/${draftId}/date-windows`);
+  if (!Array.isArray(dateWindows.windows) || dateWindows.windows.length !== 7 ||
+      !dateWindows.windows.some(window => window.offsetDays === -3) ||
+      !dateWindows.windows.some(window => window.offsetDays === 3)) {
+    throw new Error('Flexible date window must produce the requested seven candidate days');
+  }
+  const invalidDates = await put(`/api/platform/v30/trip-draft/${draftId}/dates`, {
+    startDate: '2027-04-17',
+    endDate: '2027-04-12'
+  }, 400);
+  if (invalidDates.error !== 'endDate_before_startDate') {
+    throw new Error('Invalid date order must be rejected explicitly');
+  }
+
+  const optimization = await post(`/api/platform/v30/trip-draft/${draftId}/optimize`, {
+    pace: 'tranquille',
+    durationDays: 5,
+    climatePriority: true,
+    safetyPriority: true
+  });
+  if (!optimization.optimization?.optimizedAt || !Array.isArray(optimization.optimization.hardMissing) ||
+      !optimization.optimization.hardMissing.includes('transport') ||
+      !optimization.optimization.hardMissing.includes('accommodation') ||
+      optimization.travelerDecides !== true) {
+    throw new Error('Trip optimization must persist date analysis, flag missing components and preserve traveler decision');
+  }
+  const checklist = await get(`/api/platform/v30/trip-draft/${draftId}/checklist`);
+  if (!Array.isArray(checklist.items) || !checklist.items.some(item => item.key === 'optimization' && item.done)) {
+    throw new Error('Trip checklist must mark completed optimization');
+  }
+  console.log('HTTP smoke: trip dates + flexible windows + optimization + checklist OK');
   console.log('HTTP smoke: trip draft + readiness + traveler decision OK');
 
   const saved = await post('/api/platform/v30/vault', {
