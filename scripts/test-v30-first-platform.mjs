@@ -48,6 +48,10 @@ const serverSource=fs.readFileSync(new URL('../server/v30-platform.js',import.me
     if(invalidCompose.status!==400||invalidComposeBody.error!=='solutionIds_max_3_required') throw new Error('E2E composition limit was not enforced');
     const draftSummary=await request(`/trip-draft/${draftId}/summary`);
     if(draftSummary.proposalOnly!==true||draftSummary.complete!==false) throw new Error('E2E draft summary incorrectly claims completion');
+    const optimization=await request(`/trip-draft/${draftId}/optimize`,{method:'POST',body:JSON.stringify({budgetLevel:'economique',pace:'Tranquille',durationDays:7,climatePriority:true,safetyPriority:true})});
+    if(!optimization.travelerDecides||!optimization.optimization?.optimizedAt||!optimization.optimization.hardMissing.includes('transport')||!optimization.optimization.hardMissing.includes('accommodation')) throw new Error('E2E preparation optimization contract failed');
+    const checklist=await request(`/trip-draft/${draftId}/checklist`);
+    if(!checklist.items.some(item=>item.key==='optimization'&&item.done)) throw new Error('E2E checklist does not reflect optimization');
     const intent=await request(`/session/${sid}/intent`,{method:'POST',body:JSON.stringify({rawText:"Je veux découvrir l'artisanat à Marrakech, tranquillement, avec accès à la santé et à la sécurité."})});
     if(intent.intent.activity!=='Artisanat'||intent.intent.territoryKey!=='MARRAKECH') throw new Error('E2E intent failed');
     const windows=await request('/journey/windows?territoryKey=MARRAKECH&tag=artisanat&durationDays=7&startMonth=10');
