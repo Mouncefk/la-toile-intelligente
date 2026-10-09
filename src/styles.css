@@ -172,3 +172,65 @@
 .v32Scenarios{display:grid;gap:7px;margin:10px 0;padding:12px;border:1px solid rgba(170,130,255,.14);border-radius:13px;background:rgba(120,80,220,.035)}.v32Scenarios>small{font-size:9px;letter-spacing:.12em;color:rgba(255,255,255,.42)}.v32Scenarios section{display:grid;gap:3px;padding:9px;border-top:1px solid rgba(255,255,255,.06)}.v32Scenarios section b{font-size:12px}.v32Scenarios section span{font-size:10px;color:rgba(255,255,255,.58)}.v32Scenarios section em{font-size:9px;color:rgba(255,255,255,.38)}.v32Scenarios>i{font-size:9px;color:rgba(255,255,255,.4)}
 
 .v32History{display:grid;gap:5px;margin:10px 0;padding:11px;border:1px solid rgba(255,255,255,.08);border-radius:12px;background:rgba(255,255,255,.02)}.v32History>small{font-size:9px;letter-spacing:.12em;color:rgba(255,255,255,.42)}.v32History>div{display:grid;grid-template-columns:42px 1fr auto;gap:8px;align-items:center;padding:6px 0;border-top:1px solid rgba(255,255,255,.05)}.v32History b{font-size:12px}.v32History span{font-size:10px;color:rgba(255,255,255,.62)}.v32History em{font-size:9px;color:rgba(255,255,255,.35)}
+
+
+/* V30.4 — Référence visuelle tourisme : navigation et exploration immersive */
+.v30app{background:radial-gradient(ellipse at 48% 28%,#06224a 0%,#020b18 38%,#01050c 76%);color:#f3f7ff}
+.v30header{height:auto;min-height:76px;padding:10px 18px;gap:18px;display:flex;align-items:center;background:rgba(2,8,17,.94);border-bottom:1px solid rgba(72,157,226,.2);position:sticky;top:0;z-index:30}
+.v30brandBlock{display:flex;align-items:center;gap:10px;min-width:220px;color:#fff;text-decoration:none}
+.v30brandMark{font-size:42px;filter:drop-shadow(0 0 10px #1888ff)}
+.v30brandBlock .v30brand{font-size:26px;letter-spacing:0;font-weight:800;line-height:1}
+.v30brandBlock small{display:block;font-size:12px;letter-spacing:0;color:#d9b86c;margin-top:3px}
+.v30TopNav{display:flex;align-items:center;justify-content:center;gap:3px;flex:1;overflow:auto;border:1px solid #19354c;background:#03111f;border-radius:14px;padding:4px}
+.v30TopNav a{color:#e4edf8;text-decoration:none;font-size:11px;font-weight:650;padding:12px 9px;border-radius:10px;white-space:nowrap}
+.v30TopNav a:hover,.v30TopNav a.active{background:#0b2940;color:#60d7ff}
+.v30HeaderActions{display:flex;align-items:center;gap:7px}
+.v30HeaderActions button{border:1px solid #294258;border-radius:999px;background:#061626;color:#f5f8ff;padding:10px 12px;white-space:nowrap;cursor:pointer;font-size:11px}
+.v30HeaderActions button:first-child{font-size:22px;width:42px;height:42px;padding:0}
+.v30HeaderActions .v30Signup{background:linear-gradient(135deg,#1689ff,#075fe2);border-color:#1689ff;font-weight:800}
+.v30HeaderActions .v30Language{color:#bce9ff}
+.v30status{font-size:9px;letter-spacing:.08em;white-space:nowrap}
+.v30QuickRail{position:absolute;z-index:12;left:14px;top:90px;width:222px;display:flex;flex-direction:column;gap:4px}
+.v30QuickSearch{padding:15px 13px 12px;border:1px solid #31526a;border-radius:16px;background:rgba(3,17,31,.93);box-shadow:0 10px 32px #0007;margin-bottom:10px}
+.v30QuickSearch b{display:block;font-size:15px;margin-bottom:7px}
+.v30QuickSearch small{display:block;color:#aabbd0;font-size:10px;line-height:1.5;margin-bottom:12px}
+.v30QuickSearch button{width:100%;text-align:left;border:1px solid #45637a;border-radius:10px;background:#122b40;color:#b9cce0;padding:11px 9px;font-size:10px;cursor:pointer}
+.v30QuickRail>a{display:flex;align-items:center;gap:10px;padding:8px 10px;border:1px solid #213b50;border-radius:12px;background:rgba(3,17,29,.92);color:#f4f8ff;text-decoration:none;font-size:11px;min-height:44px}
+.v30QuickRail>a:hover{border-color:#20baff;background:#0b2940}
+.v30QuickRail>a span{width:32px;height:32px;flex:none;display:grid;place-items:center;border-radius:10px;background:linear-gradient(145deg,#0d7cff,#1645a7);font-size:17px}
+.v30MainContent{min-width:0}
+.v32GlobeNavigator{display:grid;grid-template-columns:minmax(0,1fr) minmax(310px,350px);gap:0;margin:0 0 18px;padding:14px 14px 14px 248px;border:0;border-bottom:1px solid #16334a;border-radius:0;background:radial-gradient(ellipse at 52% 42%,rgba(8,76,158,.35),transparent 48%),linear-gradient(115deg,#020b18,#041426 58%,#020914);box-shadow:none;min-height:660px;position:relative;overflow:hidden}
+.v32GlobeVisual{min-height:620px;border-radius:0;background:radial-gradient(ellipse at center,rgba(16,86,170,.27),transparent 55%),transparent}
+.v32GlobeVisual:before{width:min(92%,760px);border-color:rgba(76,179,255,.25);box-shadow:inset 0 0 100px #0077ff24,0 0 110px #0b7fff22}
+.v32Glow{width:65%;background:radial-gradient(circle,rgba(15,111,255,.32),transparent 68%);filter:blur(22px)}
+.v32Sphere3D{width:min(88%,690px);background:radial-gradient(circle at 31% 24%,#3a9ef1 0%,#1264b4 18%,#06336e 38%,#02152f 68%,#010713 83%);box-shadow:inset -55px -24px 100px #000e,inset 25px 12px 55px #a2dcff33,0 0 28px #168fff88,0 0 100px #147eff55;touch-action:pan-y}
+.v32Sphere3D:before{content:"";position:absolute;inset:0;border-radius:50%;background:radial-gradient(ellipse at 25% 35%,#50b77b55 0 5%,transparent 17%),radial-gradient(ellipse at 48% 30%,#74b77755 0 9%,transparent 19%),radial-gradient(ellipse at 58% 57%,#65b77866 0 10%,transparent 23%),radial-gradient(ellipse at 32% 67%,#72b87a44 0 9%,transparent 20%),linear-gradient(110deg,transparent 35%,#72baff20 50%,transparent 68%);filter:contrast(1.15);pointer-events:none}
+.v32Sphere3D .v32GlobeLabel{font-size:0;opacity:0}
+.v32Latitude,.v32Longitude{border-color:#a3d8ff20}
+.v32RealGeometry path{fill:#4b9f7050;stroke:#c0ecffcc;stroke-width:.28;filter:drop-shadow(0 0 3px #3db8ff)}
+.v32Dot{background:#007dff;color:white;border:2px solid #fff;box-shadow:0 0 16px #20aaff;padding:4px 6px;font-size:10px;max-width:110px;overflow:hidden;text-overflow:ellipsis}
+.v32GlobeControls{position:absolute;right:12px;top:18px;display:flex;flex-direction:column;gap:6px;z-index:10}
+.v32GlobeControls button{width:40px;height:40px;border-radius:12px;border:1px solid #37617d;background:#041a2d;color:#fff;font-size:21px;cursor:pointer}
+.v32GlobeSub{left:26px;bottom:15px}
+.v32GlobePanel{max-height:630px;overflow:auto;padding:18px 16px;border:1px solid #1a4058;border-radius:18px;background:rgba(2,14,26,.89);box-shadow:0 14px 36px #0006}
+.v32NodeTitle h2{font-size:28px}
+.v32Children{max-height:200px}
+.v32Overview>div,.v32Safety,.v32Components>div{background:rgba(7,31,50,.78);border-color:#18384e}
+.v32SafetyList{grid-template-columns:1fr!important}
+.v30hero{margin:0 auto 22px;padding:24px 22px 24px 250px;max-width:none;min-height:300px;grid-template-columns:minmax(230px,.7fr) minmax(0,1.3fr);gap:22px;background:linear-gradient(120deg,#031222,#05172a);border-bottom:1px solid #16354d}
+.v30hero .v30globe{display:none}
+.v30hero .v30intro{grid-column:1/-1;max-width:900px}
+.v30hero h1{font-size:clamp(30px,4vw,52px)}
+.v30hero .v30intent{max-width:760px;background:#112a3d;border-color:#3a607a}
+.v30hero .v30intent button{background:#087fff;color:white}
+.v30workspace,.v30healthSummary,.v30opportunityPanel,.v30scopeLegend,.v30b2bScope,.v30freedom,.v30results,.v30prep,.v30journey{margin-left:248px;margin-right:18px}
+.v30healthSummary{border-color:#17435b;background:linear-gradient(110deg,#061827,#03111f)}
+.v30workspace{gap:18px}
+.v30territoryPanel,.v30freedom,.v30results,.v30opportunityPanel,.v30b2bScope{background:rgba(3,15,27,.88);border-color:#18384e}
+.v30footer{background:#020a13;border-color:#173148}
+.v30app .v30brandBlock{flex-shrink:0}
+.v30app .v30status{margin-left:0}
+.v30LightMode{filter:brightness(1.18) saturate(.75)}
+@media(max-width:1180px){.v30TopNav{justify-content:flex-start}.v30TopNav a{padding:10px 7px}.v30HeaderActions .v30Login,.v30HeaderActions .v30Language{display:none}.v30QuickRail{width:190px}.v32GlobeNavigator{padding-left:210px;grid-template-columns:minmax(0,1fr) 300px}.v30workspace,.v30healthSummary,.v30opportunityPanel,.v30scopeLegend,.v30b2bScope,.v30freedom,.v30results,.v30prep,.v30journey{margin-left:210px}.v30hero{padding-left:210px}}
+@media(max-width:850px){.v30header{flex-wrap:wrap;gap:8px}.v30TopNav{order:3;flex-basis:100%}.v30HeaderActions{margin-left:auto}.v30QuickRail{position:static;width:auto;padding:10px 12px;display:grid;grid-template-columns:repeat(2,minmax(0,1fr));background:#020b16}.v30QuickSearch{grid-column:1/-1}.v30QuickRail>a{font-size:10px}.v30MainContent{width:100%}.v32GlobeNavigator{padding:12px;grid-template-columns:1fr;min-height:0}.v32GlobeVisual{min-height:430px}.v32Sphere3D{width:min(80vw,430px)}.v32GlobePanel{max-height:none}.v30hero{padding:25px 16px;min-height:0}.v30workspace,.v30healthSummary,.v30opportunityPanel,.v30scopeLegend,.v30b2bScope,.v30freedom,.v30results,.v30prep,.v30journey{margin-left:12px;margin-right:12px}}
+@media(max-width:520px){.v30brandBlock{min-width:0}.v30brandMark{font-size:32px}.v30brandBlock .v30brand{font-size:21px}.v30HeaderActions button:not(.v30Signup){display:none}.v30QuickRail{grid-template-columns:1fr 1fr}.v32GlobeVisual{min-height:340px}.v30TopNav a{font-size:10px}}
