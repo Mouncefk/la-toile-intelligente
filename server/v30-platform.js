@@ -194,6 +194,13 @@ v30Router.get('/territory/:territoryKey', async (req, res) => {
   if (!solutions) return;
   const health = await safeQuery(res, 'SELECT * FROM v30_health_safety_points WHERE territory_key=$1 AND active=true ORDER BY service_type,name', [key]);
   if (!health) return;
+  const healthCoverage = {
+    medicine: health.rows.some(point => point.service_type === 'medicine'),
+    pharmacy: health.rows.some(point => point.service_type === 'pharmacy'),
+    security: health.rows.some(point => point.service_type === 'security'),
+    emergency: health.rows.some(point => point.service_type === 'emergency')
+  };
+  const healthSafetyScore = Math.round(Object.values(healthCoverage).filter(Boolean).length / Object.keys(healthCoverage).length * 100);
   res.json({ territory: territory.rows[0], solutions: solutions.rows, healthSafety: health.rows, healthSafetyDecision: { coverage: healthCoverage, score: healthSafetyScore, complete: healthSafetyScore === 100, missing: Object.entries(healthCoverage).filter(([,v])=>!v).map(([k])=>k) } });
 });
 
