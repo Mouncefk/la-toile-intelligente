@@ -48,6 +48,20 @@ async function put(path, payload, expectedStatus = 200) {
   return body;
 }
 
+async function postExpect(path, payload, expectedStatus) {
+  const response = await fetch(base + path, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(payload),
+    signal: AbortSignal.timeout(8000)
+  });
+  const body = await response.json().catch(() => ({}));
+  if (response.status !== expectedStatus) {
+    throw new Error(`${path} returned HTTP ${response.status}, expected ${expectedStatus}: ${JSON.stringify(body)}`);
+  }
+  return body;
+}
+
 async function waitForHealth() {
   const deadline = Date.now() + 25000;
   let lastError;
@@ -229,6 +243,19 @@ try {
   if (!Array.isArray(checklist.items) || !checklist.items.some(item => item.key === 'optimization' && item.done)) {
     throw new Error('Trip checklist must mark completed optimization');
   }
+  const tooMany = await postExpect(`/api/platform/v30/trip-draft/${draftId}/compose`, {
+    solutionIds: [1, 2, 3, 4]
+  }, 400);
+  if (tooMany.error !== 'solutionIds_max_3_required') {
+    throw new Error('Trip composition must reject more than three selected solutions');
+  }
+  const proposal = await post(`/api/platform/v30/trip-draft/${draftId}/compose`, {
+    solutionIds: []
+  });
+  if (proposal.proposalOnly !== true || proposal.travelerDecides !== true || !proposal.draft) {
+    throw new Error('Trip composition must remain a proposal and preserve traveler choice');
+  }
+  console.log('HTTP smoke: composition limit + proposal-only/no automatic booking contract OK');
   console.log('HTTP smoke: trip dates + flexible windows + optimization + checklist OK');
   console.log('HTTP smoke: trip draft + readiness + traveler decision OK');
 
