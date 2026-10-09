@@ -1,3 +1,47 @@
+# La Toile — version d’essai V30.1
+
+> **État du candidat d’essai :** la validation GitHub V30 est verte sur le commit `a3f6dc16c748a95c75b09213f2c86f359ae91fc2`. Cela valide le build et le contrat API automatisé, mais ne constitue pas à lui seul une recette complète de l’interface par un utilisateur.
+
+## Démarrer une instance locale
+
+Prérequis : Node.js/npm et Docker avec Docker Compose.
+
+1. Installer les dépendances :
+   ```bash
+   npm install
+   ```
+2. Démarrer PostgreSQL/PostGIS et ses scripts d’initialisation :
+   ```bash
+   docker compose up -d
+   ```
+   Les scripts de `database/seed` sont exécutés automatiquement uniquement lors de la première initialisation du volume PostgreSQL.
+3. Dans un premier terminal, démarrer l’API :
+   ```bash
+   npm run server
+   ```
+4. Dans un second terminal, démarrer l’interface :
+   ```bash
+   npm run dev
+   ```
+5. Ouvrir l’adresse locale affichée par Vite (par défaut `http://localhost:5173`). L’API écoute par défaut sur le port `4300` et Vite transmet les requêtes `/api` vers cette API.
+
+### Vérifications rapides
+
+- Santé de l’API : `http://localhost:4300/api/health`
+- Parcours V30 : `http://localhost:4300/api/platform/v30/flow`
+- Compilation de production : `npm run build`
+- Test du parcours V30 (nécessite une base initialisée et accessible) : `npm run test:v30:first-platform`
+
+La connexion PostgreSQL par défaut est `postgresql://latoile:latoile_dev@localhost:5432/la_toile`. Pour un environnement différent, définir `DATABASE_URL` avant de lancer le serveur.
+
+**Prudence avec les données locales :** `docker compose down -v` supprime le volume de la base et toutes les données locales qu’il contient. Ne l’utiliser que si cette suppression est volontaire.
+
+## Périmètre et limites de cette version d’essai
+
+Cette version sert à vérifier le parcours et les fondations API V30. Elle ne doit pas être considérée comme une plateforme commerciale complète : la couverture mondiale réelle, la qualité des données professionnelles, la recette intégrale de l’interface, les paiements et les réservations en production restent à vérifier ou à finaliser selon leur périmètre.
+
+---
+
 # La Toile — Global Core V27
 
 V27 is the current integration branch, built on the V26 stable reference and adding the Experience Core orchestrator.
