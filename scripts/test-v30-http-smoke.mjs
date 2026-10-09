@@ -59,12 +59,28 @@ try {
   }
   console.log('HTTP smoke: pilot registry MAR + FRA OK');
 
+  const pilotTerritories = {};
   for (const iso3 of ['MAR', 'FRA']) {
     const data = await get(`/api/platform/v30/territories/${iso3}`);
     if (!Array.isArray(data.territories) || data.territories.length === 0) {
       throw new Error(`No active territories returned for ${iso3}`);
     }
+    pilotTerritories[iso3] = data.territories;
     console.log(`HTTP smoke: ${iso3} territories OK (${data.territories.length})`);
+
+    const sample = data.territories.find(item => item.region_type !== 'country') || data.territories[0];
+    const detail = await get(`/api/platform/v30/territory/${encodeURIComponent(sample.territory_key)}`);
+    if (!detail.territory || detail.territory.territory_key !== sample.territory_key) {
+      throw new Error(`Territory detail contract invalid for ${sample.territory_key}`);
+    }
+    if (!Array.isArray(detail.solutions) || !Array.isArray(detail.healthSafety) || !detail.healthSafetyDecision) {
+      throw new Error(`Territory solution and health/safety contract incomplete for ${sample.territory_key}`);
+    }
+    const climateDetail = await get(`/api/platform/v30/territory/${encodeURIComponent(sample.territory_key)}/climate?month=10`);
+    if (!climateDetail.territory || climateDetail.territory.territory_key !== sample.territory_key) {
+      throw new Error(`Territory climate contract invalid for ${sample.territory_key}`);
+    }
+    console.log(`HTTP smoke: ${iso3} territory detail + climate + safety OK (${sample.territory_key})`);
   }
 
   const hierarchy = await get('/api/platform/v30/globe/hierarchy');
@@ -72,6 +88,18 @@ try {
     throw new Error('Global geography hierarchy is missing or too small');
   }
   console.log(`HTTP smoke: global geography hierarchy OK (${hierarchy.nodes.length} nodes)`);
+
+  const globeRoot = await get('/api/platform/v30/v32/globe/root');
+  if (!Array.isArray(globeRoot.nodes) || globeRoot.nodes.length === 0 || globeRoot.navigation !== 'progressive') {
+    throw new Error('V32 globe root must provide world nodes and progressive navigation');
+  }
+  console.log(`HTTP smoke: V32 globe root OK (${globeRoot.nodes.length} world node(s))`);
+
+  const safety = await get('/api/platform/v30/v32/globe/MARRAKECH/health-safety');
+  if (!Array.isArray(safety.points) || !safety.counts || safety.privacy !== 'public_service_data_only') {
+    throw new Error('V32 public health/safety endpoint contract invalid for Marrakech');
+  }
+  console.log(`HTTP smoke: V32 health/safety OK (${safety.points.length} public service point(s))`);
 
   const climate = await get('/api/platform/v30/climate/context?month=10&hemisphere=north');
   if (climate.month !== 10 || climate.hemisphere !== 'north' || climate.climate !== 'mediterranean' || !Object.hasOwn(climate, 'context')) {
