@@ -954,7 +954,7 @@ v30Router.get('/v32/globe/:nodeKey/health-safety',async(req,res)=>{
  try{
   const n=await pool.query("SELECT node_key,name FROM v32_geo_nodes WHERE node_key=$1 AND active=true",[req.params.nodeKey]);
   if(!n.rows[0])return res.status(404).json({error:'geo_node_not_found'});
-  const q=await pool.query("SELECT id,service_type,name,description,latitude,longitude,public_contact FROM v30_health_safety_points WHERE territory_key=$1 AND active=true ORDER BY service_type,name",[req.params.nodeKey]);
+  const q=await pool.query("SELECT id,service_type,name,description,latitude,longitude,public_contact FROM v30_health_safety_points WHERE territory_key=COALESCE((SELECT legacy_key FROM v32_territory_bridge WHERE legacy_system='v30' AND globe_node_key=$1 LIMIT 1),$1) AND active=true ORDER BY service_type,name",[req.params.nodeKey]);
   const counts=q.rows.reduce((a,x)=>(a[x.service_type]=(a[x.service_type]||0)+1,a),{});
   res.json({node:n.rows[0],points:q.rows,counts,privacy:'public_service_data_only'});
  }catch(e){res.status(500).json({error:e.message})}
