@@ -74,7 +74,7 @@ console.log('V30.24 traveler composition contract: ok');
 const v30_25_ui=fs.readFileSync(new URL('../src/v30-app.jsx',import.meta.url),'utf8');
 if(!v30_25_ui.includes('applyRecommendedDates')) throw new Error('V30.25 date decision action missing');
 if(!v30_25_ui.includes('Retenir cette fenêtre')) throw new Error('V30.25 date decision CTA missing');
-if(!v30_25_ui.includes('/trip-draft/'+tripDraft.id+'/dates')) throw new Error('V30.25 date persistence endpoint missing');
+if(!v30_25_ui.includes("tripDraft.id+'/dates'")) throw new Error('V30.25 date persistence endpoint missing');
 console.log('V30.25 travel-window decision contract: ok');
 
 // V30.26 structured preparation components contract
