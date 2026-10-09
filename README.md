@@ -1,6 +1,6 @@
 # La Toile — version d’essai V30.1
 
-> **État du candidat d’essai :** la base V30 et le test HTTP étaient verts sur un commit antérieur. Les derniers changements ajoutent la couverture Santé & Sécurité de Casablanca/Tanger et un contrôle du point d’entrée UI ; vérifiez la dernière exécution « V30 First Living Tourism Platform Validation » dans GitHub Actions avant de considérer ce candidat comme validé. Un build et des tests API verts ne remplacent pas la recette complète de l’interface par un utilisateur.
+> **État du candidat d’essai :** les contrôles GitHub Actions du commit `bba64e0cc845aaf8e7c645a46465ee40ff8ac02c` sont verts : contrat de l’interface, build de production, contrat fonctionnel V30 et test HTTP en direct. Cela valide les contrôles automatisés, pas encore la recette visuelle complète par un utilisateur.
 
 ## Démarrer une instance locale
 
@@ -41,10 +41,19 @@ Prérequis : Node.js/npm et Docker avec Docker Compose.
 5. Créer un projet de voyage, enregistrer des dates ou une fenêtre flexible, puis lancer l’analyse de préparation.
 6. Vérifier que transport et hébergement manquants sont signalés, et qu’aucune réservation n’est créée automatiquement.
 7. Répéter au minimum pour un territoire marocain et un territoire français. Signaler tout écran vide, erreur API ou donnée manifestement incohérente.
-- Contrat de l’interface V30 (entrée par défaut, globe et panneaux de préparation) : `npm run test:v30:entry`
-- Compilation de production : `npm run build`
-- Test du parcours V30 (nécessite une base initialisée et accessible) : `npm run test:v30:first-platform`
-- Test HTTP de l’API en conditions d’exécution (démarre le serveur et contrôle les routes V30 sur la base initialisée) : `npm run test:v30:http-smoke`
+
+### Contrôles automatisés disponibles
+
+Depuis un terminal, dans le dossier du projet :
+
+```bash
+npm run test:v30:entry
+npm run build
+npm run test:v30:first-platform
+npm run test:v30:http-smoke
+``
+
+Le test HTTP démarre le serveur et contrôle les routes V30 sur la base initialisée et accessible.
 
 La connexion PostgreSQL par défaut est `postgresql://latoile:latoile_dev@localhost:5432/la_toile`. Pour un environnement différent, définir `DATABASE_URL` avant de lancer le serveur.
 
