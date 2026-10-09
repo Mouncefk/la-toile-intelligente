@@ -142,6 +142,44 @@ try {
   }
   console.log(`HTTP smoke: traveler session + intent qualification OK (session ${sessionId})`);
 
+  await post(`/api/platform/v30/session/${sessionId}/profile`, {
+    traveler_type: 'family',
+    party_type: 'family',
+    party_size: 3,
+    pace: 'tranquille',
+    duration_days: 5,
+    preferences: ['desert', 'artisanat']
+  });
+  const solutions = await get(`/api/platform/v30/session/${sessionId}/solutions?month=10`);
+  if (!Array.isArray(solutions.matches) && !Array.isArray(solutions.solutions) && !Array.isArray(solutions.recommendations)) {
+    throw new Error('Traveler recommendation response has no recognized results array');
+  }
+  const comparison = await get(`/api/platform/v30/session/${sessionId}/compare`);
+  if (!Array.isArray(comparison.comparisons) || comparison.maxSelections !== 3 || comparison.selectionRequired !== true) {
+    throw new Error('Traveler comparison contract invalid');
+  }
+  console.log('HTTP smoke: traveler profile + recommendations + comparison contract OK');
+
+  const draftResult = await post('/api/platform/v30/trip-draft', {
+    sessionId,
+    title: 'V30 live smoke test',
+    territoryKey: 'MARRAKECH',
+    notes: { dates: { flexibilityDays: 3, durationDays: 5 } }
+  });
+  const draftId = draftResult.draft?.id;
+  if (!draftId || draftResult.travelerDecides !== true || draftResult.proposalOnly !== true) {
+    throw new Error('Trip draft creation must persist and preserve traveler decision');
+  }
+  const draftReadiness = await get(`/api/platform/v30/trip-draft/${draftId}/readiness`);
+  if (!Array.isArray(draftReadiness.missing) || !draftReadiness.missing.includes('transport') || !draftReadiness.missing.includes('accommodation')) {
+    throw new Error('Trip draft readiness must flag missing transport and accommodation');
+  }
+  const draftSummary = await get(`/api/platform/v30/trip-draft/${draftId}/summary`);
+  if (draftSummary.travelerDecides !== true && draftSummary.proposalOnly !== true) {
+    throw new Error('Trip draft summary does not preserve traveler decision');
+  }
+  console.log('HTTP smoke: trip draft + readiness + traveler decision OK');
+
   const saved = await post('/api/platform/v30/vault', {
     sessionId,
     itemType: 'favorite',
