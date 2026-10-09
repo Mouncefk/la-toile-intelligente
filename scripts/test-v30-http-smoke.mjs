@@ -125,6 +125,15 @@ try {
     console.log(`HTTP smoke: ${iso3} territory detail + climate + safety OK (${sample.territory_key})`);
   }
 
+  for (const nodeKey of ['mar-marrakech','mar-casablanca','mar-tanger']) {
+    const safety = await get(`/api/platform/v30/v32/globe/${nodeKey}/health-safety`);
+    const types = new Set((safety.points || []).map(point => point.service_type));
+    if (!types.has('medicine') || !types.has('pharmacy') || !types.has('security')) {
+      throw new Error(`Expected medicine, pharmacy and security services for ${nodeKey}; got ${[...types].join(', ')}`);
+    }
+  }
+  console.log('HTTP smoke: Morocco health/safety coverage Marrakech + Casablanca + Tangier OK');
+
   const hierarchy = await get('/api/platform/v30/globe/hierarchy');
   if (hierarchy.root !== 'WORLD' || !Array.isArray(hierarchy.nodes) || hierarchy.nodes.length < 6) {
     throw new Error('Global geography hierarchy is missing or too small');
