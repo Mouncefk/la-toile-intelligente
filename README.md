@@ -1,6 +1,6 @@
 # La Toile — version d’essai V30.1
 
-> **État du candidat d’essai :** la validation GitHub V30 est verte sur le commit `a3f6dc16c748a95c75b09213f2c86f359ae91fc2`. Cela valide le build et le contrat API automatisé, mais ne constitue pas à lui seul une recette complète de l’interface par un utilisateur.
+> **État du candidat d’essai :** la base V30 et le test HTTP étaient verts sur un commit antérieur. Les derniers changements ajoutent la couverture Santé & Sécurité de Casablanca/Tanger et un contrôle du point d’entrée UI ; vérifiez la dernière exécution « V30 First Living Tourism Platform Validation » dans GitHub Actions avant de considérer ce candidat comme validé. Un build et des tests API verts ne remplacent pas la recette complète de l’interface par un utilisateur.
 
 ## Démarrer une instance locale
 
