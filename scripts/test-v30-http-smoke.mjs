@@ -95,7 +95,7 @@ try {
   }
   console.log(`HTTP smoke: V32 globe root OK (${globeRoot.nodes.length} world node(s))`);
 
-  const safety = await get('/api/platform/v30/v32/globe/MARRAKECH/health-safety');
+  const safety = await get('/api/platform/v30/v32/globe/mar-marrakech/health-safety');
   if (!Array.isArray(safety.points) || !safety.counts || safety.privacy !== 'public_service_data_only') {
     throw new Error('V32 public health/safety endpoint contract invalid for Marrakech');
   }
