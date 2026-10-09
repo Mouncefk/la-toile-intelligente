@@ -32,6 +32,15 @@ const serverSource=fs.readFileSync(new URL('../server/v30-platform.js',import.me
     const sr=await request('/session',{method:'POST',body:JSON.stringify({countryIso3:'MAR',territoryKey:'MARRAKECH',freedomMode:'balanced'})});
     const sid=sr.session.id;
     await request(`/session/${sid}/profile`,{method:'POST',body:JSON.stringify({traveler_type:'Tourisme senior',age_group:'senior',party_type:'couple',party_size:2,budget_level:'economique',pace:'Tranquille',duration_days:7,preferences:['artisanat'],accessibility_needs:[],constraints:[]})});
+    const draftResult=await request('/trip-draft',{method:'POST',body:JSON.stringify({sessionId:sid,title:'E2E Marrakech senior',territoryKey:'MARRAKECH',experiences:[],healthSafety:[],notes:{source:'e2e'}})});
+    const draftId=draftResult.draft.id;
+    if(!draftResult.proposalOnly||!draftResult.travelerDecides||draftResult.draft.status!=='preparation') throw new Error('E2E trip draft creation failed');
+    const invalidDates=await fetch(base+`/trip-draft/${draftId}/dates`,{method:'PUT',headers:{'content-type':'application/json'},body:JSON.stringify({startDate:'2026-10-20',endDate:'2026-10-10',durationDays:7})});
+    const invalidDatesBody=await invalidDates.json().catch(()=>({}));
+    if(invalidDates.status!==400||invalidDatesBody.error!=='endDate_before_startDate') throw new Error('E2E invalid travel dates were not rejected');
+    const savedDates=await request(`/trip-draft/${draftId}/dates`,{method:'PUT',body:JSON.stringify({startDate:'2026-10-20',endDate:'2026-10-26',flexibleDays:2,durationDays:7})});
+    const dateWindows=await request(`/trip-draft/${draftId}/date-windows`);
+    if(savedDates.dates?.durationDays!==7||dateWindows.windows.length!==5||!dateWindows.windows.some(w=>w.offsetDays===0)) throw new Error('E2E trip date persistence/windows failed');
     const intent=await request(`/session/${sid}/intent`,{method:'POST',body:JSON.stringify({rawText:"Je veux découvrir l'artisanat à Marrakech, tranquillement, avec accès à la santé et à la sécurité."})});
     if(intent.intent.activity!=='Artisanat'||intent.intent.territoryKey!=='MARRAKECH') throw new Error('E2E intent failed');
     const windows=await request('/journey/windows?territoryKey=MARRAKECH&tag=artisanat&durationDays=7&startMonth=10');
