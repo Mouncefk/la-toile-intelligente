@@ -12,7 +12,7 @@ assert.match(app, /function GlobeNavigator\(/,
   'V30 must include the interactive globe navigator');
 assert.match(app, /<GlobeNavigator\/>/,
   'V30 must render the globe navigator');
-assert.match(app, //api\/platform\/v30\/v32\/globe\/root/,
+assert.match(app, /\/api\/platform\/v30\/v32\/globe\/root/,
   'The globe navigator must load its world root from the V30 API');
 assert.match(app, /function TripPreparationPanel\(/,
   'The traveler preparation panel must be present');
