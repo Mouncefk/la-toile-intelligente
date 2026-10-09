@@ -40,6 +40,9 @@ jobs:
 
       - name: V30 syntax check
         run: npm run check:v30
+
+      - name: V30 entry and UI contract
+        run: npm run test:v30:entry
       - name: V33 syntax check
         run: npm run check:v33
       - name: V30 production build
