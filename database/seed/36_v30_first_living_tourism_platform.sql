@@ -344,7 +344,13 @@ INSERT INTO v30_health_safety_points(territory_key,service_type,name,description
 ('AGADIR','security','Sécurité locale','Orientation vers les services de sécurité et assistance.'),
 ('RABAT','medicine','Soins médicaux à proximité','Orientation vers les établissements médicaux du territoire.'),
 ('RABAT','pharmacy','Pharmacies à proximité','Recherche de pharmacies disponibles.'),
-('RABAT','security','Sécurité locale','Orientation vers les services de sécurité et assistance.')
+('RABAT','security','Sécurité locale','Orientation vers les services de sécurité et assistance.'),
+('CASABLANCA','medicine','Soins médicaux à proximité','Orientation vers les établissements médicaux du territoire.'),
+('CASABLANCA','pharmacy','Pharmacies à proximité','Repérage des services pharmaceutiques du territoire.'),
+('CASABLANCA','security','Sécurité locale','Orientation vers les services de sécurité et assistance.'),
+('TANGER','medicine','Soins médicaux à proximité','Orientation vers les établissements médicaux du territoire.'),
+('TANGER','pharmacy','Pharmacies à proximité','Repérage des services pharmaceutiques du territoire.'),
+('TANGER','security','Sécurité locale','Orientation vers les services de sécurité et assistance.')
 ON CONFLICT DO NOTHING;
 
 -- France pilot: same global core, distinct territory/context data.
