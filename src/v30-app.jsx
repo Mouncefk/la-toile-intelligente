@@ -90,7 +90,7 @@ function GlobeNavigator(){
   setLoading(true);setError('');
   try{
    const d=await v30fetch(key?'/api/platform/v30/v32/globe/'+encodeURIComponent(key):'/api/platform/v30/v32/globe/root');
-   setNode(key?d.node:d.nodes?.[0]||null);setChildren(d.children||[]);setGeometry(null);setOverview(null);setOffers([]);setHealthSafety(null);setTravelComponents(null);setSelectedComponent(null);
+   setNode(key?d.node:d.nodes?.[0]||null);setChildren(key?(d.children||[]):(d.nodes||[]));setGeometry(null);setOverview(null);setOffers([]);setHealthSafety(null);setTravelComponents(null);setSelectedComponent(null);
    if(key){try{setOverview(await v30fetch('/api/platform/v30/v32/globe/'+encodeURIComponent(key)+'/overview'))}catch(_){setOverview(null)} try{const od=await v30fetch('/api/platform/v30/v32/globe/'+encodeURIComponent(key)+'/offers');setOffers(od.offers||[])}catch(_){setOffers([])} try{const hd=await v30fetch('/api/platform/v30/v32/globe/'+encodeURIComponent(key)+'/health-safety');setHealthSafety(hd)}catch(_){setHealthSafety(null)} try{const td=await v30fetch('/api/platform/v30/v32/globe/'+encodeURIComponent(key)+'/travel-components');setTravelComponents(td.components||null)}catch(_){setTravelComponents(null)} try{setClimate(await v30fetch('/api/platform/v30/v32/globe/'+encodeURIComponent(key)+'/climate'))}catch(_){setClimate(null)} try{const g=await v30fetch('/api/platform/v30/v32/globe/'+encodeURIComponent(key)+'/geometry');setGeometry(g.geometry||null)}catch(_){setGeometry(null)}}
    else setClimate(null);
   }catch(e){setError(e.message||'Globe indisponible')}finally{setLoading(false)}
