@@ -23,13 +23,14 @@ Prérequis : Node.js/npm et Docker avec Docker Compose.
    ```bash
    npm run dev
    ```
-5. Ouvrir l’adresse V30 explicitement : `http://localhost:5173/?v30=1` (sans `?v30=1`, l’entrée actuelle affiche encore l’interface historique V27). L’API écoute par défaut sur le port `4300` et Vite transmet les requêtes `/api` vers cette API.
+5. Ouvrir `http://localhost:5173/` : sur cette branche d’essai, l’interface V30 est l’entrée par défaut. L’ancienne interface V27 reste accessible avec `http://localhost:5173/?v27=1`. L’API écoute par défaut sur le port `4300` et Vite transmet les requêtes `/api` vers cette API.
 
 ### Vérifications rapides
 
 - Santé de l’API : `http://localhost:4300/api/health`
 - Parcours V30 : `http://localhost:4300/api/platform/v30/flow`
-- Interface V30 : `http://localhost:5173/?v30=1`
+- Interface V30 (par défaut) : `http://localhost:5173/`
+- Ancienne interface V27 (comparaison) : `http://localhost:5173/?v27=1`
 
 ### Scénario de recette manuelle
 
