@@ -74,8 +74,8 @@ try {
   console.log(`HTTP smoke: global geography hierarchy OK (${hierarchy.nodes.length} nodes)`);
 
   const climate = await get('/api/platform/v30/climate/context?month=10&hemisphere=north');
-  if (!Array.isArray(climate.seasons)) {
-    throw new Error('Climate context response must include seasons[]');
+  if (climate.month !== 10 || climate.hemisphere !== 'north' || climate.climate !== 'mediterranean' || !Object.hasOwn(climate, 'context')) {
+    throw new Error('Climate context response does not match the requested month, hemisphere and climate');
   }
   console.log('HTTP smoke: seasonal climate context OK');
   console.log('V30 HTTP smoke suite: PASS');
