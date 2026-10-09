@@ -35,7 +35,8 @@
     "test:v30:first-platform": "node scripts/test-v30-first-platform.mjs",
     "check:v30": "node --check server/v30-platform.js && node --check server/index-v27.js && node --check scripts/test-v30-first-platform.mjs",
     "check:v33": "node --check server/v30-platform.js && node --check scripts/test-v30-first-platform.mjs",
-    "test:v30:http-smoke": "node scripts/test-v30-http-smoke.mjs"
+    "test:v30:http-smoke": "node scripts/test-v30-http-smoke.mjs",
+    "test:v30:entry": "node scripts/test-v30-entry.mjs"
   },
   "dependencies": {
     "@vitejs/plugin-react": "latest",
