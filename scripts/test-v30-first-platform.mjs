@@ -41,6 +41,13 @@ const serverSource=fs.readFileSync(new URL('../server/v30-platform.js',import.me
     const savedDates=await request(`/trip-draft/${draftId}/dates`,{method:'PUT',body:JSON.stringify({startDate:'2026-10-20',endDate:'2026-10-26',flexibleDays:2,durationDays:7})});
     const dateWindows=await request(`/trip-draft/${draftId}/date-windows`);
     if(savedDates.dates?.durationDays!==7||dateWindows.windows.length!==5||!dateWindows.windows.some(w=>w.offsetDays===0)) throw new Error('E2E trip date persistence/windows failed');
+    const readiness=await request(`/trip-draft/${draftId}/readiness`);
+    if(readiness.readyForDecision!==false||!readiness.blockingMissing.includes('transport')||!readiness.blockingMissing.includes('accommodation')||readiness.noAutomaticBooking!==true||readiness.travelerDecides!==true) throw new Error('E2E readiness blockers or traveler control failed');
+    const invalidCompose=await fetch(base+`/trip-draft/${draftId}/compose`,{method:'POST',headers:{'content-type':'application/json'},body:JSON.stringify({solutionIds:[1,2,3,4]})});
+    const invalidComposeBody=await invalidCompose.json().catch(()=>({}));
+    if(invalidCompose.status!==400||invalidComposeBody.error!=='solutionIds_max_3_required') throw new Error('E2E composition limit was not enforced');
+    const draftSummary=await request(`/trip-draft/${draftId}/summary`);
+    if(draftSummary.proposalOnly!==true||draftSummary.complete!==false) throw new Error('E2E draft summary incorrectly claims completion');
     const intent=await request(`/session/${sid}/intent`,{method:'POST',body:JSON.stringify({rawText:"Je veux découvrir l'artisanat à Marrakech, tranquillement, avec accès à la santé et à la sécurité."})});
     if(intent.intent.activity!=='Artisanat'||intent.intent.territoryKey!=='MARRAKECH') throw new Error('E2E intent failed');
     const windows=await request('/journey/windows?territoryKey=MARRAKECH&tag=artisanat&durationDays=7&startMonth=10');
