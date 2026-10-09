@@ -20,6 +20,20 @@ async function get(path) {
   return body;
 }
 
+async function post(path, payload) {
+  const response = await fetch(base + path, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(payload),
+    signal: AbortSignal.timeout(8000)
+  });
+  const body = await response.json().catch(() => ({}));
+  if (!response.ok) {
+    throw new Error(`${path} returned HTTP ${response.status}: ${JSON.stringify(body)}`);
+  }
+  return body;
+}
+
 async function waitForHealth() {
   const deadline = Date.now() + 25000;
   let lastError;
@@ -106,6 +120,43 @@ try {
     throw new Error('Climate context response does not match the requested month, hemisphere and climate');
   }
   console.log('HTTP smoke: seasonal climate context OK');
+
+  const compatibility = await get('/api/platform/v30/compatibility?tag=desert&climate=arid&hemisphere=north&month=10');
+  if (compatibility.tag !== 'desert' || compatibility.climate !== 'arid' || !compatibility.rule) {
+    throw new Error('Climate/tourism compatibility rule is missing for desert travel');
+  }
+  console.log('HTTP smoke: desert/climate compatibility rule OK');
+
+  const sessionResult = await post('/api/platform/v30/session', {
+    countryIso3: 'MAR',
+    territoryKey: 'MARRAKECH',
+    freedomMode: 'balanced'
+  });
+  const sessionId = sessionResult.session?.id;
+  if (!sessionId) throw new Error('Could not create a traveler session');
+  const intentResult = await post(`/api/platform/v30/session/${sessionId}/intent`, {
+    rawText: 'Découvrir le désert et des expériences artisanales à un rythme tranquille'
+  });
+  if (!intentResult.analysis || !intentResult.intent) {
+    throw new Error('Traveler intent qualification response is incomplete');
+  }
+  console.log(`HTTP smoke: traveler session + intent qualification OK (session ${sessionId})`);
+
+  const saved = await post('/api/platform/v30/vault', {
+    sessionId,
+    itemType: 'favorite',
+    title: 'V30 HTTP smoke private test item',
+    payload: { smokeTest: true }
+  });
+  if (!saved.item || saved.privacy !== 'private') {
+    throw new Error('Traveler vault did not confirm private storage');
+  }
+  const vault = await get(`/api/platform/v30/vault/session/${sessionId}`);
+  if (vault.private !== true || !vault.items?.some(item => item.id === saved.item.id)) {
+    throw new Error('Private traveler vault persistence check failed');
+  }
+  console.log('HTTP smoke: private vault write/read OK');
+
   console.log('V30 HTTP smoke suite: PASS');
 } catch (error) {
   console.error(error.stack || error);
