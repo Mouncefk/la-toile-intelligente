@@ -292,6 +292,7 @@ CREATE TABLE IF NOT EXISTS v30_stay_proposal_templates (
 CREATE INDEX IF NOT EXISTS idx_v30_stay_proposal_templates_territory ON v30_stay_proposal_templates(territory_key,active);
 
 
+ALTER TABLE v30_territories ADD COLUMN IF NOT EXISTS region_key TEXT;
 UPDATE v30_territories SET region_key=CASE territory_key
  WHEN 'RABAT' THEN 'REGION_MAR_RABAT_SALE_KENITRA'
  WHEN 'MARRAKECH' THEN 'REGION_MAR_MARRAKECH_SAFI'
@@ -306,7 +307,6 @@ UPDATE v30_territories SET region_key=CASE territory_key
 WHERE country_iso3='MAR';
 
 CREATE INDEX IF NOT EXISTS idx_v30_health_territory ON v30_health_safety_points(territory_key,service_type);
-ALTER TABLE v30_territories ADD COLUMN IF NOT EXISTS region_key TEXT;
 INSERT INTO v30_territories(country_iso3,territory_key,name_fr,region_type,latitude,longitude,climate_zone,hemisphere,tourism_tags) VALUES
 ('MAR','MAR','Maroc','country',31.7917,-7.0926,'Mediterranean / Arid / Mountain','north',ARRAY['culture','heritage','artisanat','desert','balneaire','montagne','gastronomie','senior','family']),
 ('MAR','RABAT','Rabat','city',34.0209,-6.8416,'Mediterranean','north',ARRAY['culture','heritage','artisanat','family','senior']),
