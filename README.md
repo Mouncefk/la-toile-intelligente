@@ -42,6 +42,7 @@ Prérequis : Node.js/npm et Docker avec Docker Compose.
 7. Répéter au minimum pour un territoire marocain et un territoire français. Signaler tout écran vide, erreur API ou donnée manifestement incohérente.
 - Compilation de production : `npm run build`
 - Test du parcours V30 (nécessite une base initialisée et accessible) : `npm run test:v30:first-platform`
+- Test HTTP de l’API en conditions d’exécution (démarre le serveur et contrôle les routes V30 sur la base initialisée) : `npm run test:v30:http-smoke`
 
 La connexion PostgreSQL par défaut est `postgresql://latoile:latoile_dev@localhost:5432/la_toile`. Pour un environnement différent, définir `DATABASE_URL` avant de lancer le serveur.
 
