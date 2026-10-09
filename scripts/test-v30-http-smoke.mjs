@@ -110,8 +110,8 @@ try {
   console.log(`HTTP smoke: V32 globe root OK (${globeRoot.nodes.length} world node(s))`);
 
   const safety = await get('/api/platform/v30/v32/globe/mar-marrakech/health-safety');
-  if (!Array.isArray(safety.points) || !safety.counts || safety.privacy !== 'public_service_data_only') {
-    throw new Error('V32 public health/safety endpoint contract invalid for Marrakech');
+  if (!Array.isArray(safety.points) || safety.points.length < 3 || !safety.counts || safety.privacy !== 'public_service_data_only') {
+    throw new Error('V32 public health/safety endpoint must resolve public medical, pharmacy and security points for Marrakech');
   }
   console.log(`HTTP smoke: V32 health/safety OK (${safety.points.length} public service point(s))`);
 
@@ -171,7 +171,7 @@ try {
     throw new Error('Trip draft creation must persist and preserve traveler decision');
   }
   const draftReadiness = await get(`/api/platform/v30/trip-draft/${draftId}/readiness`);
-  if (!Array.isArray(draftReadiness.missing) || !draftReadiness.missing.includes('transport') || !draftReadiness.missing.includes('accommodation')) {
+  if (!Array.isArray(draftReadiness.blockingMissing) || !draftReadiness.blockingMissing.includes('transport') || !draftReadiness.blockingMissing.includes('accommodation')) {
     throw new Error('Trip draft readiness must flag missing transport and accommodation');
   }
   const draftSummary = await get(`/api/platform/v30/trip-draft/${draftId}/summary`);
