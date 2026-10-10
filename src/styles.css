@@ -348,3 +348,78 @@ html,body,#root{width:100%;max-width:100%;overflow-x:hidden}
  .v32GlobeVisual{min-height:clamp(360px,54vh,520px)}
  .v32GlobePanel{max-height:none}
 }
+
+
+/* V30.8 — Stabilisation de la grille générale des espaces tourisme */
+.v30app{width:100%;min-width:0;overflow-x:clip}
+.v30app>main{position:relative;display:block;width:100%;min-width:0}
+.v30MainContent{display:block;width:100%;min-width:0}
+.v30QuickRail{position:absolute;left:14px;top:14px;width:222px}
+.v30MainContent>.v32GlobeNavigator{margin-left:0;width:100%;max-width:none}
+.v30MainContent>.v30hero{margin:0 0 0 248px;padding:34px clamp(18px,3vw,44px);min-width:0;display:block}
+.v30MainContent>.v30hero .v30intro{padding:10px 0 20px;max-width:900px}
+.v30MainContent>.v30healthSummary,
+.v30MainContent>.v30workspace,
+.v30MainContent>.v30opportunityPanel,
+.v30MainContent>.v30scopeLegend,
+.v30MainContent>.v30b2bScope,
+.v30MainContent>.v30freedom,
+.v30MainContent>.v30results,
+.v30MainContent>.v30prep,
+.v30MainContent>.v30journey{
+  width:calc(100% - 266px);
+  max-width:none;
+  margin-left:248px;
+  margin-right:18px;
+}
+.v30MainContent>.v30workspace{
+  display:grid;
+  grid-template-columns:minmax(280px,0.85fr) minmax(0,1.15fr);
+  align-items:start;
+  gap:18px;
+  padding:20px 0 56px;
+}
+.v30workspace>*{min-width:0;max-width:100%}
+.v30workspace .v30territoryPanel,
+.v30workspace .v30freedom,
+.v30workspace .v30results,
+.v30workspace .v30preparationPanel,
+.v30workspace .v30profileFit,
+.v30workspace .v30health{min-width:0;width:100%}
+.v30cards{grid-template-columns:repeat(2,minmax(0,1fr))}
+.v30signalGrid{grid-template-columns:repeat(3,minmax(0,1fr))}
+.v30targetTerritories,.v30scopeChoices,.v30vaultGrid,.v30prepGrid{min-width:0}
+@media(max-width:1180px){
+ .v30MainContent>.v30hero{margin-left:210px}
+ .v30MainContent>.v30healthSummary,
+ .v30MainContent>.v30workspace,
+ .v30MainContent>.v30opportunityPanel,
+ .v30MainContent>.v30scopeLegend,
+ .v30MainContent>.v30b2bScope,
+ .v30MainContent>.v30freedom,
+ .v30MainContent>.v30results,
+ .v30MainContent>.v30prep,
+ .v30MainContent>.v30journey{width:calc(100% - 228px);margin-left:210px;margin-right:18px}
+}
+@media(max-width:850px){
+ .v30QuickRail{position:relative;left:auto;top:auto;width:auto;margin:0;padding:10px 12px;display:grid;grid-template-columns:repeat(2,minmax(0,1fr))}
+ .v30QuickSearch{grid-column:1/-1}
+ .v30MainContent>.v32GlobeNavigator{margin:0;width:100%}
+ .v30MainContent>.v30hero{margin:0;width:100%;padding:24px 16px}
+ .v30MainContent>.v30healthSummary,
+ .v30MainContent>.v30workspace,
+ .v30MainContent>.v30opportunityPanel,
+ .v30MainContent>.v30scopeLegend,
+ .v30MainContent>.v30b2bScope,
+ .v30MainContent>.v30freedom,
+ .v30MainContent>.v30results,
+ .v30MainContent>.v30prep,
+ .v30MainContent>.v30journey{width:auto;margin:12px;padding:16px}
+ .v30MainContent>.v30workspace{grid-template-columns:minmax(0,1fr);padding:12px}
+ .v30cards,.v30signalGrid{grid-template-columns:repeat(2,minmax(0,1fr))}
+}
+@media(max-width:520px){
+ .v30cards,.v30signalGrid{grid-template-columns:minmax(0,1fr)}
+ .v30MainContent>.v30workspace{gap:12px}
+ .v30TopNav{max-width:100%}
+}
