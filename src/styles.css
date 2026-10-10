@@ -247,3 +247,86 @@
 @media(max-width:850px){.v32GlobeVisual{min-height:clamp(360px,56vh,560px)}.v32Sphere3D{width:min(78vw,500px) !important}.v32GlobePanel{max-height:none}}
 @media(prefers-reduced-motion:reduce){.v32Dot,.v30TopNav a{transition:none!important}}
 
+
+
+/* V30.6 — Experience touristique : hiérarchie, respiration et adaptation écran */
+.v32GlobeNavigator{
+  width:100%;
+  max-width:1680px;
+  margin:0 auto;
+  padding:clamp(10px,1.6vw,24px);
+  display:grid;
+  grid-template-columns:minmax(0,1fr) minmax(300px,350px);
+  gap:clamp(12px,1.5vw,24px);
+  align-items:stretch;
+}
+.v32GlobeVisual{
+  min-width:0;
+  min-height:clamp(560px,76vh,820px);
+  border:1px solid rgba(79,161,221,.14);
+  border-radius:24px;
+  background:radial-gradient(ellipse at 48% 44%,rgba(12,80,139,.22),rgba(3,10,20,.2) 52%,rgba(2,7,14,.72));
+  overflow:hidden;
+}
+.v32GlobeVisual:before{
+  content:"";
+  position:absolute;
+  pointer-events:none;
+  width:min(94%,820px);
+  aspect-ratio:1;
+  border:1px solid rgba(67,166,235,.18);
+  border-radius:50%;
+}
+.v32GlobeSub{
+  position:absolute;
+  left:22px;
+  bottom:18px;
+  color:#7194ad;
+  font-size:9px;
+  letter-spacing:.18em;
+}
+.v32GlobePanel{
+  min-width:0;
+  max-height:clamp(560px,76vh,820px);
+  overflow:auto;
+  overscroll-behavior:contain;
+  border:1px solid #183a50;
+  border-radius:20px;
+  background:linear-gradient(180deg,rgba(3,17,30,.98),rgba(4,12,22,.98));
+  padding:clamp(14px,1.4vw,22px);
+  scrollbar-color:#244b63 #07121d;
+}
+.v32NodeTitle h2{font-size:clamp(24px,2.3vw,34px);letter-spacing:-.035em}
+.v32Overview{gap:8px}
+.v32Overview>div{border-radius:13px}
+.v32GlobeControls{z-index:4}
+.v32GlobeControls button{
+  width:42px;height:42px;border-radius:12px;
+  border:1px solid #28536d;background:#071927;color:#f2f8ff;
+  cursor:pointer;transition:background .18s ease,border-color .18s ease;
+}
+.v32GlobeControls button:hover{background:#10334b;border-color:#4aa9dc}
+.v32Dot{cursor:pointer;box-shadow:0 0 0 1px rgba(91,195,255,.16),0 0 18px rgba(0,132,255,.28)}
+.v32Dot:hover{z-index:5;filter:brightness(1.2);transform:translate(-50%,-50%) scale(1.06)}
+.v32Path{display:flex;flex-wrap:wrap;gap:6px;align-items:center}
+.v32Path span{color:#7f9db1;font-size:11px}
+.v32Path span:after{content:" /";color:#42647a;margin-left:5px}
+.v32Climate{display:flex;flex-wrap:wrap;justify-content:space-between;gap:8px}
+.v32Climate span{color:#8fa4b4}
+.v32Error{padding:12px;border:1px solid #7a3540;border-radius:10px;color:#ffb8c1;background:#281018}
+@media(max-width:1050px){
+ .v32GlobeNavigator{grid-template-columns:minmax(0,1fr) 300px}
+ .v32GlobeVisual{min-height:620px}
+ .v32Sphere3D{width:min(68vh,680px) !important}
+}
+@media(max-width:760px){
+ .v32GlobeNavigator{grid-template-columns:minmax(0,1fr);padding:10px}
+ .v32GlobeVisual{min-height:clamp(390px,58vh,560px);border-radius:18px}
+ .v32Sphere3D{width:min(78vw,500px) !important;min-width:260px !important}
+ .v32GlobePanel{max-height:none;border-radius:16px}
+ .v32GlobeControls{right:12px;top:12px}
+ .v32GlobeSub{left:14px;bottom:12px;font-size:8px}
+}
+@media(prefers-reduced-motion:reduce){
+ .v32GlobeControls button,.v32Dot{transition:none!important}
+}
