@@ -1,0 +1,297 @@
+import pg from 'pg'; const {Pool}=pg; const pool=new Pool({connectionString:process.env.DATABASE_URL||'postgresql://latoile:latoile_dev@localhost:5432/la_toile'}); const required=['v30_pilot_territories','v30_traveler_sessions','v30_traveler_intents','v30_territories','v30_solutions','v30_health_safety_points','v30_matches','v30_vault_items']; const r=await pool.query("SELECT table_name FROM information_schema.tables WHERE table_schema='public' AND table_name=ANY($1)",[required]); if(r.rowCount!==required.length) throw new Error('V30 tables missing'); const c=await pool.query("SELECT country_iso3,count(*)::int n FROM v30_territories WHERE country_iso3 IN ('MAR','FRA') GROUP BY country_iso3 ORDER BY country_iso3"); const by=Object.fromEntries(c.rows.map(x=>[x.country_iso3,x.n]));      const constraints=await pool.query("SELECT count(*)::int n FROM information_schema.tables WHERE table_name='v30_travel_constraints'"); if(constraints.rows[0].n!==1) throw new Error('Travel constraints missing'); const searchRequests=await pool.query("SELECT count(*)::int n FROM information_schema.tables WHERE table_name='v30_travel_search_requests'"); if(searchRequests.rows[0].n!==1) throw new Error('Travel search requests missing'); const searchResults=await pool.query("SELECT count(*)::int n FROM information_schema.tables WHERE table_name='v30_travel_search_results'"); if(searchResults.rows[0].n!==1) throw new Error('Travel search results missing'); const transport=await pool.query("SELECT count(*)::int n FROM information_schema.tables WHERE table_name='v30_transport_options'"); if(transport.rows[0].n!==1) throw new Error('Transport options missing'); const geoScope=await pool.query("SELECT count(*)::int n FROM information_schema.tables WHERE table_name='v30_b2b_geo_membership'"); if(geoScope.rows[0].n!==1) throw new Error('B2B geography membership missing'); const scopes=await pool.query("SELECT count(*)::int n FROM v30_b2b_geo_scopes WHERE scope_key IN ('LOCAL','REGIONAL','NATIONAL','INTERNATIONAL','GLOBAL')"); if(scopes.rows[0].n!==5) throw new Error('B2B geographic scope registry incomplete'); const signals=await pool.query("SELECT count(*)::int n FROM information_schema.tables WHERE table_name='v30_pro_opportunity_signals'"); if(signals.rows[0].n!==1) throw new Error('Proactive opportunity signals missing'); const b2b=await pool.query("SELECT count(*)::int n FROM information_schema.tables WHERE table_name IN ('v30_b2b_calls','v30_b2b_responses','v30_b2b_call_matches')"); if(b2b.rows[0].n!==3) throw new Error('B2B call layer incomplete'); const trip=await pool.query("SELECT count(*)::int n FROM information_schema.tables WHERE table_name='v30_trip_records'"); if(trip.rows[0].n!==1) throw new Error('Trip vault incomplete'); const health=await pool.query("SELECT count(*)::int n FROM information_schema.tables WHERE table_name IN ('v30_health_profiles','v30_emergency_contacts')"); if(health.rows[0].n!==2) throw new Error('Private health vault incomplete'); const conditionColumns=await pool.query("SELECT column_name FROM information_schema.columns WHERE table_name='v30_conditions_context' AND column_name IN ('temperature_c','precipitation_probability','wind_kmh','status')"); if(conditionColumns.rowCount<4) throw new Error('Conditions fields incomplete'); const conditions=await pool.query("SELECT count(*)::int n FROM information_schema.tables WHERE table_name='v30_conditions_context'"); if(conditions.rows[0].n!==1) throw new Error('Conditions context missing'); const rule=await pool.query("SELECT * FROM v30_tourism_climate_rules WHERE tourism_tag='balneaire' AND climate_key='mediterranean' AND hemisphere='north'"); if(!rule.rowCount) throw new Error('Balneaire climate rule missing'); const rules=await pool.query("SELECT count(*)::int n FROM v30_tourism_climate_rules"); if(rules.rows[0].n<10) throw new Error('Tourism climate compatibility incomplete'); const seasons=await pool.query("SELECT count(*)::int n FROM v30_climate_seasons"); if(seasons.rows[0].n<15) throw new Error('Climate season matrix incomplete'); const geo=await pool.query("SELECT count(*)::int n FROM v30_geography_nodes WHERE active=true"); if(geo.rows[0].n<6) throw new Error('Global geography hierarchy incomplete'); const pilots=await pool.query("SELECT country_iso3,pilot_role FROM v30_pilot_territories WHERE active=true ORDER BY country_iso3"); if(!pilots.rows.some(x=>x.country_iso3==='MAR'&&x.pilot_role==='primary')) throw new Error('Morocco primary pilot missing'); if(!pilots.rows.some(x=>x.country_iso3==='FRA'&&x.pilot_role==='secondary')) throw new Error('France secondary pilot missing'); if((by.MAR||0)<10) throw new Error('Morocco pilot incomplete'); if((by.FRA||0)<8) throw new Error('France pilot incomplete'); const hs=await pool.query("SELECT count(*)::int n FROM v30_health_safety_points h JOIN v30_territories t ON t.territory_key=h.territory_key WHERE t.country_iso3='FRA'"); if(hs.rows[0].n<6) throw new Error('France health/safety coverage incomplete'); const tripDraftTable=await pool.query("SELECT count(*)::int n FROM information_schema.tables WHERE table_name='v30_trip_drafts'"); if(tripDraftTable.rows[0].n!==1) throw new Error('Trip draft persistence missing'); const proSignals=await pool.query("SELECT count(*)::int n FROM v30_pro_opportunity_signals WHERE status='suggested'"); if(proSignals.rows[0].n<1) throw new Error('Pro opportunity signal seed missing'); const b2bOpportunities=await pool.query("SELECT count(*)::int n FROM v30_pro_opportunities WHERE status='open'"); if(b2bOpportunities.rows[0].n<3) throw new Error('B2B opportunity seed incomplete'); const healthTypes=await pool.query("SELECT count(DISTINCT service_type)::int n FROM v30_health_safety_points WHERE territory_key='MARRAKECH'"); if(healthTypes.rows[0].n<3) throw new Error('Morocco health/safety coverage incomplete'); const climateContext=await pool.query("SELECT t.territory_key,t.hemisphere,t.climate_zone,s.season_fr FROM v30_territories t LEFT JOIN v30_climate_seasons s ON s.climate_key=t.climate_zone AND s.hemisphere=t.hemisphere AND 10 BETWEEN s.month_start AND s.month_end WHERE t.territory_key IN ('MARRAKECH','MERZOUGA','IFRANE')"); if(climateContext.rowCount<3) throw new Error('Territorial climate context incomplete'); if(!climateContext.rows.some(x=>x.territory_key==='MARRAKECH'&&x.hemisphere==='north')) throw new Error('Marrakech hemisphere mapping missing'); if(!climateContext.rows.some(x=>x.territory_key==='IFRANE'&&x.season_fr)) throw new Error('Ifrane seasonal mapping missing'); const compatNorth=await pool.query("SELECT 1 FROM v30_tourism_climate_rules WHERE tourism_tag='balneaire' AND climate_key='mediterranean' AND hemisphere='north' AND 7=ANY(preferred_months)"); if(!compatNorth.rowCount) throw new Error('Northern balneaire summer compatibility missing'); const compatSouth=await pool.query("SELECT 1 FROM v30_tourism_climate_rules WHERE tourism_tag='balneaire' AND hemisphere='south'"); if(!compatSouth.rowCount) throw new Error('Southern hemisphere compatibility missing'); const solutionCols=await pool.query("SELECT column_name FROM information_schema.columns WHERE table_name='v30_solutions' AND column_name IN ('audience','specialties','territory_key')"); if(solutionCols.rowCount<3) throw new Error('Solution matching fields incomplete'); const marrakechSafety=await pool.query("SELECT count(DISTINCT service_type)::int n FROM v30_health_safety_points WHERE territory_key='MARRAKECH' AND active=true"); if(marrakechSafety.rows[0].n<3) throw new Error('Marrakech safety scoring context incomplete'); const matchBounds=await pool.query("SELECT count(*)::int n FROM v30_matches WHERE score<0 OR score>100"); if(matchBounds.rows[0].n!==0) throw new Error('Match score bounds invalid'); const matchSeed=await pool.query("SELECT count(*)::int n FROM v30_matches"); if(matchSeed.rows[0].n<0) throw new Error('Match persistence contract invalid'); const profileCols=await pool.query("SELECT count(*)::int n FROM information_schema.columns WHERE table_name='v30_traveler_profiles' AND column_name IN ('traveler_type','age_group','mobility_level','party_type','accessibility_needs','preferences','constraints')"); if(profileCols.rows[0].n!==7) throw new Error('Traveler profile contract incomplete'); const proSignalTable=await pool.query("SELECT count(*)::int n FROM information_schema.columns WHERE table_name='v30_pro_opportunity_signals' AND column_name='territory_key'"); if(proSignalTable.rows[0].n!==1) throw new Error('Pro signal territory filter missing'); const proMatchTable=await pool.query("SELECT count(*)::int n FROM information_schema.tables WHERE table_name='v30_pro_opportunities'"); if(proMatchTable.rows[0].n!==1) throw new Error('Pro opportunity matching layer missing'); const institutionalEvents=await pool.query("SELECT count(*)::int n FROM v30_institutional_events"); if(institutionalEvents.rows[0].n<0) throw new Error('Institutional event layer invalid'); const proOpp=await pool.query("SELECT count(*)::int n FROM v30_pro_opportunities WHERE status='open'"); if(proOpp.rows[0].n<3) throw new Error('Institutional professional opportunity indicators incomplete'); const compositionProfile=await pool.query("SELECT count(*)::int n FROM information_schema.columns WHERE table_name='v30_traveler_profiles' AND column_name IN ('budget_level','accessibility_needs','traveler_type','duration_days')"); if(compositionProfile.rows[0].n!==4) throw new Error('Trip composition profile inputs incomplete'); const queueIndexes=await pool.query("SELECT count(*)::int n FROM pg_indexes WHERE indexname='idx_v30_recalc_dedupe'"); if(queueIndexes.rows[0].n!==1) throw new Error('Recalculation deduplication index missing'); const queueState=await pool.query("SELECT count(*)::int n FROM information_schema.columns WHERE table_name='v30_recalculation_queue' AND column_name IN ('status','priority','processed_at')"); if(queueState.rows[0].n!==3) throw new Error('Recalculation queue state contract incomplete'); const recalcQueue=await pool.query("SELECT count(*)::int n FROM information_schema.tables WHERE table_name='v30_recalculation_queue'"); if(recalcQueue.rows[0].n!==1) throw new Error('Recalculation queue missing'); const propagationInputs=await pool.query("SELECT count(*)::int n FROM information_schema.columns WHERE table_name='v30_matches' AND column_name IN ('session_id','solution_id','reasons')"); if(propagationInputs.rows[0].n!==3) throw new Error('Living Graph propagation inputs incomplete'); const graphEvents=await pool.query("SELECT count(*)::int n FROM information_schema.tables WHERE table_name='v30_graph_events'"); if(graphEvents.rows[0].n!==1) throw new Error('Living Graph event journal missing'); const invalidationInputs=await pool.query("SELECT count(*)::int n FROM information_schema.columns WHERE table_name='v30_matches' AND column_name='reasons'"); if(invalidationInputs.rows[0].n!==1) throw new Error('Selective invalidation reason storage missing'); const historyInputs=await pool.query("SELECT count(*)::int n FROM information_schema.columns WHERE table_name='v30_matches' AND column_name IN ('created_at','score','reasons')"); if(historyInputs.rows[0].n!==3) throw new Error('Recommendation history inputs incomplete'); const provenanceInputs=await pool.query("SELECT count(*)::int n FROM information_schema.columns WHERE table_name='v30_matches' AND column_name IN ('score','reasons','created_at')"); if(provenanceInputs.rows[0].n!==3) throw new Error('Recommendation provenance persistence inputs incomplete'); const qualityRanking=await pool.query("SELECT count(*)::int n FROM information_schema.columns WHERE table_name='v30_solutions' AND column_name IN ('active','public_contact','latitude','longitude')"); if(qualityRanking.rows[0].n!==4) throw new Error('Quality ranking inputs incomplete'); const fs=await import('node:fs');const v30_19=fs.readFileSync(new URL('../src/v30-app.jsx',import.meta.url),'utf8'); if(!v30_19.includes('selectedSolutions')) throw new Error('V30.19 selected solutions state missing'); if(!v30_19.includes('length<3')) throw new Error('V30.19 three-selection limit missing'); if(!v30_19.includes('/compare/select')) throw new Error('V30.19 vault comparison endpoint missing'); console.log('V30.19 comparison selection contract: ok'); /* V30.19 comparison selection contract */ const v30_18=fs.readFileSync(new URL('../server/v30-platform.js',import.meta.url),'utf8'); if(!v30_18.includes('comparisonColumns')) throw new Error('V30.18 comparison columns missing'); if(!v30_18.includes('health_safety_score')) throw new Error('V30.18 health safety comparison score missing'); console.log('V30.18 comparison contract: ok'); /* V30.18 comparison contract */ const v30_17=fs.readFileSync(new URL('../server/v30-platform.js',import.meta.url),'utf8'); if(!v30_17.includes('Couverture Santé & Sécurité :')) throw new Error('V30.17 health safety matching reason missing'); if(!v30_17.includes('safetyRelevant')) throw new Error('V30.17 safety relevance missing'); console.log('V30.17 health safety matching contract: ok'); /* V30.17 health safety matching contract */ const v30_16=fs.readFileSync(new URL('../server/v30-platform.js',import.meta.url),'utf8'); if(!v30_16.includes('healthSafetyScore')) throw new Error('V30.16 health safety score missing'); const v30_16_vault=fs.readFileSync(new URL('../server/v30-vault.js',import.meta.url),'utf8'); if(!v30_16_vault.includes('professionalShareAllowed')) throw new Error('V30.16 privacy boundary missing'); if(!v30_16.includes('weatherMustNotBeInferred')) throw new Error('V30.16 weather boundary missing'); console.log('V30.16 health safety decision contract: ok'); /* V30.16 health safety decision contract */ const v30_15=fs.readFileSync(new URL('../server/v30-vault.js',import.meta.url),'utf8'); if(!v30_15.includes('hotRatio')) throw new Error('V30.15 traveler heat ratio missing'); if(!v30_15.includes('Accessibilité à vérifier selon les conditions locales')) throw new Error('V30.15 mobility adjustment missing'); if(!v30_15.includes('Santé & Sécurité à compléter avant décision')) throw new Error('V30.15 safety priority reason missing'); console.log('V30.15 traveler-aware window contract: ok'); /* V30.15 traveler-aware window contract */ const v30_14_vault=fs.readFileSync(new URL('../server/v30-vault.js',import.meta.url),'utf8'); if(!v30_14_vault.includes('durationDays:duration')) throw new Error('V30.14 duration-aware candidates missing'); if(!v30_14_vault.includes('coverage:Math.round(coverage*100)')) throw new Error('V30.14 climate coverage missing'); console.log('V30.14 duration-aware optimizer contract: ok'); /* V30.14 duration-aware optimizer contract */ const v30_13_ui=fs.readFileSync(new URL('../src/v30-app.jsx',import.meta.url),'utf8'); if(!v30_13_ui.includes('Retenir cette fenêtre')) throw new Error('V30.13 window selection UI missing'); if(!v30_13_ui.includes("tripDraft.id+'/dates'")) throw new Error('V30.13 vault dates endpoint contract missing'); console.log('V30.13 vault window contract: ok'); /* V30.13 vault window contract */ const v30_12_server=fs.readFileSync(new URL('../server/v30-platform.js',import.meta.url),'utf8'); if(!v30_12_server.includes('flexibilityDays')) throw new Error('V30.12 flexibility input missing'); if(!v30_12_server.includes('coverage')) throw new Error('V30.12 climate coverage missing'); if(!v30_12_server.includes('recommended')) throw new Error('V30.12 recommended window missing'); console.log('V30.12 flexible travel windows contract: ok'); /* V30.12 flexible travel windows contract */ const v30_11_server=fs.readFileSync(new URL('../server/v30-platform.js',import.meta.url),'utf8'); if(!v30_11_server.includes("scoringVersion: 'v30.11'")) throw new Error('V30.11 climate scoring version missing'); if(!v30_11_server.includes('Saison climatique favorable')) throw new Error('V30.11 favorable-season ranking reason missing'); if(!v30_11_server.includes('Hors saison optimale')) throw new Error('V30.11 off-season ranking reason missing'); if(!v30_11_server.includes('Forme touristique cohérente avec la saison')) throw new Error('V30.11 seasonal tourism context missing'); console.log('V30.11 climate ranking contract: ok'); /* V30.11 climate ranking contract */ const v30_20_ui=fs.readFileSync(new URL('../src/v30-app.jsx',import.meta.url),'utf8'); if(!v30_20_ui.includes('v30comparisonTable')) throw new Error('V30.20 side-by-side comparison UI missing'); if(!v30_20_ui.includes('healthSafetyScore')) throw new Error('V30.20 comparison health/safety score missing'); if(!v30_20_ui.includes('x.score')) throw new Error('V30.20 comparison score cell missing'); console.log('V30.20 side-by-side comparison contract: ok'); /* V30.20 side-by-side comparison contract */ 
+const v30_21_ui=fs.readFileSync(new URL('../src/v30-app.jsx',import.meta.url),'utf8'); if(!v30_21_ui.includes("[b2bScope,setB2bScope]")) throw new Error('V30.21 dedicated B2B scope state missing'); if(v30_21_ui.includes("onClick={()=>setScope(k)}")) throw new Error('V30.21 B2B scope still mutates globe scope'); if(!v30_21_ui.includes("territory?.name_fr||'Choisissez un territoire'")) throw new Error('V30.21 territory null guard missing'); console.log('V30.21 globe/B2B scope stabilization contract: ok'); /* V30.21 globe/B2B scope stabilization contract */
+const v30_22_ui=fs.readFileSync(new URL('../src/v30-app.jsx',import.meta.url),'utf8'); if(!v30_22_ui.includes('optimizeTrip')) throw new Error('V30.22 trip optimizer UI action missing'); if(!v30_22_ui.includes("tripDraft.id+'/optimize'")) throw new Error('V30.22 optimizer endpoint missing'); if(!v30_22_ui.includes('v30preparationPanel')) throw new Error('V30.22 preparation panel missing'); console.log('V30.22 trip preparation optimizer contract: ok'); /* V30.22 trip preparation optimizer contract */
+const serverSource=fs.readFileSync(new URL('../server/v30-platform.js',import.meta.url),'utf8'); const requiredRoutes=['/globe/activity','/institutional/dashboard','/journey/windows','/session/:id/solutions','/session/:id/compare','/pro/matches/:proId','/graph/change','/graph/propagate','/recalculation-queue/claim']; for(const route of requiredRoutes){if(!serverSource.includes(route)) throw new Error('Missing V30 route contract: '+route);} const vaultSource=fs.readFileSync(new URL('../server/v30-vault.js',import.meta.url),'utf8'); for(const route of ['/trip-draft/:id/optimize','/trip-draft/:id/dates','/trip-draft/:id/date-windows']){if(!vaultSource.includes(route)) throw new Error('Missing V30 vault route contract: '+route);} const qualityFields=await pool.query("SELECT count(*)::int n FROM information_schema.columns WHERE table_name='v30_solutions' AND column_name IN ('active','public_contact','latitude','longitude','provider_name')"); if(qualityFields.rows[0].n!==5) throw new Error('Solution quality evidence fields incomplete'); const matchingInputs=await pool.query("SELECT count(*)::int n FROM information_schema.columns WHERE table_name='v30_traveler_profiles' AND column_name IN ('budget_level','accessibility_needs','traveler_type')"); if(matchingInputs.rows[0].n!==3) throw new Error('Budget accessibility audience matching inputs incomplete'); const matchReasons=await pool.query("SELECT count(*)::int n FROM v30_matches WHERE reasons IS NOT NULL"); if(matchReasons.rows[0].n<0) throw new Error('Explainable match reason contract invalid'); const optimizerDateStorage=await pool.query("SELECT count(*)::int n FROM information_schema.columns WHERE table_name='v30_trip_drafts' AND column_name='notes'"); if(optimizerDateStorage.rows[0].n!==1) throw new Error('Date optimization persistence missing'); const travelerProfile=await pool.query("SELECT count(*)::int n FROM information_schema.columns WHERE table_name='v30_traveler_profiles' AND column_name IN ('traveler_type','age_group','mobility_level','party_type','budget_level','accessibility_needs')"); if(travelerProfile.rows[0].n!==6) throw new Error('Traveler profile optimization inputs incomplete'); const dateFields=await pool.query("SELECT count(*)::int n FROM information_schema.columns WHERE table_name='v30_trip_drafts' AND column_name='notes'"); if(dateFields.rows[0].n!==1) throw new Error('Flexible date storage missing'); const temporalRules=await pool.query("SELECT count(*)::int n FROM v30_climate_seasons"); if(temporalRules.rows[0].n<12) throw new Error('Temporal climate rules incomplete'); const tourismRules=await pool.query("SELECT count(*)::int n FROM v30_tourism_climate_rules"); if(tourismRules.rows[0].n<10) throw new Error('Tourism temporal compatibility rules incomplete'); const conditionsTable=await pool.query("SELECT count(*)::int n FROM information_schema.tables WHERE table_name='v30_conditions_context'"); if(conditionsTable.rows[0].n!==1) throw new Error('Territorial conditions layer missing'); const conditionStatus=await pool.query("SELECT count(*)::int n FROM v30_conditions_context WHERE status IN ('not_available','available','stale')"); if(conditionStatus.rows[0].n<1) throw new Error('Condition status contract missing'); const globeActivityTable=await pool.query("SELECT count(*)::int n FROM information_schema.tables WHERE table_name='v30_institutional_events'"); if(globeActivityTable.rows[0].n!==1) throw new Error('Living globe activity source missing'); const proGeo=await pool.query("SELECT count(*)::int n FROM v30_pro_profiles WHERE territory_key IS NOT NULL"); if(proGeo.rows[0].n<1) throw new Error('Territorial professional activity missing'); const institutionalTable=await pool.query("SELECT count(*)::int n FROM information_schema.tables WHERE table_name='v30_institutional_events'"); if(institutionalTable.rows[0].n!==1) throw new Error('Institutional aggregate event layer missing'); const privacyColumns=await pool.query("SELECT count(*)::int n FROM information_schema.columns WHERE table_name='v30_vault_items' AND column_name='privacy_class'"); if(privacyColumns.rows[0].n!==1) throw new Error('Vault privacy boundary missing'); const draftCols=await pool.query("SELECT count(*)::int n FROM information_schema.columns WHERE table_name='v30_trip_drafts' AND column_name IN ('transport','accommodation','experiences','health_safety','notes','status')"); if(draftCols.rows[0].n!==6) throw new Error('Trip composition fields incomplete'); const healthCols=await pool.query("SELECT count(*)::int n FROM information_schema.columns WHERE table_name='v30_health_profiles' AND column_name IN ('allergies','blood_type','important_treatments','emergency_contacts','reference_doctor','reference_establishment')"); if(healthCols.rows[0].n!==6) throw new Error('Private health profile fields incomplete'); const transportLinks=await pool.query("SELECT count(*)::int n FROM v30_transport_search_links WHERE active=true"); if(transportLinks.rows[0].n<3) throw new Error('Transport search links incomplete'); const optimizationMarker=await pool.query("SELECT count(*)::int n FROM information_schema.columns WHERE table_name='v30_trip_drafts' AND column_name='notes'"); if(optimizationMarker.rows[0].n!==1) throw new Error('Trip optimization storage missing'); const compareColumns=await pool.query("SELECT count(*)::int n FROM information_schema.columns WHERE table_name='v30_matches' AND column_name IN ('session_id','solution_id','score','reasons')"); if(compareColumns.rows[0].n!==4) throw new Error('Compare match contract incomplete'); const privateVault=await pool.query("SELECT count(*)::int n FROM v30_vault_items WHERE privacy_class='private'"); if(privateVault.rows[0].n<0) throw new Error('Private vault contract invalid'); console.log(JSON.stringify({ok:true,version:'30.2',pilots:by,franceHealthSafety:hs.rows[0].n})); await pool.end();
+
+/* V30_HTTP_E2E_START */
+{
+  const { spawn } = await import('node:child_process');
+  const port = 4399;
+  const base = `http://127.0.0.1:${port}/api/platform/v30`;
+  const child = spawn(process.execPath, ['server/index-v27.js'], {
+    env: { ...process.env, PORT: String(port), DATABASE_URL: process.env.DATABASE_URL || 'postgresql://connect:connect@localhost:5432/latOile' },
+    stdio: ['ignore','pipe','pipe']
+  });
+  const sleep = ms => new Promise(r => setTimeout(r, ms));
+  const request = async (path, options={}) => {
+    const r = await fetch(base + path, { headers:{'content-type':'application/json'}, ...options });
+    const body = await r.json().catch(() => ({}));
+    if (!r.ok) throw new Error(`E2E ${options.method||'GET'} ${path} -> ${r.status}: ${JSON.stringify(body)}`);
+    return body;
+  };
+  try {
+    let ready=false;
+    for(let i=0;i<30;i++){try{if((await fetch(base+'/health')).ok){ready=true;break;}}catch{}await sleep(500);}
+    if(!ready) throw new Error('V30 API did not become ready');
+    const flow=await request('/flow');
+    const globe=await request('/globe');
+    if(flow.version!=='30.2'||flow.principle!=='globe_first'||globe.countries.length<2) throw new Error('E2E globe/flow failed');
+    const territory=await request('/territory/MARRAKECH');
+    const env=await request('/territory/MARRAKECH/environment?month=10');
+    if(!territory.solutions.length||env.decisionContext.weatherMustNotBeInferred!==true) throw new Error('E2E territory/environment failed');
+    const sr=await request('/session',{method:'POST',body:JSON.stringify({countryIso3:'MAR',territoryKey:'MARRAKECH',freedomMode:'balanced'})});
+    const sid=sr.session.id;
+    await request(`/session/${sid}/profile`,{method:'POST',body:JSON.stringify({traveler_type:'Tourisme senior',age_group:'senior',party_type:'couple',party_size:2,budget_level:'economique',pace:'Tranquille',duration_days:7,preferences:['artisanat'],accessibility_needs:[],constraints:[]})});
+    const draftResult=await request('/trip-draft',{method:'POST',body:JSON.stringify({sessionId:sid,title:'E2E Marrakech senior',territoryKey:'MARRAKECH',experiences:[],healthSafety:[],notes:{source:'e2e'}})});
+    const draftId=draftResult.draft.id;
+    if(!draftResult.proposalOnly||!draftResult.travelerDecides||draftResult.draft.status!=='preparation') throw new Error('E2E trip draft creation failed');
+    const invalidDates=await fetch(base+`/trip-draft/${draftId}/dates`,{method:'PUT',headers:{'content-type':'application/json'},body:JSON.stringify({startDate:'2026-10-20',endDate:'2026-10-10',durationDays:7})});
+    const invalidDatesBody=await invalidDates.json().catch(()=>({}));
+    if(invalidDates.status!==400||invalidDatesBody.error!=='endDate_before_startDate') throw new Error('E2E invalid travel dates were not rejected');
+    const savedDates=await request(`/trip-draft/${draftId}/dates`,{method:'PUT',body:JSON.stringify({startDate:'2026-10-20',endDate:'2026-10-26',flexibleDays:2,durationDays:7})});
+    const dateWindows=await request(`/trip-draft/${draftId}/date-windows`);
+    if(savedDates.dates?.durationDays!==7||dateWindows.windows.length!==5||!dateWindows.windows.some(w=>w.offsetDays===0)) throw new Error('E2E trip date persistence/windows failed');
+    const readiness=await request(`/trip-draft/${draftId}/readiness`);
+    if(readiness.readyForDecision!==false||!readiness.blockingMissing.includes('transport')||!readiness.blockingMissing.includes('accommodation')||readiness.noAutomaticBooking!==true||readiness.travelerDecides!==true) throw new Error('E2E readiness blockers or traveler control failed');
+    const invalidCompose=await fetch(base+`/trip-draft/${draftId}/compose`,{method:'POST',headers:{'content-type':'application/json'},body:JSON.stringify({solutionIds:[1,2,3,4]})});
+    const invalidComposeBody=await invalidCompose.json().catch(()=>({}));
+    if(invalidCompose.status!==400||invalidComposeBody.error!=='solutionIds_max_3_required') throw new Error('E2E composition limit was not enforced');
+    const draftSummary=await request(`/trip-draft/${draftId}/summary`);
+    if(draftSummary.proposalOnly!==true||draftSummary.complete!==false) throw new Error('E2E draft summary incorrectly claims completion');
+    const optimization=await request(`/trip-draft/${draftId}/optimize`,{method:'POST',body:JSON.stringify({budgetLevel:'economique',pace:'Tranquille',durationDays:7,climatePriority:true,safetyPriority:true})});
+    if(!optimization.travelerDecides||!optimization.optimization?.optimizedAt||!optimization.optimization.hardMissing.includes('transport')||!optimization.optimization.hardMissing.includes('accommodation')) throw new Error('E2E preparation optimization contract failed');
+    const checklist=await request(`/trip-draft/${draftId}/checklist`);
+    if(!checklist.items.some(item=>item.key==='optimization'&&item.done)) throw new Error('E2E checklist does not reflect optimization');
+    const intent=await request(`/session/${sid}/intent`,{method:'POST',body:JSON.stringify({rawText:"Je veux découvrir l'artisanat à Marrakech, tranquillement, avec accès à la santé et à la sécurité."})});
+    if(intent.intent.activity!=='Artisanat'||intent.intent.territoryKey!=='MARRAKECH') throw new Error('E2E intent failed');
+    const windows=await request('/journey/windows?territoryKey=MARRAKECH&tag=artisanat&durationDays=7&startMonth=10');
+    const solutions=await request(`/session/${sid}/solutions?month=10`);
+    if(!windows.windows.length||!solutions.solutions.length||!solutions.solutions[0].matchReasons||Number(solutions.persistedMatchCount||0)<1) throw new Error('E2E matching persistence failed: '+JSON.stringify({solutions:solutions.solutions.length,persisted:solutions.persistedMatchCount}));
+    const compare=await request(`/session/${sid}/compare`); if(!compare.comparisons.length) throw new Error('E2E comparison empty after persisted matches: '+JSON.stringify({persisted:solutions.persistedMatchCount,compare:compare.comparisons.length}));
+    const ids=compare.comparisons.slice(0,2).map(x=>Number(x.solution_id));
+    if(!ids.length) throw new Error('E2E comparison returned no selectable solutions');
+    const selected=await request(`/session/${sid}/compare/select`,{method:'POST',body:JSON.stringify({solutionIds:ids})});
+    const vault=await request(`/vault/session/${sid}`);
+    if(!selected.private||!vault.private||!vault.items.length) throw new Error('E2E vault failed');
+    const event=await request('/graph/change',{method:'POST',body:JSON.stringify({entityType:'weather',territoryKey:'MARRAKECH',changeType:'conditions_changed',payload:{source:'e2e-smoke'}})});
+    const propagated=await request('/graph/propagate',{method:'POST',body:JSON.stringify({eventId:event.event.id})});
+    const claimed=await request('/recalculation-queue/claim',{method:'POST',body:JSON.stringify({limit:20})});
+    const history=await request(`/session/${sid}/recommendation-history`);
+    const inst=await request('/institutional/dashboard?countryIso3=MAR');
+    if(propagated.invalidatedCount<1||!claimed.items.some(x=>Number(x.session_id)===Number(sid))||!history.history.some(x=>x.invalidated===true)) throw new Error('E2E graph/recalculation failed');
+    if(!inst.confidentiality.travelerIdentitiesExcluded||!inst.confidentiality.privateVaultExcluded||!inst.confidentiality.healthProfilesExcluded) throw new Error('E2E institutional privacy failed');
+    console.log(JSON.stringify({e2e:true,sessionId:sid,solutions:solutions.solutions.length,compared:compare.comparisons.length,vaultItems:vault.items.length,invalidated:propagated.invalidatedCount,claimed:claimed.claimed}));
+  } finally { child.kill('SIGTERM'); await sleep(200); }
+}
+/* V30_HTTP_E2E_END */
+
+// V30.23 traveler preparation checklist contract
+const v30_23_vault=fs.readFileSync(new URL('../server/v30-vault.js',import.meta.url),'utf8');
+if(!v30_23_vault.includes("'/trip-draft/:id/checklist'")) throw new Error('V30.23 preparation checklist route missing');
+if(!v30_23_vault.includes('blockingMissing')) throw new Error('V30.23 blocking checklist state missing');
+if(!v30_23_vault.includes('readyForReview')) throw new Error('V30.23 readiness decision missing');
+console.log('V30.23 traveler preparation checklist contract: ok');
+
+// V30.24 traveler composition contract
+const v30_24_vault=fs.readFileSync(new URL('../server/v30-vault.js',import.meta.url),'utf8');
+const v30_24_ui=fs.readFileSync(new URL('../src/v30-app.jsx',import.meta.url),'utf8');
+if(!v30_24_vault.includes("'/trip-draft/:id/compose'")) throw new Error('V30.24 composition endpoint missing');
+if(!v30_24_ui.includes('composeTrip')) throw new Error('V30.24 composition UI action missing');
+if(!v30_24_ui.includes('Composer le voyage')) throw new Error('V30.24 composition CTA missing');
+console.log('V30.24 traveler composition contract: ok');
+
+// V30.25 travel-window decision contract
+const v30_25_ui=fs.readFileSync(new URL('../src/v30-app.jsx',import.meta.url),'utf8');
+if(!v30_25_ui.includes('applyRecommendedDates')) throw new Error('V30.25 date decision action missing');
+if(!v30_25_ui.includes('Retenir cette fenêtre')) throw new Error('V30.25 date decision CTA missing');
+if(!v30_25_ui.includes("tripDraft.id+'/dates'")) throw new Error('V30.25 date persistence endpoint missing');
+console.log('V30.25 travel-window decision contract: ok');
+
+// V30.26 structured preparation components contract
+const v30_26_vault=fs.readFileSync(new URL('../server/v30-vault.js',import.meta.url),'utf8');
+const v30_26_ui=fs.readFileSync(new URL('../src/v30-app.jsx',import.meta.url),'utf8');
+if(!v30_26_vault.includes("'/trip-draft/:id/components'")) throw new Error('V30.26 components endpoint missing');
+if(!v30_26_ui.includes('refreshTripComponents')) throw new Error('V30.26 component refresh UI missing');
+if(!v30_26_ui.includes('Transport · Hébergement · Expériences · Santé & Sécurité')) throw new Error('V30.26 component labels missing');
+console.log('V30.26 structured preparation components contract: ok');
+
+
+/* V30.27 traveler profile-fit contract */
+const v30_27_vault=fs.readFileSync(new URL('../server/v30-vault.js',import.meta.url),'utf8');
+const v30_27_ui=fs.readFileSync(new URL('../src/v30-app.jsx',import.meta.url),'utf8');
+if(!v30_27_vault.includes("'/trip-draft/:id/profile-fit'")) throw new Error('V30.27 profile-fit endpoint missing');
+for(const field of ['traveler_type','age_group','mobility_level','party_type','party_size','budget_level','pace','accessibility_needs','preferences','constraints']) if(!v30_27_vault.includes(field)) throw new Error('V30.27 profile field missing: '+field);
+if(!v30_27_vault.includes('confirmation_required')) throw new Error('V30.27 accessibility confirmation signal missing');
+if(!v30_27_vault.includes('warm_period')) throw new Error('V30.27 senior warm-period signal missing');
+if(!v30_27_ui.includes('profileFit')) throw new Error('V30.27 profile-fit UI state missing');
+if(!v30_27_ui.includes('Votre profil influence la préparation')) throw new Error('V30.27 profile-fit UI panel missing');
+console.log('V30.27 traveler profile-fit contract: ok');
+
+/* V30.28 profile-aware optimization contract */
+if(!v30_27_vault.includes('const profileFit={score:profileFitScore')) throw new Error('V30.28 persisted profile-fit summary missing');
+if(!v30_27_vault.includes("key:'profileFit'")) throw new Error('V30.28 checklist personalization item missing');
+if(!v30_27_ui.includes('profileFit.fitScore')) throw new Error('V30.28 profile-fit score bridge missing');
+console.log('V30.28 profile-aware optimization contract: ok');
+/* V30.29 traveler profile editor contract */
+if(!v30_27_vault.includes("'/trip-draft/:id/profile'")) throw new Error('V30.29 profile GET endpoint missing');
+if(!v30_27_vault.includes("'/trip-draft/:id/profile'")) throw new Error('V30.29 profile PUT endpoint missing');
+if(!v30_27_ui.includes('saveTravelerProfile')) throw new Error('V30.29 profile save action missing');
+if(!v30_27_ui.includes('Modifier le profil voyageur')) throw new Error('V30.29 profile editor UI missing');
+console.log('V30.29 traveler profile editor contract: ok');
+/* V30.30 traveler readiness contract */
+if(!v30_27_vault.includes("'/trip-draft/:id/readiness'")) throw new Error('V30.30 readiness endpoint missing');
+if(!v30_27_vault.includes('readyForDecision')) throw new Error('V30.30 readiness decision missing');
+if(!v30_27_vault.includes('noAutomaticBooking')) throw new Error('V30.30 no-auto-booking boundary missing');
+if(!v30_27_ui.includes('BILAN AVANT DÉCISION')) throw new Error('V30.30 readiness UI missing');
+if(!v30_27_ui.includes('loadReadiness')) throw new Error('V30.30 readiness action missing');
+console.log('V30.30 traveler readiness contract: ok');
+
+/* V31.1 professional offers contract */
+const v31_schema=fs.readFileSync(new URL('../database/seed/38_v31_professional_offers.sql',import.meta.url),'utf8');
+if(!v31_schema.includes('v31_pro_offers')||!v31_schema.includes('v31_offer_availability')) throw new Error('V31.1 offer schema missing');
+const v31_platform=fs.readFileSync(new URL('../server/v30-platform.js',import.meta.url),'utf8');
+for(const x of ["'/v31/professionals/:proId/offers'","'/v31/offers/:offerId/availability'","'/v31/session/:sessionId/offers'"]) if(!v31_platform.includes(x)) throw new Error('V31.1 endpoint missing: '+x);
+if(!v31_platform.includes('next_available')) throw new Error('V31.1 availability matching missing');
+console.log('V31.1 professional offers contract: ok');
+
+/* V31.2 reservation lifecycle contract */
+const v31_2_schema=fs.readFileSync(new URL('../database/seed/39_v31_reservations.sql',import.meta.url),'utf8');
+if(!v31_2_schema.includes('v31_reservation_requests')) throw new Error('V31.2 reservation schema missing');
+const v31_2_platform=fs.readFileSync(new URL('../server/v30-platform.js',import.meta.url),'utf8');
+for(const x of ["'/v31/session/:sessionId/reservations'","'/v31/professionals/:proId/reservations'","'/v31/reservations/:reservationId'"])if(!v31_2_platform.includes(x))throw new Error('V31.2 endpoint missing: '+x);
+if(!v31_2_platform.includes('automaticBooking:false'))throw new Error('V31.2 automatic booking boundary missing');
+console.log('V31.2 reservation lifecycle contract: ok');
+
+/* V31 reservation lifecycle contracts */
+const v31e=fs.readFileSync(new URL('../database/seed/40_v31_reservation_events.sql',import.meta.url),'utf8');
+if(!v31e.includes('v31_reservation_events'))throw new Error('V31 events schema missing');
+const v31p=fs.readFileSync(new URL('../server/v30-platform.js',import.meta.url),'utf8');
+for(const x of ["'/v31/reservations/:reservationId/confirm'","'/v31/reservations/:reservationId/cancel'","'/v31/reservations/:reservationId/payment-intent'"])if(!v31p.includes(x))throw new Error('V31 route missing: '+x);
+if(!v31p.includes('capacity_unavailable'))throw new Error('V31 capacity guard missing');
+if(!v31p.includes('status_transition_use_action_endpoint'))throw new Error('V31 transition guard missing');
+const v31t=fs.readFileSync(new URL('../database/seed/41_v31_transactions.sql',import.meta.url),'utf8');
+if(!v31t.includes('v31_transaction_intents'))throw new Error('V31 transaction schema missing');
+console.log('V31 reservation lifecycle contracts: ok');
+
+/* V32.94-V32.95 trip decision memory contract */
+if(!v31p.includes("'/v32/trip-draft/:draftId/decision-memory'")) throw new Error('V32.94 decision-memory endpoint missing');
+if(!v31p.includes("scope:'trip_draft'")||!v31p.includes('reusableTravelerMemory:false')) throw new Error('V32.94 trip-only memory boundary missing');
+if(!v31p.includes('decisionMemory')) throw new Error('V32.95 optimization decision memory missing');
+if(!v31p.includes("memoryDimension")) throw new Error('V32.95 memory-to-dimension mapping missing');
+if(!v31p.includes("row.decision==='accepted'?6:-6")) throw new Error('V32.95 accepted/rejected optimization adjustment missing');
+console.log('V32.94-V32.95 trip decision memory contract: ok');
+
+/* V32.97 recalculation event persistence contract */
+if(!v31p.includes("'/v32/trip-draft/:draftId/recalculate'")) throw new Error('V32.97 recalculation endpoint missing');
+if(!v31p.includes('v32_trip_recalculation_events')) throw new Error('V32.97 recalculation event persistence missing');
+if(!v31p.includes('traveler_action')) throw new Error('V32.97 traveler recalculation source missing');
+console.log('V32.97 recalculation event contract: ok');
+
+/* V32.99 trip history API contract */
+for(const x of ["'/v32/trip-draft/:draftId/recalculation-history'","'/v32/trip-draft/:draftId/optimization-history'","'/v32/trip-draft/:draftId/optimization-diff'"]) if(!v31p.includes(x)) throw new Error('V32.99 history endpoint missing: '+x);
+if(!v31p.includes('deltaFromPrevious')) throw new Error('V32.99 optimization history delta missing');
+if(!v31p.includes('scoreDelta')) throw new Error('V32.99 optimization diff score delta missing');
+console.log('V32.99 trip history API contract: ok');
+
+/* V33.01 decision brief state contract */
+if(!v31p.includes("'/v32/trip-draft/:draftId/decision-brief'")) throw new Error('V33.01 decision brief endpoint missing');
+if(!v31p.includes('latestOptimization')) throw new Error('V33.01 latest optimization missing from decision brief');
+if(!v31p.includes('decisionMemory=Object.values(latestMemory).map')) throw new Error('V33.01 decision memory missing from decision brief');
+console.log('V33.01 decision brief state contract: ok');
+
+/* V33.03 decision brief freshness contract */
+if(!v31p.includes('optimizationStale')) throw new Error('V33.03 optimization freshness signal missing');
+if(!v31p.includes("stale:Boolean(x.updated_at&&new Date(row.last_at)<new Date(x.updated_at))")) throw new Error('V33.03 decision memory freshness signal missing');
+console.log('V33.03 decision brief freshness contract: ok');
+
+/* V33.05 idempotent optimization snapshot contract */
+if(!v31p.includes('snapshotCreated')) throw new Error('V33.05 snapshot creation state missing');
+if(!v31p.includes('previousSame')) throw new Error('V33.05 duplicate snapshot guard missing');
+if(!v31p.includes('IS NOT DISTINCT FROM')) throw new Error('V33.05 scenario null-safe comparison missing');
+console.log('V33.05 optimization snapshot idempotency contract: ok');
+
+/* V33.07 improvement feedback action contract */
+if(!v31p.includes("'/v32/trip-draft/:draftId/improvement-feedback'")) throw new Error('V33.07 feedback endpoint missing');
+if(!v31p.includes("['accepted','rejected','deferred']")) throw new Error('V33.07 feedback decision validation missing');
+if(!v31p.includes("reusableTravelerMemory:false")) throw new Error('V33.07 trip-only feedback boundary missing');
+console.log('V33.07 improvement feedback action contract: ok');
+
+/* V33.09 current V32-V33 route coverage contract */
+for(const x of [
+ "'/v32/globe/root'","'/v32/globe/:nodeKey'","'/v32/globe/:nodeKey/geometry'","'/v32/globe/:nodeKey/climate'",
+ "'/v32/globe/:nodeKey/travel-components'","'/v32/globe/:nodeKey/health-safety'","'/v32/globe/:nodeKey/offers'",
+ "'/v32/trip-draft/:draftId/readiness'","'/v32/trip-draft/:draftId/preparation'","'/v32/trip-draft/:draftId/scenarios'",
+ "'/v32/trip-draft/:draftId/select-scenario'","'/v32/trip-draft/:draftId/revise-component'",
+ "'/v32/trip-draft/:draftId/recalculate'","'/v32/trip-draft/:draftId/optimization'",
+ "'/v32/trip-draft/:draftId/decision-brief'","'/v32/trip-draft/:draftId/recommended-dates'",
+ "'/v32/trip-draft/:draftId/recalculation-history'","'/v32/trip-draft/:draftId/optimization-history'",
+ "'/v32/trip-draft/:draftId/optimization-diff'","'/v32/trip-draft/:draftId/improvement-feedback'",
+ "'/v32/trip-draft/:draftId/decision-memory'"
+]) if(!v31p.includes(x)) throw new Error('V33.09 current route missing: '+x);
+console.log('V33.09 current V32-V33 route coverage contract: ok');
+
+/* V33.10 installation integrity contract */
+const v33_10_guard=fs.readFileSync(new URL('../database/seed/61_v33_installation_integrity.sql',import.meta.url),'utf8');
+for(const x of ['v32_geo_nodes','v32_seasonal_windows','v32_trip_recalculation_events','v32_trip_optimization_snapshots','v32_trip_improvement_feedback']) if(!v33_10_guard.includes(x)) throw new Error('V33.10 installation guard missing table: '+x);
+if(!v33_10_guard.includes('RAISE EXCEPTION')) throw new Error('V33.10 installation guard does not fail explicitly');
+console.log('V33.10 installation integrity contract: ok');
+
+/* V33.12 component selection synchronization contract */
+if(!v31p.includes("'/v32/globe/trip-draft/:draftId/select-component'")) throw new Error('V33.12 component selection endpoint missing');
+if(!v31p.includes('tripDraftUpdate')) throw new Error('V33.12 trip draft synchronization response missing');
+if(!v31p.includes('reoptimizationSuggested:true')) throw new Error('V33.12 reoptimization signal missing');
+console.log('V33.12 component selection synchronization contract: ok');
+
+/* V33.14 component revision state contract */
+if(!v31p.includes("'/v32/trip-draft/:draftId/revise-component'")) throw new Error('V33.14 revision endpoint missing');
+if(!v31p.includes('revision:revision.rows[0]')) throw new Error('V33.14 revision record missing');
+if(!v31p.includes('currentOffer:o.rows[0]')) throw new Error('V33.14 current offer state missing');
+console.log('V33.14 component revision state contract: ok');
+
+/* V33.16 scenario decision freshness contract */
+if(!v31p.includes("'/v32/trip-draft/:draftId/select-scenario'")) throw new Error('V33.16 scenario selection endpoint missing');
+if(!v31p.includes('decisionChanged:!wasSame')) throw new Error('V33.16 scenario decision state missing');
+if(!v31p.includes('reoptimizationSuggested:true')) throw new Error('V33.16 scenario reoptimization signal missing');
+console.log('V33.16 scenario decision freshness contract: ok');
+
+/* V33.18 recalculation freshness contract */
+if(!v31p.includes('optimizationStale')) throw new Error('V33.18 optimization freshness signal missing after recalculation');
+if(!v31p.includes('latestOptimization')) throw new Error('V33.18 latest optimization lookup missing');
+console.log('V33.18 recalculation freshness contract: ok');
+
+/* V33.20 freshness comparison contract */
+if(!v31p.includes("new Date(latestOptimization.rows[0].created_at)<new Date(x.updated_at)")) throw new Error('V33.20 stale comparison is not timestamp-based');
+console.log('V33.20 freshness comparison contract: ok');
+
+/* V33.22 idempotent scenario selection contract */
+if(!v31p.includes('wasSame')) throw new Error('V33.22 same-scenario guard missing');
+if(!v31p.includes('decisionChanged:!wasSame')) throw new Error('V33.22 scenario decision idempotency missing');
+if(!v31p.includes('reoptimizationSuggested:!wasSame')) throw new Error('V33.22 scenario reoptimization idempotency missing');
+console.log('V33.22 idempotent scenario selection contract: ok');
+
+/* V33.25 idempotent component selection contract */
+if(!v31p.includes('currentOfferId')) throw new Error('V33.25 current component guard missing');
+if(!v31p.includes('selectionChanged:!wasSame')) throw new Error('V33.25 selection idempotency missing');
+if(!v31p.includes('reoptimizationSuggested:!wasSame')) throw new Error('V33.25 reoptimization idempotency missing');
+console.log('V33.25 idempotent component selection contract: ok');
+
+/* V33.27 revision + feedback idempotency contract */
+if(!v31p.includes('revisionChanged:false')) throw new Error('V33.27 revision idempotency missing');
+if(!v31p.includes('feedbackChanged:false')) throw new Error('V33.27 feedback idempotency missing');
+if(!v31p.includes('feedbackChanged:true')) throw new Error('V33.27 feedback change contract missing');
+console.log('V33.27 revision and feedback idempotency contract: ok');
+
+/* V33.29 reservation/payment concurrency contract */
+if(!v31p.includes('FOR UPDATE')) throw new Error('V33.29 reservation locking missing');
+if(!v31p.includes("reservation_not_confirmable")) throw new Error('V33.29 repeated confirmation guard missing');
+if(!v31p.includes('ON CONFLICT(reservation_id) DO UPDATE')) throw new Error('V33.29 payment intent uniqueness missing');
+console.log('V33.29 reservation/payment concurrency contract: ok');
+
+/* V33.30 payment contract integrity */
+if(!v31p.includes('payment_amount_mismatch')) throw new Error('V33.30 payment amount integrity missing');
+if(!v31p.includes('payment_currency_mismatch')) throw new Error('V33.30 payment currency integrity missing');
+if(!v31p.includes('reservationAmount:amount')) throw new Error('V33.30 reservation amount binding missing');
+console.log('V33.30 payment contract integrity: ok');
+
+/* V33.32 decision brief freshness contract */
+if(!v31p.includes('SELECT id,title,territory_key,active_scenario_key,updated_at FROM v30_trip_drafts')) throw new Error('V33.32 decision brief updated_at missing');
+if(!v31p.includes("ORDER BY created_at DESC")) throw new Error('V33.32 latest decision ordering missing');
+if(!v31p.includes('optimizationStale')) throw new Error('V33.32 optimization freshness missing');
+console.log('V33.32 decision brief freshness contract: ok');
+
+/* V33.34 Living Graph propagation contract */
+if(!v31p.includes("UPDATE v30_matches m SET reasons")) throw new Error('V33.34 graph match invalidation missing');
+if(!v31p.includes("INSERT INTO v30_recalculation_queue")) throw new Error('V33.34 recalculation propagation missing');
+if(!v31p.includes('FOR UPDATE SKIP LOCKED')) throw new Error('V33.34 queue concurrency guard missing');
+if(!v31p.includes("status='processing'")) throw new Error('V33.34 queue processing state missing');
+console.log('V33.34 Living Graph propagation contract: ok');

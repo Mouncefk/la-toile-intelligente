@@ -1,7 +1,7 @@
 {
-  "name": "la-toile-global-core-v27",
+  "name": "la-toile-global-core-v30",
   "private": true,
-  "version": "27.0.0",
+  "version": "30.1.0",
   "type": "module",
   "scripts": {
     "dev": "vite",
@@ -31,7 +31,12 @@
     "test:v29-16:global-climate": "node scripts/test-v29-16-global-climate.mjs",
     "test:v29-17:climate-ingestion": "node scripts/test-v29-17-climate-ingestion.mjs",
     "test:v29-18:global-climate": "node scripts/test-v29-18-global-climate.mjs",
-    "test:v29-19:spatial-grid": "node scripts/test-v29-19-spatial-climate-grid.mjs"
+    "test:v29-19:spatial-grid": "node scripts/test-v29-19-spatial-climate-grid.mjs",
+    "test:v30:first-platform": "node scripts/test-v30-first-platform.mjs",
+    "check:v30": "node --check server/v30-platform.js && node --check server/index-v27.js && node --check scripts/test-v30-first-platform.mjs",
+    "check:v33": "node --check server/v30-platform.js && node --check scripts/test-v30-first-platform.mjs",
+    "test:v30:http-smoke": "node scripts/test-v30-http-smoke.mjs",
+    "test:v30:entry": "node scripts/test-v30-entry.mjs"
   },
   "dependencies": {
     "@vitejs/plugin-react": "latest",
