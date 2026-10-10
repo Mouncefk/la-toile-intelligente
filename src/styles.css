@@ -423,3 +423,19 @@ html,body,#root{width:100%;max-width:100%;overflow-x:hidden}
  .v30MainContent>.v30workspace{gap:12px}
  .v30TopNav{max-width:100%}
 }
+
+
+/* V30.9 — Réinitialisation explicite des anciennes contraintes de grille */
+.v30app>main{padding:0!important;margin:0!important;max-width:none!important}
+.v30MainContent{padding:0!important;margin:0!important;max-width:none!important}
+.v30MainContent>.v32GlobeNavigator{box-sizing:border-box!important;padding:18px 18px 24px!important;margin:0!important;width:100%!important;max-width:none!important;grid-template-columns:minmax(0,1fr) minmax(290px,340px)!important;gap:22px!important}
+.v30MainContent>.v32GlobeNavigator .v32GlobeVisual{min-width:0!important;width:100%!important;min-height:clamp(520px,72vh,800px)!important;height:auto!important;display:grid!important;place-items:center!important;overflow:hidden!important}
+.v30MainContent>.v32GlobeNavigator .v32Sphere3D{width:min( min(70vw, 760px), 100%)!important;max-width:760px!important;min-width:280px!important;aspect-ratio:1/1!important;height:auto!important;flex:none!important;visibility:visible!important;opacity:1!important}
+.v30MainContent>.v32GlobeNavigator .v32GlobePanel{min-width:0!important;width:100%!important;max-height:clamp(520px,72vh,800px)!important;overflow-y:auto!important;align-self:stretch!important}
+.v30MainContent>.v30hero{margin:0 18px 0 248px!important;padding:24px clamp(18px,3vw,44px)!important;width:auto!important;max-width:none!important}
+.v30MainContent>.v30healthSummary,.v30MainContent>.v30workspace,.v30MainContent>.v30opportunityPanel,.v30MainContent>.v30scopeLegend,.v30MainContent>.v30b2bScope,.v30MainContent>.v30freedom,.v30MainContent>.v30results,.v30MainContent>.v30prep,.v30MainContent>.v30journey{box-sizing:border-box!important;width:auto!important;max-width:none!important;margin-left:248px!important;margin-right:18px!important}
+.v30MainContent>.v30workspace{grid-template-columns:minmax(260px,.8fr) minmax(0,1.2fr)!important;padding:18px 0 48px!important;gap:18px!important}
+.v30QuickRail{z-index:20!important}
+@media(max-width:1180px){.v30MainContent>.v32GlobeNavigator{grid-template-columns:minmax(0,1fr) minmax(270px,320px)!important}.v30MainContent>.v32GlobeNavigator .v32GlobeVisual{min-height:560px!important}.v30MainContent>.v32GlobeNavigator .v32Sphere3D{width:min(62vw,620px)!important}.v30MainContent>.v30hero{margin-left:210px!important}.v30MainContent>.v30healthSummary,.v30MainContent>.v30workspace,.v30MainContent>.v30opportunityPanel,.v30MainContent>.v30scopeLegend,.v30MainContent>.v30b2bScope,.v30MainContent>.v30freedom,.v30MainContent>.v30results,.v30MainContent>.v30prep,.v30MainContent>.v30journey{margin-left:210px!important}}
+@media(max-width:850px){.v30MainContent>.v32GlobeNavigator{grid-template-columns:minmax(0,1fr)!important;padding:12px!important}.v30MainContent>.v32GlobeNavigator .v32GlobeVisual{min-height:clamp(360px,55vh,540px)!important}.v30MainContent>.v32GlobeNavigator .v32Sphere3D{width:min(78vw,500px)!important}.v30MainContent>.v32GlobeNavigator .v32GlobePanel{max-height:none!important}.v30MainContent>.v30hero{margin:0!important;width:auto!important}.v30MainContent>.v30healthSummary,.v30MainContent>.v30workspace,.v30MainContent>.v30opportunityPanel,.v30MainContent>.v30scopeLegend,.v30MainContent>.v30b2bScope,.v30MainContent>.v30freedom,.v30MainContent>.v30results,.v30MainContent>.v30prep,.v30MainContent>.v30journey{margin:12px!important;width:auto!important}.v30MainContent>.v30workspace{grid-template-columns:minmax(0,1fr)!important}}
+@media(prefers-reduced-motion:reduce){.v32Sphere3D,.v32Dot{transition:none!important}}
