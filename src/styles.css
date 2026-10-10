@@ -330,3 +330,21 @@
 @media(prefers-reduced-motion:reduce){
  .v32GlobeControls button,.v32Dot{transition:none!important}
 }
+
+
+/* V30.7 — Correctif de cadrage plein écran et débordements */
+html,body,#root{width:100%;max-width:100%;overflow-x:hidden}
+.v30App,.app,main{min-width:0;max-width:100%}
+.v32GlobeNavigator{width:100%;max-width:100%;min-width:0;overflow:hidden}
+.v32GlobeVisual{position:relative;min-width:0;width:100%;overflow:hidden}
+.v32Sphere3D{flex-shrink:0}
+.v32GlobePanel{min-width:0;width:100%}
+@media(min-width:1100px){
+ .v32GlobeNavigator{grid-template-columns:minmax(0,1fr) minmax(300px,350px)}
+ .v32GlobeVisual{min-height:clamp(560px,76vh,820px)}
+}
+@media(max-width:760px){
+ .v32GlobeNavigator{display:grid;grid-template-columns:minmax(0,1fr)}
+ .v32GlobeVisual{min-height:clamp(360px,54vh,520px)}
+ .v32GlobePanel{max-height:none}
+}
