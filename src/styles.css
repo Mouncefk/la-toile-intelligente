@@ -234,3 +234,16 @@
 @media(max-width:1180px){.v30TopNav{justify-content:flex-start}.v30TopNav a{padding:10px 7px}.v30HeaderActions .v30Login,.v30HeaderActions .v30Language{display:none}.v30QuickRail{width:190px}.v32GlobeNavigator{padding-left:210px;grid-template-columns:minmax(0,1fr) 300px}.v30workspace,.v30healthSummary,.v30opportunityPanel,.v30scopeLegend,.v30b2bScope,.v30freedom,.v30results,.v30prep,.v30journey{margin-left:210px}.v30hero{padding-left:210px}}
 @media(max-width:850px){.v30header{flex-wrap:wrap;gap:8px}.v30TopNav{order:3;flex-basis:100%}.v30HeaderActions{margin-left:auto}.v30QuickRail{position:static;width:auto;padding:10px 12px;display:grid;grid-template-columns:repeat(2,minmax(0,1fr));background:#020b16}.v30QuickSearch{grid-column:1/-1}.v30QuickRail>a{font-size:10px}.v30MainContent{width:100%}.v32GlobeNavigator{padding:12px;grid-template-columns:1fr;min-height:0}.v32GlobeVisual{min-height:430px}.v32Sphere3D{width:min(80vw,430px)}.v32GlobePanel{max-height:none}.v30hero{padding:25px 16px;min-height:0}.v30workspace,.v30healthSummary,.v30opportunityPanel,.v30scopeLegend,.v30b2bScope,.v30freedom,.v30results,.v30prep,.v30journey{margin-left:12px;margin-right:12px}}
 @media(max-width:520px){.v30brandBlock{min-width:0}.v30brandMark{font-size:32px}.v30brandBlock .v30brand{font-size:21px}.v30HeaderActions button:not(.v30Signup){display:none}.v30QuickRail{grid-template-columns:1fr 1fr}.v32GlobeVisual{min-height:340px}.v30TopNav a{font-size:10px}}
+
+/* V30.5 — Ajustement visuel ciblé après contrôle navigateur */
+.v32GlobeNavigator{grid-template-columns:minmax(0,1fr) minmax(300px,350px);align-items:stretch}
+.v32GlobeVisual{width:100%;min-width:0;min-height:clamp(560px,76vh,820px);display:grid;place-items:center;isolation:isolate}
+.v32GlobeVisual:before{width:min(94%,820px);max-width:820px}
+.v32Sphere3D{width:min( min(76vh, 820px), 94%) !important;max-width:820px !important;min-width:0}
+.v32GlobeControls{right:14px;top:18px}
+.v32GlobePanel{align-self:stretch;max-height:clamp(560px,76vh,820px)}
+.v30TopNav a{display:inline-flex;align-items:center;justify-content:center;min-height:40px}
+.v30QuickRail>a:focus-visible,.v30TopNav a:focus-visible,.v30HeaderActions button:focus-visible,.v32GlobeControls button:focus-visible{outline:2px solid #58d8ff;outline-offset:2px}
+@media(max-width:850px){.v32GlobeVisual{min-height:clamp(360px,56vh,560px)}.v32Sphere3D{width:min(78vw,500px) !important}.v32GlobePanel{max-height:none}}
+@media(prefers-reduced-motion:reduce){.v32Dot,.v30TopNav a{transition:none!important}}
+
