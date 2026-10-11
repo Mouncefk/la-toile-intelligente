@@ -1211,3 +1211,45 @@ html,body,#root{width:100%;max-width:100%;overflow-x:hidden}
 .v30MainContent>.v32GlobeNavigator .v32TripPeriod{
   padding:12px!important;
 }
+
+
+/* V30.39 — compact numbered steps in two columns */
+.v30MainContent>.v32GlobeNavigator .v32PanelNav{
+  grid-template-columns:repeat(2,minmax(0,1fr))!important;
+  gap:6px!important;
+  padding-bottom:8px!important;
+}
+.v30MainContent>.v32GlobeNavigator .v32JourneyCaption{
+  grid-column:1/-1!important;
+  margin:0!important;
+  padding:0 1px 1px!important;
+}
+.v30MainContent>.v32GlobeNavigator .v32PanelNav button{
+  grid-template-columns:21px 22px minmax(0,1fr)!important;
+  gap:5px!important;
+  min-width:0!important;
+  min-height:37px!important;
+  padding:5px 6px!important;
+  overflow:hidden!important;
+}
+.v30MainContent>.v32GlobeNavigator .v32PanelNav button .v32StepNumber{
+  width:19px!important;
+  height:19px!important;
+}
+.v30MainContent>.v32GlobeNavigator .v32PanelNav button .v32StepIcon{
+  width:21px!important;
+  height:21px!important;
+}
+.v30MainContent>.v32GlobeNavigator .v32PanelNav button .v32StepLabel{
+  min-width:0!important;
+  white-space:nowrap!important;
+  overflow:hidden!important;
+  text-overflow:ellipsis!important;
+  font-size:10px!important;
+  line-height:1.2!important;
+}
+@media(max-width:850px){
+ .v30MainContent>.v32GlobeNavigator .v32PanelNav{
+   grid-template-columns:repeat(2,minmax(0,1fr))!important;
+ }
+}
