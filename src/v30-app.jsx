@@ -95,7 +95,7 @@ function GlobeNavigator(){
    else setClimate(null);
   }catch(e){setError(e.message||'Globe indisponible')}finally{setLoading(false)}
  };
- useEffect(()=>{load(null)},[]);
+ useEffect(()=>{load('world')},[]);
  const open=n=>{if(node)setTrail(t=>[...t,node]);load(n.node_key)};
  const back=()=>{const prev=trail[trail.length-1];setTrail(t=>t.slice(0,-1));load(prev?.node_key||null)};
  return <section className="v32GlobeNavigator">
