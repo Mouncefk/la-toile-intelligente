@@ -1309,3 +1309,60 @@ html,body,#root{width:100%;max-width:100%;overflow-x:hidden}
    grid-template-columns:minmax(0,1fr)!important;
  }
 }
+
+
+/* V30.41 — multi-select tourism form chips */
+.v30MainContent>.v32GlobeNavigator .v32TourismChoices>div:first-child>p{
+ margin:4px 0 8px!important;
+ color:#9fb9ce!important;
+ font-size:11px!important;
+ line-height:1.4!important;
+}
+.v30MainContent>.v32GlobeNavigator .v32TourismChoiceGrid{
+ display:grid!important;
+ grid-template-columns:repeat(2,minmax(0,1fr))!important;
+ gap:6px!important;
+}
+.v30MainContent>.v32GlobeNavigator .v32TourismChoiceGrid button{
+ display:flex!important;
+ align-items:center!important;
+ gap:7px!important;
+ min-width:0!important;
+ min-height:36px!important;
+ padding:6px 8px!important;
+ border:1px solid #24445b!important;
+ border-radius:9px!important;
+ background:#081a2a!important;
+ color:#c9dced!important;
+ font-size:10px!important;
+ line-height:1.25!important;
+ text-align:left!important;
+ cursor:pointer!important;
+}
+.v30MainContent>.v32GlobeNavigator .v32TourismChoiceGrid button .v32ChoiceCheck{
+ display:grid!important;
+ place-items:center!important;
+ flex:none!important;
+ width:19px!important;
+ height:19px!important;
+ border:1px solid #42627b!important;
+ border-radius:5px!important;
+ color:#8db9d8!important;
+ font-weight:800!important;
+}
+.v30MainContent>.v32GlobeNavigator .v32TourismChoiceGrid button.selected{
+ border-color:#229be9!important;
+ background:#0c3552!important;
+ color:#fff!important;
+}
+.v30MainContent>.v32GlobeNavigator .v32TourismChoiceGrid button.selected .v32ChoiceCheck{
+ border-color:#49b8ff!important;
+ background:#0879bb!important;
+ color:#fff!important;
+}
+.v30MainContent>.v32GlobeNavigator .v32ChoiceCount{
+ display:block!important;
+ margin-top:7px!important;
+ color:#89abc3!important;
+ font-size:10px!important;
+}
