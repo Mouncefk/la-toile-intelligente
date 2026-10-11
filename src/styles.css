@@ -1046,3 +1046,59 @@ html,body,#root{width:100%;max-width:100%;overflow-x:hidden}
    max-height:none!important;
  }
 }
+
+
+/* V30.36 — balance globe, right panel and header on desktop */
+@media (min-width: 851px){
+ .v30MainContent>.v32GlobeNavigator{
+   grid-template-columns:minmax(0,1.08fr) minmax(390px,.92fr)!important;
+   align-items:stretch!important;
+   gap:14px!important;
+ }
+ .v30MainContent>.v32GlobeNavigator .v32GlobeVisual{
+   min-width:0!important;
+   min-height:540px!important;
+ }
+ .v30MainContent>.v32GlobeNavigator .v32GlobePanel{
+   max-height:calc(100vh - 205px)!important;
+   min-height:540px!important;
+   overflow-y:auto!important;
+   overscroll-behavior:contain!important;
+   scrollbar-gutter:stable!important;
+ }
+ .v30MainContent>.v32GlobeNavigator .v32TripPeriod{
+   padding:15px!important;
+ }
+ .v30MainContent>.v32GlobeNavigator .v32TripPeriod p{
+   line-height:1.5!important;
+ }
+}
+@media (min-width:851px) and (max-width:1150px){
+ .v30MainContent>.v32GlobeNavigator{
+   grid-template-columns:minmax(0,1fr) minmax(365px,.95fr)!important;
+ }
+ .v30MainContent>.v32GlobeNavigator .v32PanelNav button{
+   font-size:10px!important;
+   padding:7px!important;
+ }
+}
+@media (max-width:850px){
+ .v30MainContent>.v32GlobeNavigator .v32GlobePanel{
+   overflow:visible!important;
+ }
+}
+/* Keep the main navigation usable without squeezing every item */
+.v30Topbar{
+  min-width:0!important;
+}
+.v30Topbar nav{
+  min-width:0!important;
+  max-width:calc(100vw - 500px)!important;
+  overflow-x:auto!important;
+  scrollbar-width:thin!important;
+}
+@media(max-width:900px){
+ .v30Topbar nav{
+   max-width:calc(100vw - 36px)!important;
+ }
+}
