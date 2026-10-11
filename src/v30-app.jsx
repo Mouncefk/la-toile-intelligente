@@ -115,7 +115,8 @@ function GlobeNavigator(){
   </div>
   <div className="v32GlobePanel">
    <div className="v32PanelNav" role="tablist" aria-label="Espaces de La Toile">
-    {[['period','calendar-days','Période & envies'],['climate','cloud-sun','Climat & saisons'],['territory','map-pinned','Territoire'],['possibilities','compass','Possibilités'],['safety','shield-check','Santé & sécurité'],['trip','briefcase-business','Mon voyage']].map(([key,ico,label])=><button type="button" role="tab" aria-selected={activePanel===key} className={activePanel===key?'active':''} key={key} onClick={()=>setActivePanel(key)}><span aria-hidden="true">{key==='period'?'▦':key==='climate'?'☼':key==='territory'?'⌖':key==='possibilities'?'✧':key==='safety'?'✚':'▣'}</span>{label}</button>)}
+    <div className="v32JourneyCaption"><b>Votre parcours</b><span>6 étapes · vous gardez la main</span></div>
+    {[['period','calendar-days','Période & envies',1],['territory','map-pinned','Territoire',2],['climate','cloud-sun','Climat & saisons',3],['possibilities','compass','Possibilités',4],['safety','shield-check','Santé & sécurité',5],['trip','briefcase-business','Mon voyage',6]].map(([key,ico,label,step])=><button type="button" role="tab" aria-selected={activePanel===key} aria-label={'Étape '+step+' : '+label} className={activePanel===key?'active':''} key={key} onClick={()=>setActivePanel(key)}><span className="v32StepNumber" aria-hidden="true">{step}</span><span className="v32StepIcon" aria-hidden="true">{key==='period'?'▦':key==='climate'?'☼':key==='territory'?'⌖':key==='possibilities'?'✧':key==='safety'?'✚':'▣'}</span><span className="v32StepLabel">{label}</span></button>)}
    </div>
    {activePanel==='period'&&<>
 <section className="v32TripPeriod" aria-label="Période du séjour">
