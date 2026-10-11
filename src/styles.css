@@ -1102,3 +1102,74 @@ html,body,#root{width:100%;max-width:100%;overflow-x:hidden}
    max-width:calc(100vw - 36px)!important;
  }
 }
+
+
+/* V30.37 — numbered traveler journey */
+.v30MainContent>.v32GlobeNavigator .v32PanelNav{
+  grid-template-columns:minmax(0,1fr)!important;
+  gap:6px!important;
+}
+.v30MainContent>.v32GlobeNavigator .v32JourneyCaption{
+  display:flex!important;
+  align-items:baseline!important;
+  justify-content:space-between!important;
+  gap:8px!important;
+  grid-column:1/-1!important;
+  padding:2px 1px 5px!important;
+}
+.v30MainContent>.v32GlobeNavigator .v32JourneyCaption b{
+  color:#edf7ff!important;
+  font-size:13px!important;
+  letter-spacing:.02em!important;
+}
+.v30MainContent>.v32GlobeNavigator .v32JourneyCaption span{
+  color:#91abc0!important;
+  font-size:10px!important;
+}
+.v30MainContent>.v32GlobeNavigator .v32PanelNav button{
+  display:grid!important;
+  grid-template-columns:25px 28px minmax(0,1fr)!important;
+  justify-content:start!important;
+  min-height:43px!important;
+  padding:7px 10px!important;
+  text-align:left!important;
+}
+.v30MainContent>.v32GlobeNavigator .v32PanelNav button .v32StepNumber{
+  display:grid!important;
+  place-items:center!important;
+  width:23px!important;
+  height:23px!important;
+  border:1px solid #31516a!important;
+  border-radius:50%!important;
+  background:#071522!important;
+  color:#a8c8df!important;
+  font-size:11px!important;
+  font-weight:800!important;
+}
+.v30MainContent>.v32GlobeNavigator .v32PanelNav button .v32StepIcon{
+  display:grid!important;
+  place-items:center!important;
+  width:25px!important;
+  height:25px!important;
+  border-radius:7px!important;
+  background:#103653!important;
+  color:#73c5ff!important;
+  font-size:15px!important;
+}
+.v30MainContent>.v32GlobeNavigator .v32PanelNav button .v32StepLabel{
+  align-self:center!important;
+  font-size:12px!important;
+}
+.v30MainContent>.v32GlobeNavigator .v32PanelNav button.active .v32StepNumber{
+  border-color:#7bd0ff!important;
+  background:#0c5a88!important;
+  color:#fff!important;
+}
+@media(max-width:850px){
+ .v30MainContent>.v32GlobeNavigator .v32PanelNav{
+   grid-template-columns:repeat(2,minmax(0,1fr))!important;
+ }
+ .v30MainContent>.v32GlobeNavigator .v32JourneyCaption{
+   grid-column:1/-1!important;
+ }
+}
