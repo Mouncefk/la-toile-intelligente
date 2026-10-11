@@ -946,3 +946,103 @@ html,body,#root{width:100%;max-width:100%;overflow-x:hidden}
     gap:6px!important;
   }
 }
+
+
+/* V30.35 — intuitive right-side panel tabs */
+.v30MainContent>.v32GlobeNavigator{
+  grid-template-columns:minmax(0,1fr) minmax(350px,410px)!important;
+  gap:18px!important;
+}
+.v30MainContent>.v32GlobeNavigator .v32GlobePanel{
+  box-sizing:border-box!important;
+  display:flex!important;
+  flex-direction:column!important;
+  gap:12px!important;
+  min-width:0!important;
+  padding:14px!important;
+  border:1px solid rgba(78,157,209,.24)!important;
+  border-radius:18px!important;
+  background:linear-gradient(160deg,rgba(5,22,38,.97),rgba(3,12,24,.98))!important;
+  overflow-y:auto!important;
+}
+.v30MainContent>.v32GlobeNavigator .v32PanelNav{
+  display:grid!important;
+  grid-template-columns:repeat(2,minmax(0,1fr))!important;
+  gap:7px!important;
+  padding:0 0 12px!important;
+  border-bottom:1px solid #1d3c53!important;
+}
+.v30MainContent>.v32GlobeNavigator .v32PanelNav button{
+  display:flex!important;
+  align-items:center!important;
+  gap:9px!important;
+  min-width:0!important;
+  min-height:42px!important;
+  padding:8px 10px!important;
+  border:1px solid #24455c!important;
+  border-radius:10px!important;
+  background:#081a2a!important;
+  color:#c9dced!important;
+  font-size:11px!important;
+  text-align:left!important;
+  cursor:pointer!important;
+}
+.v30MainContent>.v32GlobeNavigator .v32PanelNav button span{
+  display:grid!important;
+  place-items:center!important;
+  flex:none!important;
+  width:25px!important;
+  height:25px!important;
+  border-radius:7px!important;
+  background:#103653!important;
+  color:#73c5ff!important;
+  font-size:16px!important;
+}
+.v30MainContent>.v32GlobeNavigator .v32PanelNav button.active{
+  border-color:#2498e8!important;
+  background:linear-gradient(135deg,#104b75,#0a2b46)!important;
+  color:#fff!important;
+  box-shadow:inset 0 0 0 1px #2498e833!important;
+}
+.v30MainContent>.v32GlobeNavigator .v32PanelSection{
+  display:flex!important;
+  flex-direction:column!important;
+  gap:12px!important;
+  min-width:0!important;
+  padding:2px 0 8px!important;
+}
+.v30MainContent>.v32GlobeNavigator .v32PanelSection h3{
+  margin:0!important;
+  font-size:18px!important;
+  line-height:1.35!important;
+}
+.v30MainContent>.v32GlobeNavigator .v32PanelSection p{
+  margin:0!important;
+  color:#b4c9dc!important;
+  font-size:12px!important;
+  line-height:1.55!important;
+}
+.v30MainContent>.v32GlobeNavigator .v32TripPeriod{
+  margin:0!important;
+}
+.v30MainContent>.v32GlobeNavigator .v32PanelSection .v32Children{
+  display:grid!important;
+  gap:7px!important;
+}
+.v30MainContent>.v32GlobeNavigator .v32PanelSection .v32Children button{
+  text-align:left!important;
+}
+@media(max-width:1180px){
+ .v30MainContent>.v32GlobeNavigator{
+   grid-template-columns:minmax(0,1fr) minmax(310px,370px)!important;
+   gap:12px!important;
+ }
+}
+@media(max-width:850px){
+ .v30MainContent>.v32GlobeNavigator{
+   grid-template-columns:minmax(0,1fr)!important;
+ }
+ .v30MainContent>.v32GlobeNavigator .v32GlobePanel{
+   max-height:none!important;
+ }
+}
