@@ -1253,3 +1253,59 @@ html,body,#root{width:100%;max-width:100%;overflow-x:hidden}
    grid-template-columns:repeat(2,minmax(0,1fr))!important;
  }
 }
+
+
+/* V30.40 — continent and territory choices as compact buttons */
+.v30MainContent>.v32GlobeNavigator .v32CompactChildren{
+  display:grid!important;
+  grid-template-columns:repeat(2,minmax(0,1fr))!important;
+  gap:7px!important;
+  max-height:none!important;
+  overflow:visible!important;
+  padding:5px 0 10px!important;
+}
+.v30MainContent>.v32GlobeNavigator .v32CompactChildren button{
+  display:grid!important;
+  grid-template-columns:24px minmax(0,1fr) 14px!important;
+  align-items:center!important;
+  gap:7px!important;
+  min-width:0!important;
+  min-height:43px!important;
+  padding:7px 9px!important;
+  border:1px solid #24445b!important;
+  border-radius:10px!important;
+  background:#081a2a!important;
+  text-align:left!important;
+}
+.v30MainContent>.v32GlobeNavigator .v32CompactChildren button .v32ChildNumber{
+  display:grid!important;
+  place-items:center!important;
+  width:23px!important;
+  height:23px!important;
+  border-radius:7px!important;
+  background:#103653!important;
+  color:#78c9ff!important;
+  font-size:10px!important;
+  font-weight:800!important;
+}
+.v30MainContent>.v32GlobeNavigator .v32CompactChildren button b{
+  min-width:0!important;
+  overflow:hidden!important;
+  text-overflow:ellipsis!important;
+  white-space:nowrap!important;
+  font-size:11px!important;
+}
+.v30MainContent>.v32GlobeNavigator .v32CompactChildren button .v32ChildArrow{
+  color:#79caff!important;
+  font-size:20px!important;
+  text-align:center!important;
+}
+.v30MainContent>.v32GlobeNavigator .v32CompactChildren button:hover{
+  border-color:#269be8!important;
+  background:#0c2b42!important;
+}
+@media(max-width:480px){
+ .v30MainContent>.v32GlobeNavigator .v32CompactChildren{
+   grid-template-columns:minmax(0,1fr)!important;
+ }
+}
