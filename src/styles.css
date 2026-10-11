@@ -690,3 +690,79 @@ html,body,#root{width:100%;max-width:100%;overflow-x:hidden}
   color:#8faabd!important;
   font-size:11px!important;
 }
+
+
+/* V30.32 — final spacing pass for globe detail panel */
+.v30MainContent>.v32GlobeNavigator .v32GlobePanel{
+  display:flex!important;
+  flex-direction:column!important;
+  gap:12px!important;
+}
+.v30MainContent>.v32GlobeNavigator .v32Components{
+  display:grid!important;
+  gap:10px!important;
+  margin:4px 0!important;
+  padding:14px!important;
+}
+.v30MainContent>.v32GlobeNavigator .v32Components>small{
+  display:block!important;
+  margin:0 0 2px!important;
+  line-height:1.5!important;
+}
+.v30MainContent>.v32GlobeNavigator .v32Components>div{
+  display:grid!important;
+  grid-template-columns:minmax(0,1fr) auto!important;
+  align-items:center!important;
+  gap:8px 12px!important;
+  padding:11px 12px!important;
+  margin:0!important;
+  line-height:1.45!important;
+}
+.v30MainContent>.v32GlobeNavigator .v32Components>div>b{
+  display:block!important;
+  line-height:1.4!important;
+}
+.v30MainContent>.v32GlobeNavigator .v32Components>div>span{
+  display:block!important;
+  white-space:nowrap!important;
+  line-height:1.4!important;
+}
+.v30MainContent>.v32GlobeNavigator .v32Components>div>button{
+  margin-top:2px!important;
+}
+.v30MainContent>.v32GlobeNavigator .v32Safety{
+  display:grid!important;
+  gap:10px!important;
+  margin:0!important;
+}
+.v30MainContent>.v32GlobeNavigator .v32Safety>small{
+  margin:0!important;
+}
+.v30MainContent>.v32GlobeNavigator .v32Safety>div:not(.v32SafetyList):not(.v32SafetySelected){
+  margin-top:0!important;
+}
+.v30MainContent>.v32GlobeNavigator .v32TourismTags{
+  gap:14px!important;
+  margin:0!important;
+  padding:4px 0!important;
+}
+.v30MainContent>.v32GlobeNavigator .v32TourismTags>div{
+  min-width:0!important;
+}
+.v30MainContent>.v32GlobeNavigator .v32TourismTags small{
+  margin:0 0 6px!important;
+}
+.v30MainContent>.v32GlobeNavigator .v32NavActions{
+  margin-top:0!important;
+}
+@media(max-width:1180px){
+  .v30MainContent>.v32GlobeNavigator{
+    grid-template-columns:minmax(0,1fr) minmax(360px,.9fr)!important;
+    gap:14px!important;
+  }
+}
+@media(max-width:850px){
+  .v30MainContent>.v32GlobeNavigator{
+    grid-template-columns:minmax(0,1fr)!important;
+  }
+}
