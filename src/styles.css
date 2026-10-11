@@ -522,3 +522,53 @@ html,body,#root{width:100%;max-width:100%;overflow-x:hidden}
     overflow:visible!important;
   }
 }
+
+/* V30 visual QA: readable health and safety actions */
+.v30MainContent>.v32GlobeNavigator .v32SafetyList{
+  display:grid!important;
+  grid-template-columns:minmax(0,1fr)!important;
+  gap:8px!important;
+  margin-bottom:10px!important;
+}
+.v30MainContent>.v32GlobeNavigator .v32SafetyList button{
+  display:flex!important;
+  flex-direction:column!important;
+  align-items:flex-start!important;
+  justify-content:center!important;
+  gap:4px!important;
+  width:100%!important;
+  min-height:54px!important;
+  padding:10px 13px!important;
+  text-align:left!important;
+  white-space:normal!important;
+  color:#edf7ff!important;
+  background:#0a1d2d!important;
+  border:1px solid #244d68!important;
+  border-radius:10px!important;
+  box-shadow:none!important;
+}
+.v30MainContent>.v32GlobeNavigator .v32SafetyList button:hover{
+  background:#10334b!important;
+  border-color:#45a9e8!important;
+}
+.v30MainContent>.v32GlobeNavigator .v32SafetyList button b{
+  display:block!important;
+  margin:0!important;
+  color:#edf7ff!important;
+  font-size:12px!important;
+  line-height:1.4!important;
+  font-weight:700!important;
+}
+.v30MainContent>.v32GlobeNavigator .v32SafetyList button small{
+  display:none!important;
+}
+.v30MainContent>.v32GlobeNavigator .v32Safety{
+  min-width:0!important;
+}
+.v30MainContent>.v32GlobeNavigator .v32Safety>small{
+  display:block!important;
+  color:#80bce8!important;
+  font-size:9px!important;
+  letter-spacing:.12em!important;
+  line-height:1.5!important;
+}
