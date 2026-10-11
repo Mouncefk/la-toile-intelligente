@@ -870,3 +870,79 @@ html,body,#root{width:100%;max-width:100%;overflow-x:hidden}
     grid-column:auto!important;
   }
 }
+
+
+/* V30.34 — horizontal explorer rail; keep the globe unobstructed */
+.v30app>main{
+  display:flex!important;
+  flex-direction:column!important;
+  align-items:stretch!important;
+}
+.v30app>main>.v30MainContent{
+  order:1!important;
+  width:100%!important;
+  min-width:0!important;
+}
+.v30app>main>.v30QuickRail{
+  order:2!important;
+  position:relative!important;
+  inset:auto!important;
+  z-index:5!important;
+  box-sizing:border-box!important;
+  width:auto!important;
+  max-width:none!important;
+  margin:12px 18px 24px!important;
+  display:grid!important;
+  grid-template-columns:repeat(4,minmax(0,1fr))!important;
+  align-items:stretch!important;
+  gap:8px!important;
+}
+.v30app>main>.v30QuickRail .v30QuickSearch{
+  grid-column:1/-1!important;
+  display:grid!important;
+  grid-template-columns:minmax(150px,.7fr) minmax(160px,1fr) minmax(220px,1.5fr)!important;
+  align-items:center!important;
+  gap:10px!important;
+  margin:0 0 2px!important;
+  padding:10px 12px!important;
+}
+.v30app>main>.v30QuickRail .v30QuickSearch b,
+.v30app>main>.v30QuickRail .v30QuickSearch small{
+  margin:0!important;
+}
+.v30app>main>.v30QuickRail .v30QuickSearch button{
+  box-sizing:border-box!important;
+  min-width:0!important;
+  margin:0!important;
+}
+.v30app>main>.v30QuickRail>a{
+  box-sizing:border-box!important;
+  min-width:0!important;
+  min-height:42px!important;
+  padding:6px 9px!important;
+}
+.v30app>main>.v30QuickRail>a span{
+  width:28px!important;
+  height:28px!important;
+}
+.v30MainContent>.v32GlobeNavigator{
+  padding-left:18px!important;
+}
+@media(max-width:1000px){
+  .v30app>main>.v30QuickRail{
+    grid-template-columns:repeat(3,minmax(0,1fr))!important;
+  }
+  .v30app>main>.v30QuickRail .v30QuickSearch{
+    grid-template-columns:minmax(0,1fr)!important;
+  }
+}
+@media(max-width:620px){
+  .v30app>main>.v30QuickRail{
+    grid-template-columns:repeat(2,minmax(0,1fr))!important;
+    margin:10px!important;
+  }
+  .v30app>main>.v30QuickRail>a{
+    font-size:10px!important;
+    gap:6px!important;
+  }
+}
