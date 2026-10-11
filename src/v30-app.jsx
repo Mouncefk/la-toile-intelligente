@@ -74,6 +74,7 @@ function TripReadinessPanel({draftId}){
 }
 function GlobeNavigator(){
  const [node,setNode]=useState(null),[children,setChildren]=useState([]),[trail,setTrail]=useState([]),[climate,setClimate]=useState(null),[overview,setOverview]=useState(null),[offers,setOffers]=useState([]),[healthSafety,setHealthSafety]=useState(null),[travelComponents,setTravelComponents]=useState(null),[selectedSafety,setSelectedSafety]=useState(null),[selectedComponent,setSelectedComponent]=useState(null),[geometry,setGeometry]=useState(null),[loading,setLoading]=useState(true),[error,setError]=useState(''),[rotation,setRotation]=useState(0),[zoom,setZoom]=useState(1);
+ const [dateMode,setDateMode]=useState('approximate'),[startDate,setStartDate]=useState(''),[endDate,setEndDate]=useState(''),[season,setSeason]=useState('Printemps'),[year,setYear]=useState('2027'),[duration,setDuration]=useState('1 à 2 semaines'),[dateNotice,setDateNotice]=useState('Choisissez votre niveau de précision pour commencer.');
  const drag=useRef(null);
  const pointerDown=e=>{drag.current=e.clientX};
  const pointerMove=e=>{if(drag.current===null)return;setRotation(v=>v+(e.clientX-drag.current)*.35);drag.current=e.clientX};
@@ -112,6 +113,27 @@ function GlobeNavigator(){
    <div className="v32GlobeSub">GLOBE VIVANT · EXPLORATION PROGRESSIVE</div>
   </div>
   <div className="v32GlobePanel">
+   <section className="v32TripPeriod" aria-label="Période du séjour">
+    <div className="v32Eyebrow">ÉTAPE 1 · PÉRIODE DU SÉJOUR</div>
+    <h3>Quand souhaitez-vous partir ?</h3>
+    <p>Indiquez vos dates exactes, une saison approximative ou une période flexible. Vous gardez le contrôle de votre choix.</p>
+    <div className="v32DateModes">
+     <button type="button" className={dateMode==='exact'?'active':''} onClick={()=>{setDateMode('exact');setDateNotice('Indiquez vos dates de départ et de retour.')}}>Dates précises</button>
+     <button type="button" className={dateMode==='approximate'?'active':''} onClick={()=>{setDateMode('approximate');setDateNotice('Choisissez une saison, une année et une durée.')}}>Période approximative</button>
+     <button type="button" className={dateMode==='flexible'?'active':''} onClick={()=>{setDateMode('flexible');setDateNotice('La période restera flexible pendant l’exploration.')}}>Je suis flexible</button>
+    </div>
+    {dateMode==='exact'?<div className="v32DateGrid">
+     <label>Départ<input type="date" value={startDate} onChange={e=>{setStartDate(e.target.value);setDateNotice('')}} /></label>
+     <label>Retour<input type="date" min={startDate||undefined} value={endDate} onChange={e=>{setEndDate(e.target.value);setDateNotice('')}} /></label>
+    </div>:<div className="v32DateGrid">
+     <label>Saison envisagée<select value={season} onChange={e=>setSeason(e.target.value)}><option>Printemps</option><option>Été</option><option>Automne</option><option>Hiver</option><option>Toute saison</option></select></label>
+     <label>Année<select value={year} onChange={e=>setYear(e.target.value)}>{['2026','2027','2028','2029','2030'].map(y=><option key={y}>{y}</option>)}</select></label>
+     <label className="v32DurationField">Durée envisagée<select value={duration} onChange={e=>setDuration(e.target.value)}><option>Un week-end</option><option>3 à 5 jours</option><option>1 à 2 semaines</option><option>2 à 4 semaines</option><option>Plus d’un mois</option></select></label>
+    </div>}
+    {dateMode==='flexible'&&<p className="v32FlexNote">La Toile comparera les possibilités disponibles sans imposer de date fixe.</p>}
+    <button className="v32AnalyzeDates" type="button" onClick={()=>{if(dateMode==='exact'){if(!startDate||!endDate){setDateNotice('Veuillez renseigner les deux dates.');return;}if(endDate<startDate){setDateNotice('La date de retour doit être postérieure ou égale à la date de départ.');return;}setDateNotice('Période sélectionnée : '+startDate+' → '+endDate+'. Explorez le globe pour poursuivre.');}else{setDateNotice('Préférence enregistrée : '+(dateMode==='flexible'?'dates flexibles':season+' '+year+' · '+duration)+'. Explorez le globe pour poursuivre.');}}}>Analyser cette période</button>
+    <small className="v32DateNotice" role="status">{dateNotice}</small>
+   </section>
    <div className="v32Eyebrow">EXPLORATION PROGRESSIVE</div>
    <div className="v32Path">{trail.map(x=><span key={x.node_key}>{x.name}</span>)}{node&&<strong>{node.name}</strong>}</div>
    {loading?<p>Chargement du globe…</p>:error?<p className="v32Error">{error}</p>:<>
