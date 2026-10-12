@@ -1598,3 +1598,79 @@ html,body,#root{width:100%;max-width:100%;overflow-x:hidden}
 .v30MainContent>.v30AssistantDock{order:0!important}
 .v30MainContent>.v32GlobeNavigator{order:1!important}
 .v30MainContent>:not(.v30AssistantDock):not(.v32GlobeNavigator){order:2!important}
+
+
+/* V30.9 — panneau de découverte inspiré de la maquette La Toile */
+.v30MainContent>.v30AssistantDock{order:0!important}
+.v30MainContent>.v32GlobeNavigator{order:1!important;display:grid!important;grid-template-columns:minmax(0,.92fr) minmax(0,1.08fr)!important;gap:12px!important;align-items:start!important;margin:0 18px!important}
+.v30MainContent>.v32GlobeNavigator>.v32GlobeVisual{position:sticky!important;top:12px!important;height:calc(100vh - 190px)!important;min-height:560px!important;max-height:900px!important;border-radius:18px!important;overflow:hidden!important}
+.v30MainContent>.v32GlobeNavigator>.v32GlobePanel{display:block!important;min-width:0!important;max-height:none!important;height:auto!important;overflow:visible!important;padding:0!important;border:1px solid rgba(71,151,217,.38)!important;border-radius:18px!important;background:linear-gradient(180deg,#07182b 0%,#020914 100%)!important}
+.v30ReferenceDiscovery{padding:10px;display:flex;flex-direction:column;gap:0;color:#f4f8ff}
+.v30ReferenceBanner{position:relative;min-height:145px;overflow:hidden;border:1px solid rgba(108,184,255,.4);border-radius:13px;background:linear-gradient(110deg,rgba(2,12,28,.92),rgba(5,25,47,.55)),radial-gradient(ellipse at 75% 25%,#b77739 0%,#235e83 23%,#173653 42%,#061629 75%);display:flex;align-items:center;padding:18px}
+.v30ReferenceBanner:after{content:"";position:absolute;inset:0;background:linear-gradient(0deg,rgba(0,0,0,.32),transparent 65%);pointer-events:none}
+.v30ReferenceBannerCopy{position:relative;z-index:1;max-width:92%}
+.v30ReferenceBannerCopy .eyebrow{color:#8ddaff;font-size:9px;letter-spacing:2px}
+.v30ReferenceBannerCopy h2{font-size:clamp(24px,2.3vw,34px);margin:5px 0;color:white}
+.v30ReferenceBannerCopy h2 span{color:#ffcf71}
+.v30ReferenceBannerCopy p{max-width:520px;margin:0 0 12px;font-size:12px;line-height:1.5;color:#e0ebf8}
+.v30ReferenceBannerCopy button{border:1px solid #e8b85e;border-radius:22px;background:linear-gradient(100deg,#624019,#d69a3d);color:white;padding:8px 13px;font-weight:700;font-size:11px;cursor:pointer}
+.v30ReferenceCategories{display:grid;grid-template-columns:repeat(8,minmax(0,1fr));gap:3px;padding:12px 2px 13px;border-bottom:1px solid rgba(97,148,193,.25)}
+.v30ReferenceCategories button{display:flex;flex-direction:column;align-items:center;gap:5px;background:transparent;color:#e4efff;border:0;padding:4px 1px;min-width:0;cursor:pointer}
+.v30ReferenceCategories button span{display:grid;place-items:center;width:36px;height:36px;border:1px solid #315b82;border-radius:50%;background:linear-gradient(145deg,#0c2743,#030b17);color:#a8d4ff;font-size:17px;box-shadow:inset 0 0 12px rgba(54,153,255,.1)}
+.v30ReferenceCategories button:first-child span{border-color:#edc36c;box-shadow:0 0 14px #ad742f;color:#ffdc8b}
+.v30ReferenceCategories button b{font-size:9px;font-weight:600;text-align:center;white-space:normal;line-height:1.2}
+.v30ReferenceSection{padding:10px 0;border-bottom:1px solid rgba(97,148,193,.23)}
+.v30ReferenceSection h3{font-size:13px;line-height:1.3;margin:0 0 8px;color:#f6f8ff}
+.v30ReferenceForms{display:grid;grid-template-columns:repeat(10,minmax(0,1fr));gap:5px}
+.v30ReferenceForms button{min-width:0;position:relative;overflow:hidden;padding:0 0 6px;border:1px solid rgba(109,164,215,.2);border-radius:8px;background:#0a1929;color:white;cursor:pointer}
+.v30FormImage,.v30SuggestionImage{display:block;position:relative;overflow:hidden;background:linear-gradient(145deg,#6ab7d8,#1e5976 48%,#e0b16b)}
+.v30FormImage{height:78px;margin-bottom:5px}
+.v30FormImage:before,.v30SuggestionImage:before{content:"";position:absolute;inset:0;background:linear-gradient(0deg,rgba(0,0,0,.55),transparent 70%)}
+.v30FormImage:after{content:"";position:absolute;width:140%;height:55%;left:-20%;bottom:-23%;border-radius:50% 50% 0 0;background:rgba(4,20,37,.5);transform:rotate(-12deg)}
+.v30FormImage.form1{background:linear-gradient(150deg,#d6ecff,#6f9fba 40%,#253e59 41%,#f3f0e5 60%,#426e89)}
+.v30FormImage.form2{background:linear-gradient(165deg,#ffd88a,#d88139 45%,#713f2d 46%,#f6ba58 70%,#4d3429)}
+.v30FormImage.form3,.v30FormImage.form4{background:linear-gradient(145deg,#5d9ac0,#d8c49a 42%,#a56e43 43%,#283d4f)}
+.v30FormImage.form5{background:linear-gradient(140deg,#e6b75b,#8b3e23 45%,#314a38)}
+.v30FormImage.form6{background:linear-gradient(140deg,#e3a04d,#843b28 40%,#1b2434)}
+.v30FormImage.form7{background:linear-gradient(150deg,#b0e2d0,#428f81 45%,#d7e5d7)}
+.v30FormImage.form8{background:linear-gradient(150deg,#91cbe8,#6b8e83 42%,#344c5e 43%,#e5b77a)}
+.v30FormImage.form9{background:linear-gradient(145deg,#c3d5df,#7898a3 40%,#d9c6a1 41%,#4a7c91)}
+.v30ReferenceForms button b{display:block;font-size:9px;line-height:1.2;white-space:normal}
+.v30ReferenceForms button.selected{border-color:#5ccaff;box-shadow:0 0 10px rgba(43,174,255,.45)}
+.v30ReferenceNeeds{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:6px}
+.v30ReferenceNeeds button{display:flex;flex-direction:column;align-items:center;gap:6px;min-height:105px;padding:10px 7px;border:1px solid #284c70;border-radius:9px;background:linear-gradient(145deg,#0a1c30,#030b16);color:#f4f8ff;cursor:pointer;text-align:center}
+.v30ReferenceNeeds button>span{font-size:21px;color:#b7ddff}
+.v30ReferenceNeeds button>b{font-size:10px;line-height:1.3}
+.v30ReferenceNeeds button>small{font-size:9px;line-height:1.35;color:#b6c9dd}
+.v30ReferenceHeading{display:flex;justify-content:space-between;align-items:center;gap:8px}
+.v30ReferenceHeading button{border:1px solid #315879;background:transparent;color:#d7eaff;border-radius:18px;padding:5px 10px;font-size:10px;cursor:pointer}
+.v30ReferenceSuggestions{display:grid;grid-template-columns:repeat(6,minmax(0,1fr));gap:5px}
+.v30ReferenceSuggestions button{min-width:0;overflow:hidden;padding:0 0 7px;text-align:left;border:1px solid rgba(109,164,215,.22);border-radius:8px;background:#071626;color:white;cursor:pointer}
+.v30SuggestionImage{height:72px;margin-bottom:6px}
+.v30SuggestionImage.suggestion0{background:linear-gradient(145deg,#e0bc78,#af7444 36%,#476c55 37%,#152c37)}
+.v30SuggestionImage.suggestion1{background:linear-gradient(145deg,#81c7e9,#e5dfc9 45%,#b98e60 46%,#286783)}
+.v30SuggestionImage.suggestion2{background:linear-gradient(160deg,#f7c86a,#d97d36 48%,#6c3b27)}
+.v30SuggestionImage.suggestion3{background:linear-gradient(145deg,#e7d3a7,#8f5734 44%,#3b5261)}
+.v30SuggestionImage.suggestion4{background:linear-gradient(145deg,#79c2e8,#426da4 45%,#243e71)}
+.v30SuggestionImage.suggestion5{background:linear-gradient(145deg,#8bc8e3,#e6dfbd 42%,#2b819e)}
+.v30ReferenceSuggestions b,.v30ReferenceSuggestions small{display:block;padding:0 6px}
+.v30ReferenceSuggestions b{font-size:10px}
+.v30ReferenceSuggestions small{font-size:8px;line-height:1.25;color:#adc4da;margin-top:3px}
+.v30ReferenceJourneyLabel{padding:9px 12px 3px;font-size:10px;color:#80d7ff;letter-spacing:.7px}
+.v30MainContent>.v30hero,.v30MainContent>.v30healthSummary{display:none!important}
+.v30MainContent>.v30workspace{order:3!important;margin:12px 18px 0!important}
+.v30MainContent>.v30opportunityPanel{order:4!important}
+.v30MainContent>.v30AssistantDock{margin:18px 18px 14px!important}
+@media(max-width:1100px){
+ .v30MainContent>.v32GlobeNavigator{grid-template-columns:minmax(0,.85fr) minmax(0,1.15fr)!important;margin:0 10px!important}
+ .v30ReferenceCategories{grid-template-columns:repeat(4,minmax(0,1fr));row-gap:10px}
+ .v30ReferenceForms{grid-template-columns:repeat(5,minmax(0,1fr))}
+ .v30ReferenceForms .v30FormImage{height:64px}
+ .v30ReferenceSuggestions{grid-template-columns:repeat(3,minmax(0,1fr))}
+}
+@media(max-width:760px){
+ .v30MainContent>.v32GlobeNavigator{grid-template-columns:minmax(0,1fr)!important}
+ .v30MainContent>.v32GlobeNavigator>.v32GlobeVisual{position:relative!important;top:auto!important;height:65vh!important;min-height:390px!important}
+ .v30ReferenceNeeds{grid-template-columns:repeat(2,minmax(0,1fr))}
+ .v30ReferenceCategories{grid-template-columns:repeat(4,minmax(0,1fr))}
+}
