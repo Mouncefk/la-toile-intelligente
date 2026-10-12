@@ -1929,3 +1929,38 @@ html,body,#root{width:100%;max-width:100%;overflow-x:hidden}
  .v30MainContent>.v32GlobeNavigator>.v32GlobePanel>.v30SuggestionsWide .v30ReferenceSuggestions b{font-size:10px!important}
  .v30MainContent>.v32GlobeNavigator>.v32GlobePanel>.v30SuggestionsWide .v30ReferenceSuggestions small{font-size:9px!important}
 }
+
+
+/* V30.19 — assistant de voyage compact, priorité au globe et au panneau territorial */
+@media(min-width:1101px){
+ .v30MainContent>.v30AssistantDock{
+  display:grid!important;
+  grid-template-columns:minmax(260px,.8fr) minmax(0,1.2fr)!important;
+  align-items:center!important;
+  gap:8px 16px!important;
+  margin:4px 12px 6px!important;
+  padding:7px 12px!important;
+  min-height:0!important;
+  border-radius:10px!important;
+ }
+ .v30AssistantIdentity{display:flex!important;align-items:center!important;gap:10px!important;min-width:0!important}
+ .v30AssistantOrb{width:30px!important;height:30px!important;min-width:30px!important;font-size:16px!important;border-radius:9px!important}
+ .v30AssistantIdentity .eyebrow{font-size:8px!important;letter-spacing:1.4px!important;margin:0!important}
+ .v30AssistantIdentity h2{font-size:14px!important;line-height:1.15!important;margin:2px 0 0!important}
+ .v30AssistantIdentity p{display:none!important}
+ .v30AssistantComposer{display:grid!important;grid-template-columns:minmax(0,1fr) auto!important;gap:6px!important;align-items:center!important}
+ .v30AssistantInput{min-height:32px!important;height:32px!important;padding:6px 10px!important;font-size:10px!important}
+ .v30AssistantComposer>button{min-height:32px!important;height:32px!important;padding:0 12px!important;font-size:10px!important;white-space:nowrap!important}
+ .v30AssistantSuggestions{grid-column:2!important;display:flex!important;justify-content:flex-start!important;gap:4px!important;margin:0!important}
+ .v30AssistantSuggestions .v30AssistantHint{display:none!important}
+ .v30AssistantSuggestions button{min-height:22px!important;padding:3px 7px!important;font-size:9px!important}
+ .v30MainContent>.v32GlobeNavigator{height:calc(100dvh - 220px)!important;min-height:430px!important;max-height:700px!important}
+}
+@media(max-height:820px) and (min-width:1101px){
+ .v30MainContent>.v30AssistantDock{padding:5px 10px!important;margin-top:2px!important;margin-bottom:4px!important}
+ .v30AssistantOrb{width:26px!important;height:26px!important;min-width:26px!important}
+ .v30AssistantIdentity h2{font-size:13px!important}
+ .v30AssistantInput,.v30AssistantComposer>button{height:29px!important;min-height:29px!important}
+ .v30AssistantSuggestions button{min-height:20px!important;font-size:8px!important}
+ .v30MainContent>.v32GlobeNavigator{height:calc(100dvh - 195px)!important;min-height:400px!important}
+}
