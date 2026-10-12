@@ -1682,3 +1682,40 @@ html,body,#root{width:100%;max-width:100%;overflow-x:hidden}
   grid-template-columns:minmax(0,1.16fr) minmax(0,.94fr)!important;
  }
 }
+
+
+/* V30.11 — le parcours guidé s’ouvre en fenêtre et ne pousse plus la page */
+.v30ReferenceJourneyLabel{display:none!important}
+.v30OpenJourney{display:flex;align-items:center;gap:12px;width:100%;margin:12px 0 4px;padding:12px 15px;border:1px solid #b98b46;border-radius:12px;background:linear-gradient(110deg,#132d45,#071421 65%,#3c2b17);color:#fff;text-align:left;cursor:pointer;box-shadow:0 0 18px rgba(48,148,224,.12)}
+.v30OpenJourney>span:first-child{display:grid;place-items:center;width:38px;height:38px;border-radius:50%;border:1px solid #e5bd6c;color:#ffd98b;font-size:20px}
+.v30OpenJourney>span:nth-child(2){display:flex;flex:1;flex-direction:column;gap:3px}
+.v30OpenJourney>span:nth-child(2)>b{font-size:13px}
+.v30OpenJourney small{font-size:10px;color:#b7cee2}
+.v30OpenJourney> b:last-child{font-size:20px;color:#ffd98b}
+.v30JourneyOverlay{position:fixed;z-index:9999;inset:0;display:flex;align-items:center;justify-content:center;padding:22px;background:rgba(0,5,14,.78);backdrop-filter:blur(8px)}
+.v30JourneyWindow{display:flex;flex-direction:column;width:min(980px,96vw);max-height:min(88vh,900px);overflow:hidden;border:1px solid rgba(91,185,255,.58);border-radius:18px;background:linear-gradient(160deg,#0a2035,#030914 72%);box-shadow:0 24px 100px rgba(0,0,0,.65),0 0 28px rgba(28,151,255,.13);color:#f2f7ff}
+.v30JourneyWindowHead{display:flex;align-items:flex-start;justify-content:space-between;gap:18px;padding:20px 22px 14px;border-bottom:1px solid rgba(105,164,210,.22)}
+.v30JourneyWindowHead .eyebrow{color:#78d7ff;font-size:9px;letter-spacing:2px}
+.v30JourneyWindowHead h2{margin:5px 0;font-size:24px}
+.v30JourneyWindowHead p{margin:0;font-size:12px;color:#b6c9dc}
+.v30JourneyWindowHead>button{flex:none;display:grid;place-items:center;width:38px;height:38px;border:1px solid #355a79;border-radius:50%;background:#071421;color:white;font-size:26px;cursor:pointer}
+.v30JourneyWindow>.v32PanelNav{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:7px;padding:14px 18px;border-bottom:1px solid rgba(105,164,210,.22)}
+.v30JourneyWindow .v32JourneyCaption{grid-column:1/-1;display:flex;align-items:center;justify-content:space-between;gap:12px;margin-bottom:3px}
+.v30JourneyWindow .v32PanelNav>button{display:flex;align-items:center;gap:8px;min-width:0;padding:10px;border:1px solid #294c6b;border-radius:9px;background:#08192a;color:#d8e9fa;text-align:left;cursor:pointer}
+.v30JourneyWindow .v32PanelNav>button.active{border-color:#32b8ff;background:linear-gradient(100deg,#0d4266,#0a243b);box-shadow:inset 0 0 0 1px rgba(49,184,255,.12)}
+.v30JourneyWindow .v32StepLabel{white-space:normal;overflow:visible;text-overflow:clip;font-size:11px;line-height:1.3}
+.v30JourneyWindow>.v32PanelNav~section{overflow-y:auto;min-height:0;padding:18px 22px 22px}
+.v30JourneyWindow .v32PanelSection,.v30JourneyWindow .v32TripPeriod{overflow-y:auto;min-height:0;padding:18px 22px 22px}
+.v30JourneyWindow .v32TripPeriod h3,.v30JourneyWindow .v32PanelSection h3{font-size:20px}
+.v30JourneyWindow .v32DateGrid{grid-template-columns:repeat(2,minmax(0,1fr))}
+.v30JourneyWindow .v32DateGrid .v32DurationField{grid-column:1/-1}
+@media(max-width:760px){
+ .v30JourneyOverlay{padding:8px}
+ .v30JourneyWindow{width:100%;max-height:94vh;border-radius:13px}
+ .v30JourneyWindowHead{padding:14px}
+ .v30JourneyWindow>.v32PanelNav{grid-template-columns:repeat(2,minmax(0,1fr));padding:10px}
+ .v30JourneyWindow .v32StepLabel{font-size:10px}
+ .v30JourneyWindow .v32PanelSection,.v30JourneyWindow .v32TripPeriod{padding:14px}
+ .v30JourneyWindow .v32DateGrid{grid-template-columns:minmax(0,1fr)}
+ .v30JourneyWindow .v32DateGrid .v32DurationField{grid-column:auto}
+}
