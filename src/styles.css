@@ -1820,3 +1820,69 @@ html,body,#root{width:100%;max-width:100%;overflow-x:hidden}
  }
  .v30MainContent>.v32GlobeNavigator>.v32GlobePanel>.v30SuggestionsWide .v30ReferenceSuggestions{grid-template-columns:repeat(6,minmax(0,1fr))!important}
 }
+
+
+/* V30.17 — accueil compact à vue unique, contenu conservé */
+@media(min-width:1101px){
+ .v30MainContent{gap:8px!important;min-height:0!important}
+ .v30MainContent>.v30AssistantDock{
+  grid-template-columns:minmax(0,1fr) minmax(0,.9fr)!important;
+  gap:8px 18px!important;margin:8px 12px 0!important;padding:10px 16px!important;
+  border-radius:14px!important;
+ }
+ .v30AssistantOrb{width:42px!important;height:42px!important;font-size:22px!important}
+ .v30AssistantIdentity h2{font-size:clamp(16px,1.4vw,21px)!important;margin:2px 0 4px!important}
+ .v30AssistantIdentity p{font-size:11px!important;line-height:1.35!important;margin:0!important}
+ .v30AssistantComposer{gap:6px!important}
+ .v30AssistantInput{min-height:38px!important}
+ .v30AssistantComposer>button{min-height:38px!important}
+ .v30AssistantSuggestions{gap:5px!important}
+ .v30AssistantSuggestions button{padding:5px 8px!important;font-size:10px!important}
+ .v30MainContent>.v32GlobeNavigator{
+  position:relative!important;display:grid!important;
+  grid-template-columns:minmax(0,1.04fr) minmax(0,.96fr)!important;
+  grid-template-rows:minmax(0,1fr)!important;
+  height:calc(100dvh - 265px)!important;min-height:430px!important;max-height:680px!important;
+  margin:0 12px!important;padding-bottom:142px!important;gap:10px!important;
+  align-items:stretch!important;overflow:visible!important;
+ }
+ .v30MainContent>.v32GlobeNavigator>.v32GlobeVisual,
+ .v30MainContent>.v32GlobeNavigator>.v32GlobePanel{height:100%!important;min-height:0!important;max-height:none!important}
+ .v30MainContent>.v32GlobeNavigator>.v32GlobeVisual{grid-column:1!important;grid-row:1!important;overflow:hidden!important}
+ .v30MainContent>.v32GlobeNavigator>.v32GlobePanel{grid-column:2!important;grid-row:1!important;overflow-y:auto!important;overflow-x:hidden!important;scrollbar-width:thin!important}
+ .v30MainContent>.v32GlobeNavigator>.v32GlobePanel>.v30SuggestionsWide{
+  position:absolute!important;left:0!important;right:0!important;bottom:0!important;
+  width:100%!important;max-width:none!important;margin:0!important;padding:8px 10px!important;
+  box-sizing:border-box!important;border:1px solid rgba(67,137,193,.35)!important;border-radius:12px!important;
+  background:linear-gradient(110deg,rgba(6,22,39,.98),rgba(2,10,20,.98))!important;
+ }
+ .v30MainContent>.v32GlobeNavigator>.v32GlobePanel>.v30SuggestionsWide .v30ReferenceSection{padding:0!important}
+ .v30MainContent>.v32GlobeNavigator>.v32GlobePanel>.v30SuggestionsWide .v30ReferenceHeading{display:flex!important;align-items:center!important;margin:0 0 5px!important}
+ .v30MainContent>.v32GlobeNavigator>.v32GlobePanel>.v30SuggestionsWide .v30ReferenceHeading h3{font-size:12px!important;margin:0!important}
+ .v30MainContent>.v32GlobeNavigator>.v32GlobePanel>.v30SuggestionsWide .v30ReferenceHeading button{font-size:10px!important;padding:4px 8px!important}
+ .v30MainContent>.v32GlobeNavigator>.v32GlobePanel>.v30SuggestionsWide .v30ReferenceSuggestions{grid-template-columns:repeat(6,minmax(0,1fr))!important;gap:7px!important}
+ .v30MainContent>.v32GlobeNavigator>.v32GlobePanel>.v30SuggestionsWide .v30SuggestionImage{height:clamp(48px,6.2vh,68px)!important}
+ .v30MainContent>.v32GlobeNavigator>.v32GlobePanel>.v30SuggestionsWide .v30ReferenceSuggestions b{font-size:10px!important}
+ .v30MainContent>.v32GlobeNavigator>.v32GlobePanel>.v30SuggestionsWide .v30ReferenceSuggestions small{font-size:9px!important}
+ .v30ReferenceCategories{gap:4px!important;margin:6px 0!important}
+ .v30ReferenceCategories button{min-height:46px!important;padding:4px 2px!important;gap:3px!important}
+ .v30ReferenceCategories button>span{font-size:16px!important}
+ .v30ReferenceCategories button>b{font-size:9px!important}
+ .v30ReferenceSection{padding:5px 0!important}
+ .v30ReferenceSection h3{font-size:12px!important;margin:3px 0 5px!important}
+ .v30ReferenceForms{grid-template-columns:repeat(5,minmax(0,1fr))!important;gap:5px!important}
+ .v30ReferenceForms .v30FormImage{height:clamp(42px,5.6vh,60px)!important}
+ .v30ReferenceForms button>b{font-size:9px!important}
+ .v30ReferenceNeeds{grid-template-columns:repeat(3,minmax(0,1fr))!important;gap:4px!important}
+ .v30ReferenceNeeds button{min-height:54px!important;padding:4px!important;gap:2px!important}
+ .v30ReferenceNeeds button>span{font-size:14px!important}
+ .v30ReferenceNeeds button>b{font-size:9px!important}
+ .v30ReferenceNeeds button>small{font-size:8px!important;line-height:1.1!important}
+}
+@media(max-height:820px) and (min-width:1101px){
+ .v30MainContent>.v30AssistantDock{padding:8px 14px!important}
+ .v30AssistantIdentity p{display:none!important}
+ .v30MainContent>.v32GlobeNavigator{height:calc(100dvh - 230px)!important;min-height:390px!important;padding-bottom:126px!important}
+ .v30MainContent>.v32GlobeNavigator>.v32GlobePanel>.v30SuggestionsWide .v30SuggestionImage{height:48px!important}
+ .v30ReferenceNeeds button{min-height:46px!important}
+}
