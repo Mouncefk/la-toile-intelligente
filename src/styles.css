@@ -1592,3 +1592,9 @@ html,body,#root{width:100%;max-width:100%;overflow-x:hidden}
    min-height:340px!important;
  }
 }
+
+
+/* V30.8 — ordre explicite des sections : assistant, globe, puis contenus */
+.v30MainContent>.v30AssistantDock{order:0!important}
+.v30MainContent>.v32GlobeNavigator{order:1!important}
+.v30MainContent>:not(.v30AssistantDock):not(.v32GlobeNavigator){order:2!important}
