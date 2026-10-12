@@ -2184,3 +2184,65 @@ html,body,#root{width:100%;max-width:100%;overflow-x:hidden}
   .v30MainContent>.v32GlobeNavigator{height:calc(100dvh - 135px)!important;min-height:440px!important}
   .v30MainContent>.v30AssistantDock{top:8px!important;padding:7px 9px!important}
 }
+
+
+/* V30 UI refinement 2 — assistant hors du globe, respiration du panneau */
+@media (min-width:1101px){
+  .v30MainContent{
+    display:flex!important;flex-direction:column!important;gap:10px!important;
+    padding-top:0!important;overflow:visible!important;
+  }
+  .v30MainContent>.v30AssistantDock{
+    position:relative!important;inset:auto!important;z-index:2!important;
+    width:min(48%,610px)!important;max-width:610px!important;
+    flex:0 0 auto!important;min-height:0!important;height:auto!important;
+    margin:0!important;padding:8px 10px!important;
+    display:grid!important;grid-template-columns:minmax(0,1fr)!important;
+    gap:5px!important;border-radius:11px!important;
+    background:linear-gradient(105deg,rgba(4,19,33,.98),rgba(5,26,44,.96))!important;
+    box-shadow:0 4px 14px rgba(0,0,0,.2)!important;
+    backdrop-filter:blur(8px)!important;
+  }
+  .v30MainContent>.v30AssistantDock .v30AssistantIdentity{gap:8px!important;align-items:center!important}
+  .v30MainContent>.v30AssistantDock .v30AssistantOrb{width:28px!important;height:28px!important;min-width:28px!important;font-size:14px!important}
+  .v30MainContent>.v30AssistantDock .v30AssistantIdentity .eyebrow{font-size:8px!important;letter-spacing:.1em!important}
+  .v30MainContent>.v30AssistantDock .v30AssistantIdentity h2{font-size:13px!important;line-height:1.15!important;margin:2px 0!important}
+  .v30MainContent>.v30AssistantDock .v30AssistantIdentity p{display:none!important}
+  .v30MainContent>.v30AssistantDock .v30AssistantComposer{display:grid!important;grid-template-columns:minmax(0,1fr) auto!important;gap:5px!important}
+  .v30MainContent>.v30AssistantDock .v30AssistantInput{min-height:28px!important;padding:3px 7px!important}
+  .v30MainContent>.v30AssistantDock .v30AssistantInput input{font-size:9px!important}
+  .v30MainContent>.v30AssistantDock .v30AssistantComposer>button{min-height:28px!important;padding:4px 8px!important;font-size:8px!important;white-space:nowrap!important}
+  .v30MainContent>.v30AssistantDock .v30AssistantSuggestions{display:flex!important;align-items:center!important;gap:4px!important;flex-wrap:wrap!important}
+  .v30MainContent>.v30AssistantDock .v30AssistantSuggestions>span{font-size:8px!important;margin-right:2px!important}
+  .v30MainContent>.v30AssistantDock .v30AssistantSuggestions button{padding:3px 6px!important;font-size:8px!important;min-height:20px!important}
+  .v30MainContent>.v32GlobeNavigator{
+    flex:1 1 auto!important;min-height:0!important;
+    height:calc(100dvh - 225px)!important;max-height:780px!important;
+    margin:0!important;
+    grid-template-columns:minmax(0,1.08fr) minmax(0,.92fr)!important;
+    column-gap:11px!important;
+  }
+  .v30MainContent>.v32GlobeNavigator>.v32GlobePanel{
+    gap:9px!important;padding:10px!important;
+  }
+  .v30MainContent>.v32GlobeNavigator>.v32GlobePanel>.v30ReferenceDiscovery{
+    gap:8px!important;padding:4px!important;
+  }
+  .v30ReferenceBanner{min-height:72px!important;max-height:86px!important;margin-bottom:2px!important}
+  .v30ReferenceBannerImage{min-height:72px!important}
+  .v30ReferenceCategories{margin:5px 0 7px!important;gap:5px!important}
+  .v30ReferenceCategories button{min-height:43px!important;padding:5px 2px!important}
+  .v30ReferenceForms{gap:6px!important;margin:5px 0 7px!important}
+  .v30ReferenceForms .v30FormImage{height:clamp(29px,3.5vh,39px)!important;min-height:29px!important}
+  .v30ReferenceNeeds{gap:6px!important;margin-top:5px!important}
+  .v30ReferenceNeeds button{min-height:44px!important;padding:6px!important}
+  .v30MainContent>.v32GlobeNavigator>.v32GlobePanel>.v30SuggestionsWide{padding:8px!important}
+  .v30MainContent>.v32GlobeNavigator>.v32GlobePanel>.v30SuggestionsWide .v30ReferenceSuggestions{gap:7px!important}
+  .v30MainContent>.v32GlobeNavigator>.v32GlobePanel>.v30SuggestionsWide .v30SuggestionImage{height:clamp(32px,4vh,43px)!important}
+}
+@media(max-height:820px) and (min-width:1101px){
+  .v30MainContent>.v32GlobeNavigator{height:calc(100dvh - 205px)!important}
+  .v30MainContent>.v32GlobeNavigator>.v32GlobePanel{gap:7px!important;padding:8px!important}
+  .v30ReferenceBanner{min-height:64px!important;max-height:74px!important}
+  .v30ReferenceBannerImage{min-height:64px!important}
+}
