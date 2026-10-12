@@ -1740,3 +1740,22 @@ html,body,#root{width:100%;max-width:100%;overflow-x:hidden}
  .v30SuggestionImage{height:58px!important}
  .v30ReferenceSection{padding:7px 0!important}
 }
+
+
+/* V30.14 — suggestions en bandeau horizontal sous le globe et le panneau */
+.v30MainContent>.v30SuggestionsWide{order:2!important;display:block!important;margin:10px 18px 20px!important;padding:0 12px!important;border:1px solid rgba(67,137,193,.3)!important;border-radius:14px!important;background:linear-gradient(110deg,rgba(6,22,39,.96),rgba(2,10,20,.98))!important}
+.v30SuggestionsWide .v30ReferenceSection{padding:10px 0!important;border:0!important}
+.v30SuggestionsWide .v30ReferenceHeading h3{font-size:15px!important}
+.v30SuggestionsWide .v30ReferenceSuggestions{grid-template-columns:repeat(6,minmax(0,1fr))!important;gap:9px!important}
+.v30SuggestionsWide .v30SuggestionImage{height:clamp(72px,8vw,112px)!important}
+.v30SuggestionsWide .v30ReferenceSuggestions button{border-radius:9px!important}
+.v30SuggestionsWide .v30ReferenceSuggestions b{font-size:12px!important;padding:0 8px!important}
+.v30SuggestionsWide .v30ReferenceSuggestions small{font-size:10px!important;padding:0 8px!important}
+@media(max-width:900px){
+ .v30SuggestionsWide .v30ReferenceSuggestions{grid-template-columns:repeat(3,minmax(0,1fr))!important}
+}
+@media(max-width:560px){
+ .v30MainContent>.v30SuggestionsWide{margin:8px 10px 14px!important;padding:0 8px!important}
+ .v30SuggestionsWide .v30ReferenceSuggestions{grid-template-columns:repeat(2,minmax(0,1fr))!important}
+ .v30SuggestionsWide .v30SuggestionImage{height:84px!important}
+}
