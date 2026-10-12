@@ -1759,3 +1759,39 @@ html,body,#root{width:100%;max-width:100%;overflow-x:hidden}
  .v30SuggestionsWide .v30ReferenceSuggestions{grid-template-columns:repeat(2,minmax(0,1fr))!important}
  .v30SuggestionsWide .v30SuggestionImage{height:84px!important}
 }
+
+
+/* V30.15 — suggestions sur toute la grille du globe + cartes de besoins compactes */
+.v30MainContent>.v32GlobeNavigator>.v30SuggestionsWide{
+ grid-column:1/-1!important;
+ width:auto!important;
+ min-width:0!important;
+ margin:8px 0 14px!important;
+ padding:0 12px!important;
+ align-self:start!important;
+}
+.v30MainContent>.v32GlobeNavigator>.v30SuggestionsWide .v30ReferenceSuggestions{
+ grid-template-columns:repeat(6,minmax(0,1fr))!important;
+ gap:9px!important;
+}
+.v30MainContent>.v32GlobeNavigator>.v30SuggestionsWide .v30SuggestionImage{
+ height:clamp(72px,7vw,104px)!important;
+}
+.v30ReferenceNeeds{grid-template-columns:repeat(3,minmax(0,1fr))!important;gap:5px!important}
+.v30ReferenceNeeds button{
+ min-height:68px!important;
+ padding:6px 5px!important;
+ gap:3px!important;
+ border-radius:7px!important;
+}
+.v30ReferenceNeeds button>span{font-size:16px!important;line-height:1.05!important}
+.v30ReferenceNeeds button>b{font-size:9px!important;line-height:1.15!important}
+.v30ReferenceNeeds button>small{font-size:8px!important;line-height:1.15!important;display:-webkit-box!important;-webkit-line-clamp:2!important;-webkit-box-orient:vertical!important;overflow:hidden!important}
+@media(max-width:900px){
+ .v30MainContent>.v32GlobeNavigator>.v30SuggestionsWide .v30ReferenceSuggestions{grid-template-columns:repeat(3,minmax(0,1fr))!important}
+}
+@media(max-width:760px){
+ .v30MainContent>.v32GlobeNavigator>.v30SuggestionsWide{grid-column:1!important}
+ .v30MainContent>.v32GlobeNavigator>.v30SuggestionsWide .v30ReferenceSuggestions{grid-template-columns:repeat(2,minmax(0,1fr))!important}
+ .v30ReferenceNeeds{grid-template-columns:repeat(2,minmax(0,1fr))!important}
+}
