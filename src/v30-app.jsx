@@ -116,6 +116,32 @@ function GlobeNavigator(){
    <div className="v32GlobeSub">GLOBE VIVANT · EXPLORATION PROGRESSIVE</div>
   </div>
   <div className="v32GlobePanel">
+   <section className="v30ReferenceDiscovery" aria-label="Découvrir le Maroc">
+    <div className="v30ReferenceBanner">
+     <div className="v30ReferenceBannerImage" aria-hidden="true"></div>
+     <div className="v30ReferenceBannerCopy"><span className="eyebrow">DESTINATION À EXPLORER</span><h2>{node?.name||'Maroc'} <span>✦</span></h2><p>Des villes impériales aux plages de l’Atlantique, du désert aux montagnes, un pays aux mille expériences.</p><button type="button" onClick={()=>{setActivePanel('territory');if(!node)load('world')}}>Explorer le territoire <b>›</b></button></div>
+    </div>
+    <div className="v30ReferenceCategories" aria-label="Catégories de voyage">
+     {[['♜','Découvrir','territory'],['▰','Séjourner','possibilities'],['♨','Manger','envies'],['▧','Expérimenter','envies'],['↗','Se déplacer','possibilities'],['★','Se divertir','envies'],['✚','Se soigner','safety'],['⛨','Se protéger','safety']].map(([ico,label,key])=><button type="button" key={label} onClick={()=>setActivePanel(key)}><span>{ico}</span><b>{label}</b></button>)}
+    </div>
+    <div className="v30ReferenceSection"><h3>Formes de tourisme à explorer</h3><div className="v30ReferenceForms">
+     {['Balnéaire','Montagne','Désert','Culture','Patrimoine','Gastronomie','Artisanat','Nature','Aventure','Senior'].map((form,i)=><button type="button" key={form} className={selectedTourismForms.includes(form)?'selected':''} onClick={()=>{toggleTourismForm(form);setActivePanel('envies')}}><span className={'v30FormImage form'+i}></span><b>{form}</b></button>)}
+    </div></div>
+    <div className="v30ReferenceSection"><h3>Que souhaitez-vous faire ?</h3><div className="v30ReferenceNeeds">
+     {[
+      ['♧','Je veux découvrir','Les incontournables et les trésors cachés…','territory'],
+      ['▰','Je cherche un séjour','Hôtels, riads, maisons d’hôtes…','possibilities'],
+      ['▧','Je veux vivre une expérience','Excursions, activités, circuits…','envies'],
+      ['✧','L’artisanat m’intéresse','Ateliers, artisans, produits locaux…','envies'],
+      ['↗','Organiser mon déplacement','Transferts, location, transport…','possibilities'],
+      ['✚','Santé & Sécurité','Médecins, pharmacies, services d’urgence…','safety']
+     ].map(([ico,title,desc,key])=><button type="button" key={title} onClick={()=>setActivePanel(key)}><span>{ico}</span><b>{title}</b><small>{desc}</small></button>)}
+    </div></div>
+    <div className="v30ReferenceSection"><div className="v30ReferenceHeading"><h3>Suggestions pour votre voyage</h3><button type="button" onClick={()=>setActivePanel('territory')}>Voir plus ›</button></div><div className="v30ReferenceSuggestions">
+     {[['Marrakech','Culture & patrimoine'],['Essaouira','Plages & art de vivre'],['Merzouga','Désert & aventure'],['Fès','Histoire & artisanat'],['Chefchaouen','Nature & sérénité'],['Agadir','Balnéaire & détente']].map(([name,desc],i)=><button type="button" key={name} onClick={()=>{setDateNotice('Territoire sélectionné comme piste : '+name+'. Vous gardez le choix final.');setActivePanel('territory')}}><span className={'v30SuggestionImage suggestion'+i}></span><b>{name}</b><small>{desc}</small></button>)}
+    </div></div>
+   </section>
+   <div className="v30ReferenceJourneyLabel">Votre parcours guidé reste disponible</div>
    <div className="v32PanelNav" role="tablist" aria-label="Espaces de La Toile">
     <div className="v32JourneyCaption"><b>Votre parcours</b><span>8 étapes · vous gardez la main</span></div>
     {[['period','calendar-days','Période & durée',1],['envies','heart','Envies touristiques',2],['climate','cloud-sun','Climat & saisons',3],['territory','map-pinned','Explorer les territoires',4],['compare','scale','Comparer les destinations',5],['possibilities','compass','Possibilités & professionnels',6],['safety','shield-check','Santé & sécurité',7],['trip','briefcase-business','Mon voyage',8]].map(([key,ico,label,step])=><button type="button" role="tab" aria-selected={activePanel===key} aria-label={'Étape '+step+' : '+label} className={activePanel===key?'active':''} key={key} onClick={()=>setActivePanel(key)}><span className="v32StepNumber" aria-hidden="true">{step}</span><span className="v32StepIcon" aria-hidden="true">{key==='period'?'▦':key==='envies'?'♡':key==='climate'?'☼':key==='territory'?'⌖':key==='compare'?'⇄':key==='possibilities'?'✧':key==='safety'?'✚':'▣'}</span><span className="v32StepLabel">{label}</span></button>)}
