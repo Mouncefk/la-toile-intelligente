@@ -2522,3 +2522,19 @@ html,body,#root{width:100%;max-width:100%;overflow-x:hidden}
  .v30JourneyWindow .v32DateModes,.v30JourneyWindow .v32DateGrid{grid-template-columns:minmax(0,1fr)!important}
  .v30JourneyWindow .v32DateGrid .v32DurationField{grid-column:auto!important}
 }
+
+
+/* V30.16 — utiliser l'espace libre en bas pour agrandir la scène principale */
+@media (min-width:1101px) and (max-height:820px){
+  .v30MainContent>.v32GlobeNavigator{
+    height:calc(100dvh - 190px)!important;
+    min-height:455px!important;
+    max-height:calc(100dvh - 190px)!important;
+  }
+}
+@media (min-width:1101px) and (min-height:821px){
+  .v30MainContent>.v32GlobeNavigator{
+    height:calc(100dvh - 245px)!important;
+    min-height:500px!important;
+  }
+}
