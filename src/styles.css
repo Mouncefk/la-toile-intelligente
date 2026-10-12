@@ -1533,3 +1533,62 @@ html,body,#root{width:100%;max-width:100%;overflow-x:hidden}
  .v30MainContent>.v32GlobeNavigator .v32StepLabel{font-size:11px!important}
  .v30app>main>.v30QuickRail{grid-template-columns:repeat(2,minmax(0,1fr))!important}
 }
+
+
+/* V30.7 — rétablir le globe comme zone principale, immédiatement après l’assistant */
+.v30MainContent>.v32GlobeNavigator{
+  display:grid!important;
+  position:relative!important;
+  inset:auto!important;
+  order:1!important;
+  width:auto!important;
+  min-width:0!important;
+  max-width:none!important;
+  margin:0 18px!important;
+  padding:0!important;
+  grid-template-columns:minmax(0,1.05fr) minmax(390px,.95fr)!important;
+  align-items:stretch!important;
+  gap:18px!important;
+  visibility:visible!important;
+  opacity:1!important;
+  z-index:1!important;
+}
+.v30MainContent>.v32GlobeNavigator>.v32GlobeVisual{
+  display:grid!important;
+  position:relative!important;
+  visibility:visible!important;
+  opacity:1!important;
+  min-width:0!important;
+  min-height:clamp(480px,64vh,680px)!important;
+  height:auto!important;
+  overflow:hidden!important;
+}
+.v30MainContent>.v32GlobeNavigator .v32Sphere3D{
+  display:block!important;
+  visibility:visible!important;
+  opacity:1!important;
+}
+.v30MainContent>.v32GlobeNavigator>.v32GlobePanel{
+  display:block!important;
+  position:relative!important;
+  min-width:0!important;
+  max-height:none!important;
+  height:auto!important;
+  overflow:visible!important;
+}
+.v30MainContent>.v30hero{order:2!important}
+.v30MainContent>.v30healthSummary{order:3!important}
+@media(max-width:900px){
+ .v30MainContent>.v32GlobeNavigator{
+   grid-template-columns:minmax(0,1fr)!important;
+   margin:0 12px!important;
+ }
+ .v30MainContent>.v32GlobeNavigator>.v32GlobeVisual{
+   min-height:clamp(360px,58vh,520px)!important;
+ }
+}
+@media(max-width:560px){
+ .v30MainContent>.v32GlobeNavigator>.v32GlobeVisual{
+   min-height:340px!important;
+ }
+}
