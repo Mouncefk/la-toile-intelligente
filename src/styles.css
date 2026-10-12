@@ -2538,3 +2538,33 @@ html,body,#root{width:100%;max-width:100%;overflow-x:hidden}
     min-height:500px!important;
   }
 }
+
+
+/* V30.17 — alignement horizontal assistant / scène et panneau latéral */
+@media (min-width:1101px){
+  .v30MainContent{
+    display:grid!important;
+    grid-template-columns:minmax(0,1.08fr) minmax(0,.92fr)!important;
+    grid-template-rows:auto minmax(0,1fr)!important;
+    column-gap:11px!important;row-gap:10px!important;
+    align-items:stretch!important;
+  }
+  .v30MainContent>.v30AssistantDock{
+    grid-column:1!important;grid-row:1!important;
+    width:100%!important;max-width:100%!important;min-width:0!important;
+    margin:0!important;
+  }
+  .v30MainContent>.v32GlobeNavigator{
+    display:contents!important;
+  }
+  .v30MainContent>.v32GlobeNavigator>.v32GlobeStage,
+  .v30MainContent>.v32GlobeNavigator>.v32Globe{
+    grid-column:1!important;grid-row:2!important;
+    width:100%!important;min-width:0!important;height:100%!important;
+  }
+  .v30MainContent>.v32GlobeNavigator>.v32GlobePanel{
+    grid-column:2!important;grid-row:1 / span 2!important;
+    width:100%!important;min-width:0!important;height:100%!important;
+    max-height:none!important;align-self:stretch!important;
+  }
+}
