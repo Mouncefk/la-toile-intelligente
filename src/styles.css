@@ -1719,3 +1719,24 @@ html,body,#root{width:100%;max-width:100%;overflow-x:hidden}
  .v30JourneyWindow .v32DateGrid{grid-template-columns:minmax(0,1fr)}
  .v30JourneyWindow .v32DateGrid .v32DurationField{grid-column:auto}
 }
+
+
+/* V30.13 — navigation sans troncature et fenêtre de parcours plus compacte */
+.v30JourneyWindow{max-height:calc(100dvh - 36px)!important}
+.v30JourneyWindow>.v32PanelNav{grid-template-columns:repeat(4,minmax(0,1fr))!important;gap:6px!important;padding:10px 16px!important}
+.v30JourneyWindow .v32PanelNav>button{min-height:46px!important;padding:8px 10px!important;white-space:normal!important;overflow:visible!important}
+.v30JourneyWindow .v32PanelNav>button .v32StepLabel{display:block!important;min-width:0!important;max-width:none!important;white-space:normal!important;overflow:visible!important;text-overflow:clip!important;overflow-wrap:anywhere!important;font-size:11px!important;line-height:1.25!important}
+.v30JourneyWindow .v32PanelNav>button .v32StepNumber{flex:none!important}
+.v30JourneyWindow>.v32PanelNav~section,.v30JourneyWindow .v32PanelSection,.v30JourneyWindow .v32TripPeriod{flex:1 1 auto!important;overflow-y:auto!important;overscroll-behavior:contain!important}
+.v30JourneyWindow .v32PanelNav .v32JourneyCaption{grid-column:1/-1!important}
+@media(max-width:760px){
+ .v30JourneyWindow>.v32PanelNav{grid-template-columns:repeat(2,minmax(0,1fr))!important}
+ .v30JourneyWindow .v32PanelNav>button{min-height:42px!important}
+}
+@media(min-width:1101px){
+ .v30ReferenceDiscovery{gap:0!important}
+ .v30ReferenceForms .v30FormImage{height:62px!important}
+ .v30ReferenceNeeds button{min-height:86px!important;padding:7px 5px!important}
+ .v30SuggestionImage{height:58px!important}
+ .v30ReferenceSection{padding:7px 0!important}
+}
