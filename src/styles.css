@@ -1674,3 +1674,11 @@ html,body,#root{width:100%;max-width:100%;overflow-x:hidden}
  .v30ReferenceNeeds{grid-template-columns:repeat(2,minmax(0,1fr))}
  .v30ReferenceCategories{grid-template-columns:repeat(4,minmax(0,1fr))}
 }
+
+
+/* V30.10 — rééquilibrer la largeur : globe prioritaire, panneau latéral resserré */
+@media(min-width:1101px){
+ .v30MainContent>.v32GlobeNavigator{
+  grid-template-columns:minmax(0,1.16fr) minmax(0,.94fr)!important;
+ }
+}
