@@ -1804,3 +1804,19 @@ html,body,#root{width:100%;max-width:100%;overflow-x:hidden}
  .v30MainContent>.v32GlobeNavigator>.v30SuggestionsWide{grid-column:1/-1!important;grid-row:2!important;width:auto!important;min-width:0!important;margin:8px 0 14px!important}
  .v30MainContent>.v32GlobeNavigator>.v30SuggestionsWide .v30ReferenceSuggestions{grid-template-columns:repeat(6,minmax(0,1fr))!important}
 }
+
+
+/* V30.16.1 — étendre le bloc suggestions depuis la colonne droite sans casser la grille */
+@media(min-width:761px){
+ .v30MainContent>.v32GlobeNavigator>.v32GlobePanel{display:block!important}
+ .v30MainContent>.v32GlobeNavigator>.v32GlobePanel>.v30SuggestionsWide{
+  position:relative!important;
+  z-index:2!important;
+  width:calc(100% + 100% + 12px)!important;
+  max-width:none!important;
+  margin-left:calc(-100% - 12px)!important;
+  margin-top:10px!important;
+  box-sizing:border-box!important;
+ }
+ .v30MainContent>.v32GlobeNavigator>.v32GlobePanel>.v30SuggestionsWide .v30ReferenceSuggestions{grid-template-columns:repeat(6,minmax(0,1fr))!important}
+}
