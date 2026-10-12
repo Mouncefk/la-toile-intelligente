@@ -2615,3 +2615,80 @@ html,body,#root{width:100%;max-width:100%;overflow-x:hidden}
   .v30MainContent .v30AssistantComposer{min-width:0!important}
   .v30MainContent .v30AssistantSuggestions{grid-column:2!important;margin-top:-4px!important}
 }
+
+
+/* V30.19 — remise en place ferme des trois zones principales */
+@media (min-width:1101px){
+  .v30app>main>.v30MainContent{
+    display:grid!important;
+    grid-template-columns:minmax(0,1.08fr) minmax(0,.92fr)!important;
+    grid-template-rows:78px minmax(440px,1fr)!important;
+    gap:10px 11px!important;
+    height:calc(100dvh - 165px)!important;
+    min-height:500px!important;
+    max-height:calc(100dvh - 165px)!important;
+    overflow:visible!important;
+    position:relative!important;
+  }
+  .v30app>main>.v30MainContent>.v30AssistantDock{
+    display:grid!important;
+    grid-column:1!important;grid-row:1!important;
+    grid-template-columns:minmax(190px,.8fr) minmax(0,1.2fr)!important;
+    grid-template-rows:auto auto!important;
+    align-items:center!important;align-content:center!important;
+    gap:5px 12px!important;
+    position:relative!important;top:auto!important;right:auto!important;bottom:auto!important;left:auto!important;
+    width:100%!important;height:100%!important;min-height:0!important;max-height:none!important;
+    margin:0!important;padding:8px 12px!important;
+    transform:none!important;z-index:3!important;
+    opacity:1!important;visibility:visible!important;
+    background:linear-gradient(115deg,#071b2b,#09263a)!important;
+    border:1px solid #1b6889!important;border-radius:13px!important;
+    overflow:hidden!important;
+  }
+  .v30app>main>.v30MainContent>.v30AssistantDock .v30AssistantIdentity{
+    grid-column:1!important;grid-row:1 / span 2!important;
+    display:flex!important;align-items:center!important;min-width:0!important;
+  }
+  .v30app>main>.v30MainContent>.v30AssistantDock .v30AssistantIdentity p{display:none!important}
+  .v30app>main>.v30MainContent>.v30AssistantDock .v30AssistantComposer{
+    grid-column:2!important;grid-row:1!important;
+    display:grid!important;grid-template-columns:minmax(0,1fr) auto!important;
+    min-width:0!important;margin:0!important;
+  }
+  .v30app>main>.v30MainContent>.v30AssistantDock .v30AssistantSuggestions{
+    grid-column:2!important;grid-row:2!important;
+    display:flex!important;align-items:center!important;justify-content:flex-start!important;
+    min-width:0!important;margin:0!important;gap:5px!important;flex-wrap:nowrap!important;
+  }
+  .v30app>main>.v30MainContent>.v32GlobeNavigator{display:contents!important}
+  .v30app>main>.v30MainContent .v32GlobeVisual{
+    display:grid!important;grid-column:1!important;grid-row:2!important;
+    position:relative!important;inset:auto!important;
+    width:100%!important;height:100%!important;min-height:0!important;max-height:none!important;
+    margin:0!important;padding:0!important;overflow:hidden!important;
+    background:radial-gradient(ellipse at 48% 45%,rgba(13,94,177,.35),transparent 62%),#031020!important;
+    opacity:1!important;visibility:visible!important;filter:none!important;
+    z-index:1!important;border:1px solid #163b55!important;border-radius:16px!important;
+  }
+  .v30app>main>.v30MainContent .v32GlobeVisual:before{width:min(94%,760px)!important;opacity:1!important}
+  .v30app>main>.v30MainContent .v32Sphere3D{
+    display:block!important;position:relative!important;z-index:2!important;
+    visibility:visible!important;opacity:1!important;filter:none!important;
+    width:min( min(68vw, 740px), 100%)!important;min-width:280px!important;
+  }
+  .v30app>main>.v30MainContent .v32GlobeControls{z-index:5!important}
+  .v30app>main>.v30MainContent .v32GlobeSub{z-index:4!important}
+  .v30app>main>.v30MainContent .v32GlobePanel{
+    display:flex!important;flex-direction:column!important;
+    grid-column:2!important;grid-row:1 / span 2!important;
+    position:relative!important;inset:auto!important;
+    width:100%!important;height:100%!important;min-height:0!important;max-height:none!important;
+    margin:0!important;padding:12px!important;gap:12px!important;
+    overflow-y:auto!important;overflow-x:hidden!important;
+    opacity:1!important;visibility:visible!important;
+    background:linear-gradient(160deg,#061827,#03101b)!important;
+    border:1px solid #19445d!important;border-radius:16px!important;
+    z-index:2!important;
+  }
+}
