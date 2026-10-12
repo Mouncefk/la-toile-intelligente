@@ -2062,3 +2062,80 @@ html,body,#root{width:100%;max-width:100%;overflow-x:hidden}
  .v30ReferenceBanner{min-height:58px!important;max-height:66px!important}
  .v30ReferenceBannerImage{min-height:58px!important}
 }
+
+
+/* V30.22 — parcours visiteur confortable : globe dominant, panneau complet avec suggestions intégrées */
+@media(min-width:1101px){
+ .v30MainContent>.v32GlobeNavigator{
+  display:grid!important;
+  grid-template-columns:minmax(0,1.18fr) minmax(390px,.82fr)!important;
+  grid-template-rows:minmax(0,1fr)!important;
+  gap:10px!important;
+  height:calc(100dvh - 220px)!important;
+  min-height:470px!important;max-height:760px!important;
+  padding:0!important;margin:0 12px!important;
+  overflow:hidden!important;align-items:stretch!important;
+ }
+ .v30MainContent>.v32GlobeNavigator>.v32GlobeVisual{
+  grid-column:1!important;grid-row:1!important;
+  width:100%!important;height:100%!important;min-height:0!important;max-height:none!important;
+  overflow:hidden!important;
+ }
+ .v30MainContent>.v32GlobeNavigator>.v32GlobePanel{
+  grid-column:2!important;grid-row:1!important;
+  display:flex!important;flex-direction:column!important;gap:7px!important;
+  width:100%!important;height:100%!important;min-height:0!important;max-height:none!important;
+  overflow:hidden!important;padding:7px!important;box-sizing:border-box!important;
+  border:1px solid rgba(67,137,193,.42)!important;border-radius:14px!important;
+  background:linear-gradient(160deg,rgba(5,20,35,.98),rgba(2,10,19,.99))!important;
+ }
+ .v30MainContent>.v32GlobeNavigator>.v32GlobePanel>.v30ReferenceDiscovery{
+  display:flex!important;flex:1 1 auto!important;flex-direction:column!important;gap:5px!important;
+  min-height:0!important;height:auto!important;max-height:none!important;
+  overflow-y:auto!important;overflow-x:hidden!important;scrollbar-width:thin!important;
+  padding:2px!important;border:0!important;background:transparent!important;
+ }
+ .v30MainContent>.v32GlobeNavigator>.v32GlobePanel>.v30SuggestionsWide{
+  position:relative!important;inset:auto!important;
+  display:flex!important;flex:0 0 auto!important;flex-direction:column!important;
+  width:100%!important;max-width:none!important;min-width:0!important;
+  margin:0!important;padding:7px!important;box-sizing:border-box!important;
+  border:1px solid rgba(67,137,193,.38)!important;border-radius:10px!important;
+  background:linear-gradient(110deg,rgba(7,24,41,.98),rgba(3,12,22,.98))!important;
+ }
+ .v30MainContent>.v32GlobeNavigator>.v32GlobePanel>.v30SuggestionsWide .v30ReferenceSection{padding:0!important;margin:0!important}
+ .v30MainContent>.v32GlobeNavigator>.v32GlobePanel>.v30SuggestionsWide .v30ReferenceHeading{display:flex!important;align-items:center!important;margin:0 0 5px!important}
+ .v30MainContent>.v32GlobeNavigator>.v32GlobePanel>.v30SuggestionsWide .v30ReferenceHeading h3{font-size:11px!important;margin:0!important}
+ .v30MainContent>.v32GlobeNavigator>.v32GlobePanel>.v30SuggestionsWide .v30ReferenceHeading button{font-size:8px!important;padding:3px 6px!important}
+ .v30MainContent>.v32GlobeNavigator>.v32GlobePanel>.v30SuggestionsWide .v30ReferenceSuggestions{grid-template-columns:repeat(3,minmax(0,1fr))!important;gap:5px!important}
+ .v30MainContent>.v32GlobeNavigator>.v32GlobePanel>.v30SuggestionsWide .v30SuggestionImage{height:clamp(28px,3.7vh,40px)!important;min-height:28px!important}
+ .v30MainContent>.v32GlobeNavigator>.v32GlobePanel>.v30SuggestionsWide .v30ReferenceSuggestions b{font-size:9px!important}
+ .v30MainContent>.v32GlobeNavigator>.v32GlobePanel>.v30SuggestionsWide .v30ReferenceSuggestions small{font-size:8px!important}
+ .v30ReferenceBanner{min-height:64px!important;max-height:76px!important}
+ .v30ReferenceBannerImage{min-height:64px!important}
+ .v30ReferenceBannerCopy h2{font-size:clamp(18px,1.5vw,23px)!important}
+ .v30ReferenceBannerCopy p{font-size:9px!important;line-height:1.2!important}
+ .v30ReferenceCategories{grid-template-columns:repeat(8,minmax(0,1fr))!important;gap:3px!important;margin:3px 0!important}
+ .v30ReferenceCategories button{min-height:38px!important;padding:3px 1px!important}
+ .v30ReferenceCategories button>span{font-size:14px!important}
+ .v30ReferenceCategories button>b{font-size:8px!important}
+ .v30ReferenceForms{grid-template-columns:repeat(5,minmax(0,1fr))!important;gap:4px!important}
+ .v30ReferenceForms .v30FormImage{height:clamp(25px,3.2vh,34px)!important;min-height:25px!important}
+ .v30ReferenceForms button>b{font-size:8px!important}
+ .v30ReferenceNeeds{grid-template-columns:repeat(3,minmax(0,1fr))!important;gap:4px!important}
+ .v30ReferenceNeeds button{min-height:40px!important;padding:4px!important}
+ .v30ReferenceNeeds button>span{font-size:13px!important}
+ .v30ReferenceNeeds button>b{font-size:8px!important}
+ .v30ReferenceNeeds button>small{display:none!important}
+}
+@media(max-height:820px) and (min-width:1101px){
+ .v30MainContent>.v32GlobeNavigator{height:calc(100dvh - 195px)!important;min-height:420px!important}
+ .v30MainContent>.v32GlobeNavigator>.v32GlobePanel{gap:4px!important;padding:5px!important}
+ .v30MainContent>.v32GlobeNavigator>.v32GlobePanel>.v30SuggestionsWide{padding:5px!important}
+ .v30MainContent>.v32GlobeNavigator>.v32GlobePanel>.v30SuggestionsWide .v30SuggestionImage{height:29px!important}
+ .v30ReferenceBanner{min-height:54px!important;max-height:62px!important}
+ .v30ReferenceBannerImage{min-height:54px!important}
+ .v30ReferenceCategories button{min-height:33px!important}
+ .v30ReferenceForms .v30FormImage{height:25px!important}
+ .v30ReferenceNeeds button{min-height:34px!important}
+}
