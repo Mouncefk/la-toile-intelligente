@@ -1,0 +1,1 @@
+ALTER TABLE v30_trip_drafts ADD COLUMN IF NOT EXISTS active_scenario_key TEXT CHECK (active_scenario_key IN ('comfort','balanced','discovery'));

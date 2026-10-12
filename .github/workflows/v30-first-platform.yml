@@ -1,0 +1,66 @@
+name: V30 First Living Tourism Platform Validation
+
+on:
+  workflow_dispatch:
+  push:
+    branches:
+      - v30-first-living-tourism-platform
+  pull_request:
+    branches:
+      - main
+      - v29-11-living-tourism-graph
+      - v30-first-living-tourism-platform
+
+jobs:
+  v30:
+    runs-on: ubuntu-latest
+    services:
+      postgres:
+        image: postgis/postgis:16-3.4
+        env:
+          POSTGRES_USER: connect
+          POSTGRES_PASSWORD: connect
+          POSTGRES_DB: latOile
+        ports:
+          - "5432:5432"
+        options: >-
+          --health-cmd="pg_isready -U connect -d latOile"
+          --health-interval=10s
+          --health-timeout=5s
+          --health-retries=10
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 24
+      - name: Install dependencies
+        run: npm install
+      - name: V30 server smoke syntax
+        run: node --check server/v30-vault.js && node --check server/v30-platform.js
+
+      - name: V30 syntax check
+        run: npm run check:v30
+
+      - name: V30 entry and UI contract
+        run: npm run test:v30:entry
+      - name: V33 syntax check
+        run: npm run check:v33
+      - name: V30 production build
+        run: npm run build
+      - name: Apply database seeds
+        env:
+          PGPASSWORD: connect
+        run: |
+          for f in database/seed/*.sql; do
+            echo "Applying $f"
+            psql -h localhost -U connect -d latOile -v ON_ERROR_STOP=1 -f "$f"
+          done
+      - name: V30 first platform contract
+        env:
+          DATABASE_URL: postgresql://connect:connect@localhost:5432/latOile
+        run: npm run test:v30:first-platform
+
+      - name: V30 live HTTP smoke test
+        env:
+          DATABASE_URL: postgresql://connect:connect@localhost:5432/latOile
+        run: npm run test:v30:http-smoke

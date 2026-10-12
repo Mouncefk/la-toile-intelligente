@@ -1,3 +1,70 @@
+# La Toile — version d’essai V30.1
+
+> **État du candidat d’essai :** les contrôles GitHub Actions du commit `bba64e0cc845aaf8e7c645a46465ee40ff8ac02c` sont verts : contrat de l’interface, build de production, contrat fonctionnel V30 et test HTTP en direct. Cela valide les contrôles automatisés, pas encore la recette visuelle complète par un utilisateur.
+
+## Démarrer une instance locale
+
+Prérequis : Node.js/npm et Docker avec Docker Compose.
+
+1. Installer les dépendances :
+   ```bash
+   npm install
+   ```
+2. Démarrer PostgreSQL/PostGIS et ses scripts d’initialisation :
+   ```bash
+   docker compose up -d
+   ```
+   Les scripts de `database/seed` sont exécutés automatiquement uniquement lors de la première initialisation du volume PostgreSQL.
+3. Dans un premier terminal, démarrer l’API :
+   ```bash
+   npm run server
+   ```
+4. Dans un second terminal, démarrer l’interface :
+   ```bash
+   npm run dev
+   ```
+5. Ouvrir `http://localhost:5173/` : sur cette branche d’essai, l’interface V30 est l’entrée par défaut. L’ancienne interface V27 reste accessible avec `http://localhost:5173/?v27=1`. L’API écoute par défaut sur le port `4300` et Vite transmet les requêtes `/api` vers cette API.
+
+### Vérifications rapides
+
+- Santé de l’API : `http://localhost:4300/api/health`
+- Parcours V30 : `http://localhost:4300/api/platform/v30/flow`
+- Interface V30 (par défaut) : `http://localhost:5173/`
+- Ancienne interface V27 (comparaison) : `http://localhost:5173/?v27=1`
+
+### Scénario de recette manuelle
+
+1. Ouvrir l’interface V30 et vérifier que les territoires se chargent sans erreur API.
+2. Choisir un territoire pilote et vérifier que les solutions, le contexte climatique et Santé & Sécurité se mettent à jour.
+3. Saisir une intention, puis explorer les propositions disponibles.
+4. Comparer jusqu’à trois possibilités et vérifier que les raisons de compatibilité et les indicateurs Santé & Sécurité sont visibles.
+5. Créer un projet de voyage, enregistrer des dates ou une fenêtre flexible, puis lancer l’analyse de préparation.
+6. Vérifier que transport et hébergement manquants sont signalés, et qu’aucune réservation n’est créée automatiquement.
+7. Répéter au minimum pour un territoire marocain et un territoire français. Signaler tout écran vide, erreur API ou donnée manifestement incohérente.
+
+### Contrôles automatisés disponibles
+
+Depuis un terminal, dans le dossier du projet :
+
+```bash
+npm run test:v30:entry
+npm run build
+npm run test:v30:first-platform
+npm run test:v30:http-smoke
+``
+
+Le test HTTP démarre le serveur et contrôle les routes V30 sur la base initialisée et accessible.
+
+La connexion PostgreSQL par défaut est `postgresql://latoile:latoile_dev@localhost:5432/la_toile`. Pour un environnement différent, définir `DATABASE_URL` avant de lancer le serveur.
+
+**Prudence avec les données locales :** `docker compose down -v` supprime le volume de la base et toutes les données locales qu’il contient. Ne l’utiliser que si cette suppression est volontaire.
+
+## Périmètre et limites de cette version d’essai
+
+Cette version sert à vérifier le parcours et les fondations API V30. Elle ne doit pas être considérée comme une plateforme commerciale complète : la couverture mondiale réelle, la qualité des données professionnelles, la recette intégrale de l’interface, les paiements et les réservations en production restent à vérifier ou à finaliser selon leur périmètre.
+
+---
+
 # La Toile — Global Core V27
 
 V27 is the current integration branch, built on the V26 stable reference and adding the Experience Core orchestrator.
