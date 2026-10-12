@@ -2568,3 +2568,50 @@ html,body,#root{width:100%;max-width:100%;overflow-x:hidden}
     max-height:none!important;align-self:stretch!important;
   }
 }
+
+
+/* V30.18 — correction des sélecteurs réels de la scène globe */
+@media (min-width:1101px){
+  .v30MainContent{
+    display:grid!important;
+    grid-template-columns:minmax(0,1.08fr) minmax(0,.92fr)!important;
+    grid-template-rows:auto minmax(0,1fr)!important;
+    align-items:stretch!important;
+    gap:10px 11px!important;
+    min-height:0!important;
+    height:calc(100dvh - 165px)!important;
+    max-height:calc(100dvh - 165px)!important;
+    overflow:visible!important;
+  }
+  .v30MainContent>.v30AssistantDock{
+    grid-column:1!important;grid-row:1!important;
+    position:relative!important;inset:auto!important;
+    width:100%!important;max-width:100%!important;min-width:0!important;
+    height:auto!important;min-height:68px!important;
+    margin:0!important;z-index:2!important;
+  }
+  .v30MainContent>.v32GlobeNavigator{display:contents!important}
+  .v30MainContent .v32GlobeVisual{
+    grid-column:1!important;grid-row:2!important;
+    position:relative!important;inset:auto!important;
+    width:100%!important;height:100%!important;
+    min-width:0!important;min-height:0!important;max-height:none!important;
+    margin:0!important;overflow:hidden!important;
+    opacity:1!important;visibility:visible!important;
+  }
+  .v30MainContent .v32GlobePanel{
+    grid-column:2!important;grid-row:1 / span 2!important;
+    position:relative!important;inset:auto!important;
+    width:100%!important;height:100%!important;
+    min-width:0!important;min-height:0!important;max-height:none!important;
+    margin:0!important;overflow-y:auto!important;overflow-x:hidden!important;
+    opacity:1!important;visibility:visible!important;
+    align-self:stretch!important;
+    padding:12px!important;gap:12px!important;
+  }
+  .v30MainContent .v30AssistantIdentity p{display:none!important}
+  .v30MainContent .v30AssistantDock{grid-template-columns:minmax(220px,.8fr) minmax(0,1.2fr)!important;align-items:center!important}
+  .v30MainContent .v30AssistantIdentity{min-width:0!important}
+  .v30MainContent .v30AssistantComposer{min-width:0!important}
+  .v30MainContent .v30AssistantSuggestions{grid-column:2!important;margin-top:-4px!important}
+}
