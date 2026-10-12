@@ -121,6 +121,7 @@ function GlobeNavigator(){
      <div className="v30ReferenceBannerImage" aria-hidden="true"></div>
      <div className="v30ReferenceBannerCopy"><span className="eyebrow">DESTINATION À EXPLORER</span><h2>{node?.name||'Maroc'} <span>✦</span></h2><p>Des villes impériales aux plages de l’Atlantique, du désert aux montagnes, un pays aux mille expériences.</p><button type="button" onClick={()=>{setActivePanel('territory');setJourneyOpen(true);if(!node)load('world')}}>Explorer le territoire <b>›</b></button></div>
     </div>
+    <button type="button" className="v30OpenJourney" onClick={()=>{setActivePanel('period');setJourneyOpen(true)}}><span>⌖</span><span><b>Préparer mon voyage</b><small>Ouvrir les 8 étapes à la demande</small></span><b aria-hidden="true">→</b></button>
     <div className="v30ReferenceCategories" aria-label="Catégories de voyage">
      {[['♜','Découvrir','territory'],['▰','Séjourner','possibilities'],['♨','Manger','envies'],['▧','Expérimenter','envies'],['↗','Se déplacer','possibilities'],['★','Se divertir','envies'],['✚','Se soigner','safety'],['⛨','Se protéger','safety']].map(([ico,label,key])=><button type="button" key={label} onClick={()=>{setActivePanel(key);setJourneyOpen(true)}}><span>{ico}</span><b>{label}</b></button>)}
     </div>
@@ -141,7 +142,6 @@ function GlobeNavigator(){
      {[['Marrakech','Culture & patrimoine'],['Essaouira','Plages & art de vivre'],['Merzouga','Désert & aventure'],['Fès','Histoire & artisanat'],['Chefchaouen','Nature & sérénité'],['Agadir','Balnéaire & détente']].map(([name,desc],i)=><button type="button" key={name} onClick={()=>{setDateNotice('Territoire sélectionné comme piste : '+name+'. Vous gardez le choix final.');setActivePanel('territory');setJourneyOpen(true)}}><span className={'v30SuggestionImage suggestion'+i}></span><b>{name}</b><small>{desc}</small></button>)}
     </div></div>
    </section>
-   <button type="button" className="v30OpenJourney" onClick={()=>{setActivePanel('period');setJourneyOpen(true)}}><span>⌖</span><span><b>Préparer mon voyage</b><small>Ouvrir les 8 étapes à la demande</small></span><b aria-hidden="true">→</b></button>
    {journeyOpen&&<div className="v30JourneyOverlay" role="dialog" aria-modal="true" aria-label="Votre parcours de voyage"><div className="v30JourneyWindow"><div className="v30JourneyWindowHead"><div><span className="eyebrow">LA TOILE · PRÉPARATION LIBRE</span><h2>Votre parcours</h2><p>Avancez à votre rythme. Vous pouvez revenir à chaque étape.</p></div><button type="button" aria-label="Fermer le parcours" onClick={()=>setJourneyOpen(false)}>×</button></div>
    <div className="v32PanelNav" role="tablist" aria-label="Espaces de La Toile">
     <div className="v32JourneyCaption"><b>Votre parcours</b><span>8 étapes · vous gardez la main</span></div>
