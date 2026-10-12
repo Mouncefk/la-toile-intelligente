@@ -2410,3 +2410,47 @@ html,body,#root{width:100%;max-width:100%;overflow-x:hidden}
   .v30ReferenceBanner{min-height:70px!important;max-height:84px!important}
   .v30ReferenceBannerImage{min-height:70px!important}
 }
+
+
+/* V30 UI refinement 6 — empêcher tout chevauchement dans le bandeau assistant */
+@media (min-width:1101px){
+  .v30MainContent>.v30AssistantDock{
+    box-sizing:border-box!important;
+    grid-template-columns:minmax(185px,.62fr) minmax(0,1fr)!important;
+    grid-template-rows:minmax(28px,auto) minmax(20px,auto)!important;
+    column-gap:14px!important;row-gap:4px!important;
+    min-height:66px!important;height:auto!important;
+    padding:7px 12px!important;
+  }
+  .v30MainContent>.v30AssistantDock .v30AssistantIdentity{
+    grid-column:1!important;grid-row:1 / span 2!important;
+    overflow:hidden!important;
+  }
+  .v30MainContent>.v30AssistantDock .v30AssistantIdentity h2{
+    overflow-wrap:anywhere!important;
+  }
+  .v30MainContent>.v30AssistantDock .v30AssistantComposer{
+    grid-column:2!important;grid-row:1!important;
+    display:grid!important;
+    grid-template-columns:minmax(0,1fr) max-content!important;
+    width:100%!important;max-width:100%!important;min-width:0!important;
+    overflow:hidden!important;
+  }
+  .v30MainContent>.v30AssistantDock .v30AssistantInput{
+    width:100%!important;max-width:100%!important;min-width:0!important;
+    box-sizing:border-box!important;
+  }
+  .v30MainContent>.v30AssistantDock .v30AssistantInput input{
+    width:100%!important;min-width:0!important;box-sizing:border-box!important;
+  }
+  .v30MainContent>.v30AssistantDock .v30AssistantComposer>button{
+    max-width:150px!important;
+  }
+  .v30MainContent>.v30AssistantDock .v30AssistantSuggestions{
+    grid-column:2!important;grid-row:2!important;
+    display:flex!important;justify-content:flex-start!important;
+    align-items:center!important;flex-wrap:wrap!important;
+    width:100%!important;min-width:0!important;overflow:visible!important;
+    position:static!important;transform:none!important;
+  }
+}
