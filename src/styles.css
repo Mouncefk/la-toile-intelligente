@@ -1795,3 +1795,12 @@ html,body,#root{width:100%;max-width:100%;overflow-x:hidden}
  .v30MainContent>.v32GlobeNavigator>.v30SuggestionsWide .v30ReferenceSuggestions{grid-template-columns:repeat(2,minmax(0,1fr))!important}
  .v30ReferenceNeeds{grid-template-columns:repeat(2,minmax(0,1fr))!important}
 }
+
+
+/* V30.16 — libérer les suggestions du conteneur latéral pour qu’elles occupent la rangée entière */
+@media(min-width:761px){
+ .v30MainContent>.v32GlobeNavigator>.v32GlobePanel{display:contents!important}
+ .v30MainContent>.v32GlobeNavigator>.v30ReferenceDiscovery{grid-column:2!important;grid-row:1!important}
+ .v30MainContent>.v32GlobeNavigator>.v30SuggestionsWide{grid-column:1/-1!important;grid-row:2!important;width:auto!important;min-width:0!important;margin:8px 0 14px!important}
+ .v30MainContent>.v32GlobeNavigator>.v30SuggestionsWide .v30ReferenceSuggestions{grid-template-columns:repeat(6,minmax(0,1fr))!important}
+}
