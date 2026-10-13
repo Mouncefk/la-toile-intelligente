@@ -75,7 +75,7 @@ function TripReadinessPanel({draftId}){
 function GlobeNavigator({journeyOpen,setJourneyOpen}){
  const [node,setNode]=useState(null),[children,setChildren]=useState([]),[trail,setTrail]=useState([]),[climate,setClimate]=useState(null),[overview,setOverview]=useState(null),[offers,setOffers]=useState([]),[healthSafety,setHealthSafety]=useState(null),[travelComponents,setTravelComponents]=useState(null),[selectedSafety,setSelectedSafety]=useState(null),[selectedComponent,setSelectedComponent]=useState(null),[geometry,setGeometry]=useState(null),[loading,setLoading]=useState(true),[error,setError]=useState(''),[rotation,setRotation]=useState(0),[zoom,setZoom]=useState(1);
  const [dateMode,setDateMode]=useState('approximate'),[startDate,setStartDate]=useState(''),[endDate,setEndDate]=useState(''),[season,setSeason]=useState('Printemps'),[year,setYear]=useState('2027'),[duration,setDuration]=useState('1 à 2 semaines'),[dateNotice,setDateNotice]=useState('Choisissez votre niveau de précision pour commencer.');
- const [activePanel,setActivePanel]=useState('period'),[journeyOpen,setJourneyOpen]=useState(false);
+ const [activePanel,setActivePanel]=useState('period');
  const [selectedTourismForms,setSelectedTourismForms]=useState([]);
  const toggleTourismForm=form=>setSelectedTourismForms(current=>current.includes(form)?current.filter(x=>x!==form):[...current,form]);
  const drag=useRef(null);
