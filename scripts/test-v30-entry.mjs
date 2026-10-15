@@ -10,8 +10,8 @@ assert.match(entry, /get\('v27'\)\s*===\s*'1'/,
   'The legacy V27 interface must remain explicitly available with ?v27=1');
 assert.match(app, /function GlobeNavigator\(/,
   'V30 must include the interactive globe navigator');
-assert.match(app, /<GlobeNavigator\/>/,
-  'V30 must render the globe navigator');
+assert.match(app, /<GlobeNavigator\b/,
+  'V30 must render the globe navigator, with or without props');
 assert.match(app, /\/api\/platform\/v30\/v32\/globe\/root/,
   'The globe navigator must load its world root from the V30 API');
 assert.match(app, /function TripPreparationPanel\(/,
