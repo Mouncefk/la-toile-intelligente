@@ -2315,7 +2315,7 @@ html,body,#root{width:100%;max-width:100%;overflow-x:hidden}
   }
   .v30MainContent>.v32GlobeNavigator{
     height:calc(100dvh - 174px)!important;
-    min-height:510px!important;max-height:900px!important;
+    min-height:0!important;max-height:900px!important;
     margin:0!important;
     grid-template-columns:minmax(0,1.12fr) minmax(0,.88fr)!important;
     column-gap:11px!important;
@@ -2617,78 +2617,235 @@ html,body,#root{width:100%;max-width:100%;overflow-x:hidden}
 }
 
 
-/* V30.19 — remise en place ferme des trois zones principales */
-@media (min-width:1101px){
-  .v30app>main>.v30MainContent{
+/* V30.20 - grille principale stabilisee */
+@media (min-width:1101px) {
+  .v30app>main>.v30MainContent {
     display:grid!important;
-    grid-template-columns:minmax(0,1.08fr) minmax(0,.92fr)!important;
-    grid-template-rows:78px minmax(440px,1fr)!important;
-    gap:10px 11px!important;
-    height:calc(100dvh - 165px)!important;
-    min-height:500px!important;
-    max-height:calc(100dvh - 165px)!important;
+    grid-template-columns:minmax(0,1.12fr) minmax(320px,.88fr)!important;
+    grid-template-rows:100px minmax(430px,1fr)!important;
+    gap:10px 12px!important;
+    height:auto!important;
+    min-height:0!important;
+    max-height:none!important;
     overflow:visible!important;
     position:relative!important;
+    align-items:stretch!important;
   }
-  .v30app>main>.v30MainContent>.v30AssistantDock{
+
+  .v30app>main>.v30MainContent>.v30AssistantDock {
     display:grid!important;
-    grid-column:1!important;grid-row:1!important;
-    grid-template-columns:minmax(190px,.8fr) minmax(0,1.2fr)!important;
+    grid-column:1!important;
+    grid-row:1!important;
+    grid-template-columns:minmax(0,.9fr) minmax(0,1.1fr)!important;
     grid-template-rows:auto auto!important;
-    align-items:center!important;align-content:center!important;
-    gap:5px 12px!important;
-    position:relative!important;top:auto!important;right:auto!important;bottom:auto!important;left:auto!important;
-    width:100%!important;height:100%!important;min-height:0!important;max-height:none!important;
-    margin:0!important;padding:8px 12px!important;
-    transform:none!important;z-index:3!important;
-    opacity:1!important;visibility:visible!important;
+    align-items:center!important;
+    align-content:center!important;
+    gap:5px 10px!important;
+    position:relative!important;
+    inset:auto!important;
+    width:100%!important;
+    height:100%!important;
+    min-height:0!important;
+    max-height:none!important;
+    margin:0!important;
+    padding:9px 12px!important;
+    transform:none!important;
+    z-index:3!important;
+    opacity:1!important;
+    visibility:visible!important;
     background:linear-gradient(115deg,#071b2b,#09263a)!important;
-    border:1px solid #1b6889!important;border-radius:13px!important;
+    border:1px solid #1b6889!important;
+    border-radius:13px!important;
     overflow:hidden!important;
   }
-  .v30app>main>.v30MainContent>.v30AssistantDock .v30AssistantIdentity{
-    grid-column:1!important;grid-row:1 / span 2!important;
-    display:flex!important;align-items:center!important;min-width:0!important;
+
+  .v30app>main>.v30MainContent>.v30AssistantDock .v30AssistantIdentity {
+    grid-column:1!important;
+    grid-row:1 / span 2!important;
+    min-width:0!important;
+    gap:8px!important;
   }
-  .v30app>main>.v30MainContent>.v30AssistantDock .v30AssistantIdentity p{display:none!important}
-  .v30app>main>.v30MainContent>.v30AssistantDock .v30AssistantComposer{
-    grid-column:2!important;grid-row:1!important;
-    display:grid!important;grid-template-columns:minmax(0,1fr) auto!important;
-    min-width:0!important;margin:0!important;
+
+  .v30app>main>.v30MainContent>.v30AssistantDock .v30AssistantIdentity p {
+    display:none!important;
   }
-  .v30app>main>.v30MainContent>.v30AssistantDock .v30AssistantSuggestions{
-    grid-column:2!important;grid-row:2!important;
-    display:flex!important;align-items:center!important;justify-content:flex-start!important;
-    min-width:0!important;margin:0!important;gap:5px!important;flex-wrap:nowrap!important;
+
+  .v30app>main>.v30MainContent>.v30AssistantDock .v30AssistantComposer {
+    grid-column:2!important;
+    grid-row:1!important;
+    display:grid!important;
+    grid-template-columns:minmax(0,1fr) auto!important;
+    min-width:0!important;
+    gap:6px!important;
   }
-  .v30app>main>.v30MainContent>.v32GlobeNavigator{display:contents!important}
-  .v30app>main>.v30MainContent .v32GlobeVisual{
-    display:grid!important;grid-column:1!important;grid-row:2!important;
-    position:relative!important;inset:auto!important;
-    width:100%!important;height:100%!important;min-height:0!important;max-height:none!important;
-    margin:0!important;padding:0!important;overflow:hidden!important;
+
+  .v30app>main>.v30MainContent>.v30AssistantDock .v30AssistantSuggestions {
+    grid-column:2!important;
+    grid-row:2!important;
+    display:flex!important;
+    flex-wrap:wrap!important;
+    justify-content:flex-start!important;
+    gap:4px!important;
+    min-width:0!important;
+  }
+
+  .v30app>main>.v30MainContent>.v32GlobeNavigator {
+    display:contents!important;
+  }
+
+  .v30app>main>.v30MainContent .v32GlobeVisual {
+    display:flex!important;
+    grid-column:1!important;
+    grid-row:2!important;
+    position:relative!important;
+    inset:auto!important;
+    width:100%!important;
+    height:100%!important;
+    min-height:430px!important;
+    max-height:none!important;
+    margin:0!important;
+    padding:0!important;
+    align-items:center!important;
+    justify-content:center!important;
+    overflow:hidden!important;
     background:radial-gradient(ellipse at 48% 45%,rgba(13,94,177,.35),transparent 62%),#031020!important;
-    opacity:1!important;visibility:visible!important;filter:none!important;
-    z-index:1!important;border:1px solid #163b55!important;border-radius:16px!important;
+    opacity:1!important;
+    visibility:visible!important;
+    filter:none!important;
+    z-index:1!important;
+    border:1px solid #163b55!important;
+    border-radius:16px!important;
   }
-  .v30app>main>.v30MainContent .v32GlobeVisual:before{width:min(94%,760px)!important;opacity:1!important}
-  .v30app>main>.v30MainContent .v32Sphere3D{
-    display:block!important;position:relative!important;z-index:2!important;
-    visibility:visible!important;opacity:1!important;filter:none!important;
-    width:min( min(68vw, 740px), 100%)!important;min-width:280px!important;
+
+  .v30app>main>.v30MainContent .v32GlobeVisual:before {
+    width:min(94%,760px)!important;
+    opacity:1!important;
   }
-  .v30app>main>.v30MainContent .v32GlobeControls{z-index:5!important}
-  .v30app>main>.v30MainContent .v32GlobeSub{z-index:4!important}
-  .v30app>main>.v30MainContent .v32GlobePanel{
-    display:flex!important;flex-direction:column!important;
-    grid-column:2!important;grid-row:1 / span 2!important;
-    position:relative!important;inset:auto!important;
-    width:100%!important;height:100%!important;min-height:0!important;max-height:none!important;
-    margin:0!important;padding:12px!important;gap:12px!important;
-    overflow-y:auto!important;overflow-x:hidden!important;
-    opacity:1!important;visibility:visible!important;
+
+  .v30app>main>.v30MainContent .v32Sphere3D {
+    display:block!important;
+    position:relative!important;
+    z-index:2!important;
+    visibility:visible!important;
+    opacity:1!important;
+    filter:none!important;
+    width:min( min(38vw,620px),94%)!important;
+    min-width:280px!important;
+    aspect-ratio:1!important;
+  }
+
+  .v30app>main>.v30MainContent .v32GlobeControls {
+    z-index:5!important;
+  }
+
+  .v30app>main>.v30MainContent .v32GlobeSub {
+    z-index:4!important;
+  }
+
+  .v30app>main>.v30MainContent .v32GlobePanel {
+    display:flex!important;
+    flex-direction:column!important;
+    grid-column:2!important;
+    grid-row:1 / span 2!important;
+    position:relative!important;
+    inset:auto!important;
+    width:100%!important;
+    height:100%!important;
+    min-height:0!important;
+    max-height:none!important;
+    margin:0!important;
+    padding:12px!important;
+    gap:12px!important;
+    overflow-y:auto!important;
+    overflow-x:hidden!important;
+    opacity:1!important;
+    visibility:visible!important;
     background:linear-gradient(160deg,#061827,#03101b)!important;
-    border:1px solid #19445d!important;border-radius:16px!important;
+    border:1px solid #19445d!important;
+    border-radius:16px!important;
     z-index:2!important;
   }
+}
+
+/* V30.21 — composition d'exploration dédiée : assistant, globe, suggestions et panneau */
+@media (min-width:1101px) {
+  .v30app>main>.v30MainContent {
+    display:block!important;
+    height:auto!important;
+    min-height:0!important;
+    max-height:none!important;
+    overflow:visible!important;
+  }
+  .v30app>main>.v30MainContent>.v30ExplorerLayout {
+    display:grid!important;
+    grid-template-columns:minmax(0,1.12fr) minmax(320px,.88fr)!important;
+    grid-template-rows:60px minmax(330px,1fr) 145px!important;
+    gap:10px 12px!important;
+    width:100%!important;
+    height:calc(100dvh - 180px)!important;
+    min-height:0!important;
+    max-height:760px!important;
+    margin:0!important;
+    padding:0!important;
+    overflow:visible!important;
+    align-items:stretch!important;
+  }
+  .v30app>main>.v30MainContent>.v30ExplorerLayout>.v30AssistantDock {
+    grid-column:1!important;grid-row:1!important;
+    width:100%!important;height:100%!important;min-height:0!important;max-height:none!important;
+    margin:0!important;padding:7px 10px!important;overflow:hidden!important;
+  }
+  .v30app>main>.v30MainContent>.v30ExplorerLayout>.v32GlobeNavigator {display:contents!important}
+  .v30app>main>.v30MainContent>.v30ExplorerLayout>.v32GlobeNavigator>.v32GlobeVisual {
+    grid-column:1!important;grid-row:2!important;
+    width:100%!important;height:100%!important;min-height:0!important;max-height:none!important;
+    margin:0!important;padding:0!important;overflow:hidden!important;
+    display:flex!important;align-items:center!important;justify-content:center!important;
+    position:relative!important;inset:auto!important;
+  }
+  .v30app>main>.v30MainContent>.v30ExplorerLayout .v32Sphere3D {
+    width:min(29vw,330px)!important;max-width:84%!important;min-width:200px!important;
+    height:auto!important;aspect-ratio:1!important;flex:0 1 auto!important;
+  }
+  .v30app>main>.v30MainContent>.v30ExplorerLayout>.v32GlobeNavigator>.v32GlobePanel {
+    grid-column:2!important;grid-row:1 / span 3!important;
+    display:flex!important;flex-direction:column!important;
+    width:100%!important;height:100%!important;min-height:0!important;max-height:none!important;
+    margin:0!important;padding:10px!important;overflow-x:hidden!important;overflow-y:auto!important;
+    position:relative!important;inset:auto!important;align-self:stretch!important;
+  }
+  .v30app>main>.v30MainContent>.v30ExplorerLayout>.v32GlobeNavigator>.v30SuggestionsWide {
+    margin-top:-28px!important;
+    grid-column:1!important;grid-row:3!important;
+    display:block!important;position:relative!important;inset:auto!important;
+    width:100%!important;height:100%!important;min-height:0!important;max-height:none!important;
+    margin:0!important;padding:7px 10px!important;overflow:hidden!important;
+    border:1px solid rgba(50,145,195,.28)!important;border-radius:13px!important;
+    background:linear-gradient(120deg,rgba(5,22,37,.96),rgba(6,29,47,.96))!important;
+  }
+  .v30app>main>.v30MainContent>.v30ExplorerLayout .v30SuggestionsWide .v30ReferenceSection {margin:0!important;padding:0!important}
+  .v30app>main>.v30MainContent>.v30ExplorerLayout .v30SuggestionsWide .v30ReferenceHeading {margin:0 0 5px!important}
+  .v30app>main>.v30MainContent>.v30ExplorerLayout .v30SuggestionsWide .v30ReferenceHeading h3 {font-size:11px!important;margin:0!important}
+  .v30app>main>.v30MainContent>.v30ExplorerLayout .v30SuggestionsWide .v30ReferenceSuggestions {
+    display:grid!important;grid-template-columns:repeat(6,minmax(0,1fr))!important;gap:6px!important;
+  }
+  .v30app>main>.v30MainContent>.v30ExplorerLayout .v30SuggestionsWide .v30ReferenceSuggestions>button {min-width:0!important;padding:0!important;gap:2px!important}
+  .v30app>main>.v30MainContent>.v30ExplorerLayout .v30SuggestionsWide .v30SuggestionImage {height:42px!important;min-height:0!important;border-radius:6px!important}
+  .v30app>main>.v30MainContent>.v30ExplorerLayout .v30SuggestionsWide .v30ReferenceSuggestions b {font-size:9px!important;line-height:1.15!important}
+  .v30app>main>.v30MainContent>.v30ExplorerLayout .v30SuggestionsWide .v30ReferenceSuggestions small {font-size:8px!important;line-height:1.15!important}
+  .v30app>main>.v30MainContent>.v30ExplorerLayout.journey-open {
+    grid-template-rows:minmax(450px,1fr) 126px!important;
+    height:calc(100dvh - 180px)!important;min-height:0!important;
+  }
+  .v30app>main>.v30MainContent>.v30ExplorerLayout.journey-open .v32GlobeVisual {grid-row:1!important}
+  .v30app>main>.v30MainContent>.v30ExplorerLayout.journey-open .v32GlobePanel {grid-row:1 / span 2!important}
+  .v30app>main>.v30MainContent>.v30ExplorerLayout.journey-open>.v32GlobeNavigator>.v30SuggestionsWide {grid-row:2!important}
+}
+@media (max-width:1100px) {
+  .v30app>main>.v30MainContent>.v30ExplorerLayout {display:flex!important;flex-direction:column!important;height:auto!important;max-height:none!important;min-height:0!important;gap:12px!important}
+  .v30app>main>.v30MainContent>.v30ExplorerLayout>.v32GlobeNavigator {display:flex!important;flex-direction:column!important}
+  .v30app>main>.v30MainContent>.v30ExplorerLayout>.v32GlobeNavigator>.v32GlobePanel {order:2!important}
+  .v30app>main>.v30MainContent>.v30ExplorerLayout>.v32GlobeNavigator>.v30SuggestionsWide {
+    margin-top:-28px!important;order:3!important}
+  .v30app>main>.v30MainContent>.v30ExplorerLayout>.v32GlobeNavigator>.v32GlobeVisual {order:1!important;min-height:340px!important}
 }
