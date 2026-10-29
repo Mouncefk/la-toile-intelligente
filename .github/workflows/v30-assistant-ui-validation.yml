@@ -1,0 +1,29 @@
+name: V30 Assistant UI Validation
+
+on:
+  workflow_dispatch:
+  push:
+    branches:
+      - v30-assistant-visibility
+
+permissions:
+  contents: read
+
+jobs:
+  ui-validation:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 24
+      - name: Install dependencies
+        run: npm install
+      - name: Check V30 syntax
+        run: npm run check:v30
+      - name: Check V30 entry and traveler UI contract
+        run: npm run test:v30:entry
+      - name: Build production bundle
+        run: npm run build

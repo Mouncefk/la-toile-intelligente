@@ -2767,7 +2767,7 @@ html,body,#root{width:100%;max-width:100%;overflow-x:hidden}
   }
 }
 
-/* V30.21 — composition d'exploration dédiée : assistant, globe, suggestions et panneau */
+/* V30.22 — assistant de voyage plus visible et composition plus équilibrée */
 @media (min-width:1101px) {
   .v30app>main>.v30MainContent {
     display:block!important;
@@ -2779,12 +2779,12 @@ html,body,#root{width:100%;max-width:100%;overflow-x:hidden}
   .v30app>main>.v30MainContent>.v30ExplorerLayout {
     display:grid!important;
     grid-template-columns:minmax(0,1.12fr) minmax(320px,.88fr)!important;
-    grid-template-rows:60px minmax(330px,1fr) 145px!important;
+    grid-template-rows:minmax(112px,auto) minmax(300px,1fr) 126px!important;
     gap:10px 12px!important;
     width:100%!important;
-    height:calc(100dvh - 180px)!important;
-    min-height:0!important;
-    max-height:760px!important;
+    height:calc(100dvh - 155px)!important;
+    min-height:560px!important;
+    max-height:820px!important;
     margin:0!important;
     padding:0!important;
     overflow:visible!important;
@@ -2792,8 +2792,12 @@ html,body,#root{width:100%;max-width:100%;overflow-x:hidden}
   }
   .v30app>main>.v30MainContent>.v30ExplorerLayout>.v30AssistantDock {
     grid-column:1!important;grid-row:1!important;
-    width:100%!important;height:100%!important;min-height:0!important;max-height:none!important;
-    margin:0!important;padding:7px 10px!important;overflow:hidden!important;
+    width:100%!important;height:100%!important;min-height:108px!important;max-height:none!important;
+    margin:0!important;padding:12px 14px!important;overflow:visible!important;
+    background:linear-gradient(115deg,#071b2b,#0a2c43)!important;
+    border:1px solid rgba(46,177,230,.72)!important;
+    border-radius:15px!important;
+    box-shadow:0 8px 28px rgba(0,0,0,.28),inset 0 0 0 1px rgba(83,194,245,.08)!important;
   }
   .v30app>main>.v30MainContent>.v30ExplorerLayout>.v32GlobeNavigator {display:contents!important}
   .v30app>main>.v30MainContent>.v30ExplorerLayout>.v32GlobeNavigator>.v32GlobeVisual {
@@ -2833,8 +2837,80 @@ html,body,#root{width:100%;max-width:100%;overflow-x:hidden}
   .v30app>main>.v30MainContent>.v30ExplorerLayout .v30SuggestionsWide .v30SuggestionImage {height:42px!important;min-height:0!important;border-radius:6px!important}
   .v30app>main>.v30MainContent>.v30ExplorerLayout .v30SuggestionsWide .v30ReferenceSuggestions b {font-size:9px!important;line-height:1.15!important}
   .v30app>main>.v30MainContent>.v30ExplorerLayout .v30SuggestionsWide .v30ReferenceSuggestions small {font-size:8px!important;line-height:1.15!important}
+
+  .v30app>main>.v30MainContent>.v30ExplorerLayout>.v30AssistantDock .v30AssistantIdentity {
+    gap:10px!important;
+    align-items:center!important;
+  }
+  .v30app>main>.v30MainContent>.v30ExplorerLayout>.v30AssistantDock .v30AssistantOrb {
+    width:42px!important;height:42px!important;min-width:42px!important;
+    display:grid!important;place-items:center!important;
+    font-size:24px!important;border-radius:50%!important;
+    background:radial-gradient(circle at 30% 25%,#7de3ff,#167bb7 65%,#07314e)!important;
+    box-shadow:0 0 24px rgba(42,185,245,.28)!important;
+  }
+  .v30app>main>.v30MainContent>.v30ExplorerLayout>.v30AssistantDock .v30AssistantIdentity h2 {
+    font-size:clamp(17px,1.45vw,22px)!important;
+    line-height:1.2!important;margin:4px 0!important;
+    white-space:normal!important;
+  }
+  .v30app>main>.v30MainContent>.v30ExplorerLayout>.v30AssistantDock .v30AssistantIdentity p {
+    display:block!important;font-size:11px!important;line-height:1.35!important;
+    margin:4px 0 0!important;color:#b9d1df!important;
+  }
+  .v30app>main>.v30MainContent>.v30ExplorerLayout>.v30AssistantDock .v30AssistantComposer {
+    grid-template-columns:minmax(0,1fr) max-content!important;
+    gap:8px!important;align-items:center!important;
+  }
+  .v30app>main>.v30MainContent>.v30ExplorerLayout>.v30AssistantDock .v30AssistantInput {
+    min-height:42px!important;border-color:#2b6d8e!important;
+    background:#041522!important;
+  }
+  .v30app>main>.v30MainContent>.v30ExplorerLayout>.v30AssistantDock .v30AssistantComposer>button {
+    max-width:none!important;min-height:42px!important;padding:9px 13px!important;
+    white-space:nowrap!important;background:linear-gradient(110deg,#078ac4,#09639b)!important;
+    border:1px solid #36b7ee!important;border-radius:10px!important;
+    color:#fff!important;font-weight:700!important;
+  }
+  .v30app>main>.v30MainContent>.v30ExplorerLayout>.v30AssistantDock .v30AssistantSuggestions {
+    grid-column:2!important;grid-row:2!important;display:flex!important;
+    gap:6px!important;flex-wrap:wrap!important;align-items:center!important;
+  }
+  .v30app>main>.v30MainContent>.v30ExplorerLayout>.v30AssistantDock .v30AssistantSuggestions>span {
+    display:inline!important;color:#a9c8d9!important;font-size:10px!important;
+  }
+  .v30app>main>.v30MainContent>.v30ExplorerLayout>.v30AssistantDock .v30AssistantSuggestions>button {
+    font-size:10px!important;min-height:25px!important;padding:4px 9px!important;
+    border:1px solid #2c627c!important;border-radius:999px!important;
+    background:#0a2b40!important;color:#e8f7ff!important;
+  }
+  .v30app>main>.v30MainContent>.v30ExplorerLayout.journey-open>.v30AssistantDock {
+    display:none!important;
+  }
+  @media (max-width:1100px) {
+    .v30app>main>.v30MainContent>.v30ExplorerLayout>.v30AssistantDock {
+      display:flex!important;flex-direction:column!important;gap:12px!important;
+      min-height:0!important;height:auto!important;padding:14px!important;
+    }
+    .v30app>main>.v30MainContent>.v30ExplorerLayout>.v30AssistantDock .v30AssistantIdentity,
+    .v30app>main>.v30MainContent>.v30ExplorerLayout>.v30AssistantDock .v30AssistantComposer,
+    .v30app>main>.v30MainContent>.v30ExplorerLayout>.v30AssistantDock .v30AssistantSuggestions {
+      display:flex!important;flex-direction:column!important;width:100%!important;
+      grid-column:auto!important;grid-row:auto!important;
+    }
+    .v30app>main>.v30MainContent>.v30ExplorerLayout>.v30AssistantDock .v30AssistantComposer {
+      display:grid!important;grid-template-columns:minmax(0,1fr)!important;
+    }
+    .v30app>main>.v30MainContent>.v30ExplorerLayout>.v30AssistantDock .v30AssistantComposer>button {
+      width:100%!important;white-space:normal!important;
+    }
+    .v30app>main>.v30MainContent>.v30ExplorerLayout>.v30AssistantDock .v30AssistantSuggestions {
+      flex-direction:row!important;align-items:flex-start!important;
+    }
+  }
+
   .v30app>main>.v30MainContent>.v30ExplorerLayout.journey-open {
-    grid-template-rows:minmax(450px,1fr) 126px!important;
+    grid-template-rows:minmax(360px,1fr) 126px!important;
     height:calc(100dvh - 180px)!important;min-height:0!important;
   }
   .v30app>main>.v30MainContent>.v30ExplorerLayout.journey-open .v32GlobeVisual {grid-row:1!important}
