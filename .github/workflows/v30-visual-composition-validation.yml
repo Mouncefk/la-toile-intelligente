@@ -1,0 +1,26 @@
+name: V30 Visual Composition Validation
+
+on:
+  workflow_dispatch:
+  push:
+    branches:
+      - v30-visual-composition-reset
+
+permissions:
+  contents: read
+
+jobs:
+  visual-build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 24
+      - run: npm install
+      - name: V30 syntax checks
+        run: npm run check:v30
+      - name: V30 UI contract
+        run: npm run test:v30:entry
+      - name: Production build
+        run: npm run build
