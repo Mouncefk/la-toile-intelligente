@@ -4078,3 +4078,27 @@ html,body,#root{width:100%;max-width:100%;overflow-x:hidden}
   .v30app>main>.v30MainContent>.v30ExplorerLayout .v30SuggestionsWide .v30SuggestionImage {height:34px!important}
   .v30app>main>.v30MainContent>.v30ExplorerLayout .v30SuggestionsWide .v30ReferenceSuggestions small {display:none!important}
 }
+
+
+/* V30.34 — Accueil voyageur épuré : retirer les panneaux techniques du flux */
+@media (min-width:1101px) {
+  .v30app>main>.v30MainContent>.v30hero,
+  .v30app>main>.v30MainContent>.v30healthSummary,
+  .v30app>main>.v30MainContent>.v30workspace,
+  .v30app>main>.v30MainContent>.v30opportunityPanel,
+  .v30app>main>.v30MainContent>.v30scopeLegend,
+  .v30app>main>.v30MainContent>.v30b2bScope,
+  .v30app>.v30footer {
+    display:none!important;
+  }
+  .v30app>main>.v30MainContent {
+    height:calc(100vh - 158px)!important;
+    min-height:0!important;
+    overflow:hidden!important;
+  }
+  .v30app>main>.v30MainContent>.v30ExplorerLayout {
+    height:calc(100vh - 184px)!important;
+    min-height:0!important;
+    max-height:none!important;
+  }
+}
