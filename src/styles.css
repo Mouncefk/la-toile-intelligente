@@ -3834,3 +3834,111 @@ html,body,#root{width:100%;max-width:100%;overflow-x:hidden}
     padding:14px clamp(14px,2vw,28px) 28px!important;
   }
 }
+
+
+/* V30.30 — Finition de l'accueil après validation navigateur */
+.v30app .v30ExplorerLayout>.v30AssistantDock {
+  box-sizing:border-box!important;
+  min-height:148px!important;
+  height:auto!important;
+  padding:22px 20px 16px!important;
+  align-items:center!important;
+  row-gap:12px!important;
+  overflow:visible!important;
+}
+.v30app .v30AssistantIdentity {
+  align-items:center!important;
+  gap:13px!important;
+  padding-top:2px!important;
+}
+.v30app .v30AssistantIdentity>div {
+  min-width:0!important;
+  padding-top:2px!important;
+}
+.v30app .v30AssistantIdentity .eyebrow {
+  display:block!important;
+  line-height:1.35!important;
+  margin:0 0 5px!important;
+  white-space:normal!important;
+}
+.v30app .v30AssistantIdentity h2 {
+  margin:0 0 4px!important;
+  line-height:1.2!important;
+}
+.v30app .v30AssistantIdentity p {
+  margin:0!important;
+  line-height:1.45!important;
+  max-width:62ch!important;
+}
+.v30app .v30AssistantOrb {
+  flex:0 0 46px!important;
+  width:46px!important;
+  height:46px!important;
+}
+.v30app .v30AssistantComposer {
+  align-items:stretch!important;
+  gap:9px!important;
+}
+.v30app .v30AssistantInput {
+  min-height:44px!important;
+}
+.v30app .v30AssistantComposer>button {
+  min-height:44px!important;
+}
+.v30app .v30AssistantSuggestions {
+  align-items:center!important;
+  gap:7px!important;
+}
+.v30app .v30ExplorerLayout>.v32GlobeNavigator {
+  align-items:stretch!important;
+  min-height:520px!important;
+  padding:12px!important;
+  gap:12px!important;
+}
+.v30app .v32GlobeVisual {
+  min-height:490px!important;
+  overflow:hidden!important;
+}
+.v30app .v32GlobePanel {
+  padding:14px!important;
+  min-height:0!important;
+}
+.v30app .v30ReferenceBanner {
+  min-height:178px!important;
+}
+.v30app .v30ReferenceBannerCopy {
+  max-width:58ch!important;
+}
+.v30app .v30ReferenceBannerCopy h2 {
+  line-height:1.12!important;
+  margin:4px 0 6px!important;
+}
+.v30app .v30ReferenceBannerCopy p {
+  line-height:1.45!important;
+}
+.v30app .v30ReferenceCategories button {
+  min-height:70px!important;
+}
+.v30app .v30ReferenceForms button {
+  min-height:72px!important;
+}
+@media(max-width:1180px) {
+  .v30app .v30ExplorerLayout>.v30AssistantDock {
+    padding:20px 16px 15px!important;
+  }
+  .v30app .v30ExplorerLayout>.v32GlobeNavigator {min-height:480px!important}
+  .v30app .v32GlobeVisual {min-height:450px!important}
+}
+@media(max-width:860px) {
+  .v30app .v30ExplorerLayout>.v30AssistantDock {min-height:0!important}
+  .v30app .v30AssistantIdentity {align-items:flex-start!important}
+  .v30app .v32GlobeVisual {min-height:400px!important}
+}
+@media(max-width:560px) {
+  .v30app .v30ExplorerLayout>.v30AssistantDock {
+    padding:17px 14px!important;
+    gap:12px!important;
+  }
+  .v30app .v30AssistantOrb {flex-basis:40px!important;width:40px!important;height:40px!important}
+  .v30app .v32GlobeVisual {min-height:330px!important}
+}
