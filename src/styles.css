@@ -3808,3 +3808,29 @@ html,body,#root{width:100%;max-width:100%;overflow-x:hidden}
     min-height:60px!important;
   }
 }
+
+
+/* V30.29 — Retirer le rail latéral défectueux du premier écran.
+   Les mêmes huit entrées sont déjà présentées dans le panneau territorial. */
+@media(min-width:861px) {
+  .v30app>main {
+    display:grid!important;
+    grid-template-columns:minmax(0,1fr)!important;
+    align-items:start!important;
+    width:100%!important;
+    min-width:0!important;
+    overflow-x:clip!important;
+  }
+  .v30app>main>.v30QuickRail {
+    display:none!important;
+  }
+  .v30app>main>.v30MainContent {
+    grid-column:1!important;
+    grid-row:1!important;
+    width:100%!important;
+    min-width:0!important;
+    max-width:100%!important;
+    margin:0!important;
+    padding:14px clamp(14px,2vw,28px) 28px!important;
+  }
+}
