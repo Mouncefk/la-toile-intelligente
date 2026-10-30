@@ -4192,3 +4192,44 @@ html,body,#root{width:100%;max-width:100%;overflow-x:hidden}
     width:min(88%,680px)!important;
   }
 }
+
+
+/* V30.37 — Supprimer le vide inférieur : l'explorateur occupe le viewport restant */
+@media (min-width:1101px) and (min-height:680px) {
+  .v30app {
+    min-height:100dvh!important;
+    height:100dvh!important;
+    display:flex!important;
+    flex-direction:column!important;
+    overflow:hidden!important;
+  }
+  .v30app>.v30header {
+    flex:0 0 78px!important;
+  }
+  .v30app>main {
+    flex:1 1 auto!important;
+    min-height:0!important;
+    height:auto!important;
+    display:flex!important;
+    flex-direction:column!important;
+    overflow:hidden!important;
+  }
+  .v30app>main>.v30MainContent {
+    flex:1 1 auto!important;
+    min-height:0!important;
+    height:auto!important;
+    max-height:none!important;
+    padding:12px 0!important;
+    box-sizing:border-box!important;
+    overflow:hidden!important;
+  }
+  .v30app>main>.v30MainContent>.v30ExplorerLayout {
+    height:100%!important;
+    min-height:0!important;
+    max-height:none!important;
+    grid-template-rows:164px minmax(0,1fr) 112px!important;
+  }
+  .v30app>main>.v30QuickRail {
+    display:none!important;
+  }
+}
