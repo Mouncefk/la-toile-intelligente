@@ -3942,3 +3942,56 @@ html,body,#root{width:100%;max-width:100%;overflow-x:hidden}
   .v30app .v30AssistantOrb {flex-basis:40px!important;width:40px!important;height:40px!important}
   .v30app .v32GlobeVisual {min-height:330px!important}
 }
+
+
+/* V30.31 — Restaurer l'intégralité de l'assistant sur desktop */
+@media (min-width:1101px) {
+  .v30app>main>.v30MainContent>.v30ExplorerLayout {
+    grid-template-rows:172px minmax(390px,1fr) 122px!important;
+  }
+  .v30app>main>.v30MainContent>.v30ExplorerLayout>.v30AssistantDock {
+    height:auto!important;
+    min-height:172px!important;
+    max-height:none!important;
+    box-sizing:border-box!important;
+    padding:15px 16px 13px!important;
+    gap:8px!important;
+    align-content:space-between!important;
+    overflow:visible!important;
+  }
+  .v30app>main>.v30MainContent>.v30ExplorerLayout>.v30AssistantDock .v30AssistantIdentity {
+    align-items:center!important;
+    min-height:48px!important;
+  }
+  .v30app>main>.v30MainContent>.v30ExplorerLayout>.v30AssistantDock .v30AssistantIdentity .eyebrow {
+    display:block!important;
+    visibility:visible!important;
+    line-height:1.35!important;
+    margin:0 0 4px!important;
+  }
+  .v30app>main>.v30MainContent>.v30ExplorerLayout>.v30AssistantDock .v30AssistantIdentity h2 {
+    margin:0 0 3px!important;
+    line-height:1.2!important;
+  }
+  .v30app>main>.v30MainContent>.v30ExplorerLayout>.v30AssistantDock .v30AssistantIdentity p {
+    display:block!important;
+    margin:0!important;
+    line-height:1.35!important;
+  }
+  .v30app>main>.v30MainContent>.v30ExplorerLayout>.v30AssistantDock .v30AssistantComposer {
+    min-height:40px!important;
+    align-items:stretch!important;
+  }
+  .v30app>main>.v30MainContent>.v30ExplorerLayout>.v30AssistantDock .v30AssistantSuggestions {
+    min-height:25px!important;
+    overflow:visible!important;
+    align-items:center!important;
+    flex-wrap:wrap!important;
+    margin:0!important;
+  }
+  .v30app>main>.v30MainContent>.v30ExplorerLayout>.v30AssistantDock .v30AssistantSuggestions>span,
+  .v30app>main>.v30MainContent>.v30ExplorerLayout>.v30AssistantDock .v30AssistantSuggestions>button {
+    display:inline-flex!important;
+    visibility:visible!important;
+  }
+}
