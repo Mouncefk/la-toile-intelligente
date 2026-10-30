@@ -4102,3 +4102,38 @@ html,body,#root{width:100%;max-width:100%;overflow-x:hidden}
     max-height:none!important;
   }
 }
+
+
+/* V30.35 — Empêcher le globe de recouvrir les suggestions de l'assistant */
+@media (min-width:1101px) and (min-height:650px) {
+  .v30app>main>.v30MainContent>.v30ExplorerLayout {
+    grid-template-rows:164px minmax(180px,1fr) 112px!important;
+    gap:9px 14px!important;
+  }
+  .v30app>main>.v30MainContent>.v30ExplorerLayout>.v30AssistantDock {
+    min-height:164px!important;
+    height:164px!important;
+    padding:12px 15px 10px!important;
+    gap:6px!important;
+    overflow:visible!important;
+  }
+  .v30app>main>.v30MainContent>.v30ExplorerLayout>.v32GlobeNavigator>.v32GlobeVisual {
+    min-height:0!important;
+    height:100%!important;
+  }
+  .v30app>main>.v30MainContent>.v30ExplorerLayout>.v30AssistantDock .v30AssistantSuggestions {
+    position:relative!important;
+    z-index:3!important;
+    min-height:26px!important;
+    margin-top:0!important;
+  }
+}
+@media (min-width:1101px) and (max-height:649px) {
+  .v30app>main>.v30MainContent>.v30ExplorerLayout {
+    grid-template-rows:154px minmax(160px,1fr) 104px!important;
+  }
+  .v30app>main>.v30MainContent>.v30ExplorerLayout>.v30AssistantDock {
+    min-height:154px!important;
+    height:154px!important;
+  }
+}
