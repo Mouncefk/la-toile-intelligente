@@ -3307,3 +3307,962 @@ html,body,#root{width:100%;max-width:100%;overflow-x:hidden}
   .v30app .v30MainContent {padding:10px!important}
   .v30app .v30QuickRail {gap:4px!important}
 }
+
+
+/* V30.26 — Recomposition structurelle de l'accueil : assistant + globe + territoire */
+.v30app {
+  --lt-ink:#edf7ff;
+  --lt-muted:#91a9bc;
+  --lt-line:rgba(92,166,207,.22);
+  --lt-cyan:#48d8e7;
+  --lt-gold:#e7bd69;
+  background:
+    radial-gradient(ellipse at 54% 8%,rgba(13,78,119,.24),transparent 42%),
+    linear-gradient(180deg,#030b15 0%,#050d17 55%,#030811 100%)!important;
+  color:var(--lt-ink)!important;
+}
+.v30app>.v30header {
+  min-height:72px!important;height:72px!important;
+  padding:0 clamp(18px,3vw,48px)!important;
+  background:rgba(3,10,19,.94)!important;
+  border-bottom:1px solid var(--lt-line)!important;
+  backdrop-filter:blur(18px)!important;
+}
+.v30app .v30brand {letter-spacing:.13em!important;color:#f4f8fb!important}
+.v30app .v30brandBlock small {color:#829caf!important;letter-spacing:.08em!important}
+.v30app>main {
+  display:grid!important;
+  grid-template-columns:76px minmax(0,1fr)!important;
+  align-items:stretch!important;
+  min-height:calc(100svh - 72px)!important;
+  background:transparent!important;
+}
+.v30app .v30QuickRail {
+  position:sticky!important;top:72px!important;
+  grid-column:1!important;grid-row:1!important;
+  width:76px!important;min-width:76px!important;
+  height:calc(100svh - 72px)!important;
+  padding:20px 8px!important;
+  display:flex!important;flex-direction:column!important;
+  align-items:center!important;gap:11px!important;
+  overflow:auto!important;
+  background:rgba(4,15,26,.78)!important;
+  border-right:1px solid var(--lt-line)!important;
+}
+.v30app .v30QuickSearch {display:none!important}
+.v30app .v30QuickRail>a {
+  width:58px!important;min-width:58px!important;
+  min-height:54px!important;padding:7px 3px!important;
+  display:flex!important;flex-direction:column!important;
+  justify-content:center!important;align-items:center!important;gap:4px!important;
+  border:1px solid transparent!important;border-radius:13px!important;
+  color:#9eb5c6!important;font-size:9px!important;text-align:center!important;
+}
+.v30app .v30QuickRail>a span {font-size:19px!important;color:#6bd4e5!important}
+.v30app .v30QuickRail>a:hover,
+.v30app .v30QuickRail>a:focus-visible {
+  background:#0b2638!important;border-color:#28546b!important;color:#f1fbff!important;
+}
+.v30app .v30MainContent {
+  grid-column:2!important;grid-row:1!important;
+  min-width:0!important;width:100%!important;
+  padding:clamp(14px,2vw,28px) clamp(14px,2.5vw,38px) 30px!important;
+  display:block!important;
+}
+.v30app .v30ExplorerLayout {
+  display:flex!important;flex-direction:column!important;
+  align-items:stretch!important;gap:18px!important;
+  width:100%!important;height:auto!important;min-height:0!important;
+  max-height:none!important;margin:0!important;padding:0!important;
+  overflow:visible!important;
+}
+.v30app .v30ExplorerLayout>.v30AssistantDock {
+  order:0!important;display:grid!important;
+  grid-template-columns:minmax(230px,.85fr) minmax(340px,1.15fr)!important;
+  grid-template-areas:"identity composer" "identity suggestions"!important;
+  align-items:center!important;gap:12px 26px!important;
+  width:100%!important;height:auto!important;min-height:142px!important;
+  max-height:none!important;margin:0!important;padding:22px 26px!important;
+  border:1px solid rgba(68,174,207,.35)!important;border-radius:18px!important;
+  background:
+    radial-gradient(ellipse at 0% 0%,rgba(27,111,145,.23),transparent 55%),
+    linear-gradient(110deg,rgba(7,25,40,.98),rgba(5,17,30,.98))!important;
+  box-shadow:0 18px 46px rgba(0,0,0,.24),inset 0 1px rgba(255,255,255,.035)!important;
+}
+.v30app .v30AssistantIdentity {grid-area:identity!important;gap:16px!important}
+.v30app .v30AssistantOrb {
+  width:54px!important;height:54px!important;min-width:54px!important;
+  display:grid!important;place-items:center!important;
+  border:1px solid rgba(72,216,231,.38)!important;border-radius:17px!important;
+  background:linear-gradient(145deg,#103b50,#0a1d30)!important;
+  color:#79eff0!important;font-size:25px!important;
+  box-shadow:0 0 30px rgba(48,199,218,.13)!important;
+}
+.v30app .v30AssistantIdentity h2 {
+  margin:6px 0!important;color:#f2f8fc!important;
+  font-size:clamp(20px,2vw,27px)!important;line-height:1.15!important;
+  letter-spacing:-.025em!important;
+}
+.v30app .v30AssistantIdentity p {
+  max-width:520px!important;margin:7px 0 0!important;
+  color:#9bb0bf!important;font-size:12px!important;line-height:1.55!important;
+}
+.v30app .v30AssistantComposer {
+  grid-area:composer!important;display:flex!important;gap:9px!important;
+  align-items:stretch!important;
+}
+.v30app .v30AssistantInput {
+  min-height:52px!important;flex:1!important;
+  border:1px solid #294c61!important;border-radius:12px!important;
+  background:#061522!important;
+}
+.v30app .v30AssistantInput input {font-size:13px!important}
+.v30app .v30AssistantComposer>button {
+  min-width:158px!important;padding:0 17px!important;
+  border:1px solid #3bbbc9!important;border-radius:12px!important;
+  background:linear-gradient(115deg,#087f9c,#126a91)!important;
+  color:#f5fdff!important;font-size:12px!important;font-weight:750!important;
+  box-shadow:0 8px 22px rgba(5,116,145,.2)!important;
+}
+.v30app .v30AssistantSuggestions {
+  grid-area:suggestions!important;display:flex!important;align-items:center!important;
+  gap:8px!important;flex-wrap:wrap!important;
+}
+.v30app .v30AssistantSuggestions>span {
+  margin-right:3px!important;color:#7894a8!important;font-size:10px!important;
+}
+.v30app .v30AssistantSuggestions>button {
+  padding:7px 11px!important;border:1px solid #244458!important;
+  border-radius:999px!important;background:#081c2b!important;
+  color:#b9d9e5!important;font-size:10px!important;
+}
+.v30app .v30ExplorerLayout>.v32GlobeNavigator {
+  order:1!important;display:grid!important;
+  grid-template-columns:minmax(0,1.12fr) minmax(360px,.88fr)!important;
+  gap:18px!important;align-items:stretch!important;
+  position:relative!important;width:100%!important;min-height:610px!important;
+  margin:0!important;padding:18px!important;
+  border:1px solid rgba(71,135,173,.24)!important;border-radius:22px!important;
+  background:
+    radial-gradient(ellipse at 31% 43%,rgba(8,85,137,.20),transparent 42%),
+    linear-gradient(135deg,#061626 0%,#04111f 54%,#050e19 100%)!important;
+  box-shadow:0 24px 70px rgba(0,0,0,.25),inset 0 1px rgba(255,255,255,.025)!important;
+  overflow:hidden!important;
+}
+.v30app .v32GlobeVisual {
+  grid-column:1!important;grid-row:1!important;
+  position:relative!important;min-width:0!important;min-height:570px!important;
+  height:100%!important;border:0!important;border-radius:16px!important;
+  background:
+    radial-gradient(ellipse at 50% 48%,rgba(17,110,164,.25),transparent 42%),
+    radial-gradient(ellipse at 50% 50%,#071c2c 0%,#04111e 57%,#030b14 100%)!important;
+  box-shadow:inset 0 0 90px rgba(0,0,0,.38)!important;
+}
+.v30app .v32GlobeVisual:before {
+  width:min(68%,570px)!important;aspect-ratio:1!important;
+  border:1px solid rgba(106,199,231,.17)!important;
+  box-shadow:0 0 65px rgba(27,143,195,.12),inset 0 0 75px rgba(31,125,173,.08)!important;
+}
+.v30app .v32Sphere3D {
+  width:min(66%,520px)!important;aspect-ratio:1!important;height:auto!important;
+  filter:drop-shadow(0 0 42px rgba(26,150,202,.24))!important;
+}
+.v30app .v32GlobeLabel {
+  color:#e7faff!important;letter-spacing:.42em!important;
+  text-shadow:0 0 20px rgba(72,216,231,.55)!important;
+}
+.v30app .v32GlobeSub {
+  bottom:18px!important;color:#7296aa!important;
+  letter-spacing:.2em!important;font-size:9px!important;
+}
+.v30app .v32GlobePanel {
+  grid-column:2!important;grid-row:1!important;
+  min-width:0!important;max-height:none!important;height:100%!important;
+  overflow:visible!important;padding:0!important;
+  border:0!important;border-left:1px solid rgba(83,147,179,.18)!important;
+  border-radius:0!important;background:transparent!important;box-shadow:none!important;
+}
+.v30app .v30ReferenceDiscovery {padding:0 0 0 18px!important;gap:14px!important}
+.v30app .v30ReferenceBanner {
+  min-height:178px!important;border:1px solid rgba(99,166,195,.3)!important;
+  border-radius:15px!important;
+  background:linear-gradient(110deg,rgba(4,19,32,.9),rgba(5,28,43,.55)),radial-gradient(ellipse at 80% 25%,#9d713d 0%,#1b5875 28%,#0a2035 70%)!important;
+}
+.v30app .v30ReferenceBannerCopy {max-width:90%!important}
+.v30app .v30ReferenceBannerCopy .eyebrow {color:#77dce5!important}
+.v30app .v30ReferenceBannerCopy h2 {font-size:clamp(24px,2vw,34px)!important}
+.v30app .v30ReferenceBannerCopy p {max-width:390px!important;color:#c0d0d9!important;line-height:1.5!important}
+.v30app .v30OpenJourney {
+  min-height:66px!important;padding:12px 15px!important;
+  border:1px solid rgba(220,177,94,.55)!important;border-radius:13px!important;
+  background:linear-gradient(110deg,rgba(12,40,54,.95),rgba(44,35,21,.72))!important;
+}
+.v30app .v30ReferenceCategories {display:grid!important;grid-template-columns:repeat(4,minmax(0,1fr))!important;gap:7px!important}
+.v30app .v30ReferenceCategories button {
+  min-height:70px!important;padding:8px 4px!important;
+  display:flex!important;flex-direction:column!important;justify-content:center!important;
+  gap:6px!important;border:1px solid rgba(70,126,153,.24)!important;
+  border-radius:11px!important;background:rgba(7,25,39,.75)!important;
+  color:#c6dbe5!important;
+}
+.v30app .v30ReferenceCategories button span {font-size:18px!important;color:#6dd9e4!important}
+.v30app .v30ReferenceCategories button b {font-size:10px!important}
+.v30app .v30ReferenceSection {margin-top:2px!important}
+.v30app .v30ReferenceSection h3 {
+  margin:0 0 10px!important;color:#d8e8ef!important;
+  font-size:12px!important;letter-spacing:.04em!important;
+}
+.v30app .v30ReferenceForms {display:grid!important;grid-template-columns:repeat(5,minmax(0,1fr))!important;gap:6px!important}
+.v30app .v30ReferenceForms button {
+  min-width:0!important;padding:5px!important;border:1px solid rgba(70,126,153,.2)!important;
+  border-radius:10px!important;background:rgba(7,24,37,.72)!important;color:#b9d0dc!important;
+}
+.v30app .v30ReferenceForms .v30FormImage {height:42px!important}
+.v30app .v30ReferenceForms button b {font-size:9px!important}
+.v30app .v30ReferenceNeeds {display:grid!important;grid-template-columns:repeat(2,minmax(0,1fr))!important;gap:7px!important}
+.v30app .v30ReferenceNeeds button {
+  min-width:0!important;padding:10px!important;border:1px solid rgba(70,126,153,.2)!important;
+  border-radius:10px!important;background:rgba(7,24,37,.72)!important;text-align:left!important;
+}
+.v30app .v30ReferenceNeeds button b {font-size:10px!important;color:#d8e9f0!important}
+.v30app .v30ReferenceNeeds button small {font-size:9px!important;color:#829eae!important;line-height:1.4!important}
+.v30app .v30hero {margin-top:26px!important}
+.v30app .v30footer {border-top:1px solid var(--lt-line)!important;color:#6d8799!important}
+@media(max-width:1180px) {
+  .v30app .v30ExplorerLayout>.v32GlobeNavigator {
+    grid-template-columns:minmax(0,1fr) minmax(310px,.85fr)!important;
+  }
+  .v30app .v32GlobeVisual {min-height:500px!important}
+  .v30app .v30ReferenceForms {grid-template-columns:repeat(5,minmax(0,1fr))!important}
+}
+@media(max-width:860px) {
+  .v30app>main {grid-template-columns:1fr!important}
+  .v30app .v30QuickRail {
+    position:relative!important;top:auto!important;grid-column:1!important;grid-row:1!important;
+    width:100%!important;min-width:0!important;height:auto!important;
+    flex-direction:row!important;justify-content:flex-start!important;
+    overflow-x:auto!important;padding:8px 12px!important;
+    border-right:0!important;border-bottom:1px solid var(--lt-line)!important;
+  }
+  .v30app .v30QuickRail>a {flex:0 0 64px!important}
+  .v30app .v30MainContent {grid-column:1!important;grid-row:2!important;padding:12px!important}
+  .v30app .v30ExplorerLayout>.v30AssistantDock {
+    grid-template-columns:1fr!important;grid-template-areas:"identity" "composer" "suggestions"!important;
+  }
+  .v30app .v30ExplorerLayout>.v32GlobeNavigator {
+    grid-template-columns:1fr!important;gap:10px!important;padding:12px!important;
+  }
+  .v30app .v32GlobeVisual {grid-column:1!important;grid-row:1!important;min-height:420px!important}
+  .v30app .v32GlobePanel {
+    grid-column:1!important;grid-row:2!important;border-left:0!important;
+    border-top:1px solid rgba(83,147,179,.18)!important;padding-top:14px!important;
+  }
+  .v30app .v30ReferenceDiscovery {padding:0!important}
+  .v30app .v30ReferenceForms {grid-template-columns:repeat(5,minmax(0,1fr))!important}
+}
+@media(max-width:560px) {
+  .v30app>.v30header {height:auto!important;min-height:64px!important;padding:8px 12px!important}
+  .v30app .v30TopNav {display:none!important}
+  .v30app .v30HeaderActions .v30Login,.v30app .v30HeaderActions .v30Signup {display:none!important}
+  .v30app .v30AssistantComposer {flex-direction:column!important}
+  .v30app .v30AssistantComposer>button {min-height:46px!important}
+  .v30app .v30AssistantIdentity h2 {font-size:20px!important}
+  .v30app .v32GlobeVisual {min-height:340px!important}
+  .v30app .v32Sphere3D {width:78%!important}
+  .v30app .v30ReferenceCategories {grid-template-columns:repeat(4,minmax(0,1fr))!important}
+  .v30app .v30ReferenceForms {grid-template-columns:repeat(3,minmax(0,1fr))!important}
+  .v30app .v30ReferenceNeeds {grid-template-columns:1fr!important}
+}
+
+
+/* V30.27 — Correctifs issus du contrôle navigateur : largeur, rail et équilibre */
+.v30app,
+.v30app #explorer,
+.v30app .v30MainContent,
+.v30app .v30ExplorerLayout,
+.v30app .v32GlobeNavigator {
+  box-sizing:border-box!important;
+  min-width:0!important;
+  max-width:100%!important;
+}
+.v30app {
+  width:100%!important;
+  overflow-x:clip!important;
+}
+.v30app>main {
+  width:100%!important;
+  min-width:0!important;
+  grid-template-columns:76px minmax(0,1fr)!important;
+  overflow-x:clip!important;
+}
+.v30app .v30QuickRail {
+  width:76px!important;
+  min-width:76px!important;
+  max-width:76px!important;
+  padding:16px 7px!important;
+  gap:8px!important;
+  overflow-x:hidden!important;
+  overflow-y:auto!important;
+}
+.v30app .v30QuickRail>a {
+  box-sizing:border-box!important;
+  flex:0 0 60px!important;
+  width:60px!important;
+  min-width:0!important;
+  max-width:60px!important;
+  min-height:58px!important;
+  height:auto!important;
+  padding:7px 3px!important;
+  white-space:normal!important;
+  overflow-wrap:anywhere!important;
+  word-break:normal!important;
+  line-height:1.15!important;
+  text-align:center!important;
+  justify-content:center!important;
+  align-items:center!important;
+}
+.v30app .v30QuickRail>a span {
+  display:block!important;
+  flex:0 0 auto!important;
+  line-height:1!important;
+}
+.v30app .v30MainContent {
+  width:100%!important;
+  max-width:100%!important;
+  min-width:0!important;
+  padding:14px clamp(12px,1.8vw,26px) 26px!important;
+  overflow:visible!important;
+}
+.v30app .v30ExplorerLayout {
+  display:flex!important;
+  flex-direction:column!important;
+  width:100%!important;
+  min-width:0!important;
+  max-width:100%!important;
+  gap:12px!important;
+}
+.v30app .v30ExplorerLayout>.v30AssistantDock {
+  width:100%!important;
+  min-width:0!important;
+  max-width:100%!important;
+  grid-template-columns:minmax(0,.9fr) minmax(0,1.1fr)!important;
+  gap:10px 20px!important;
+  padding:18px 20px!important;
+}
+.v30app .v30AssistantIdentity,
+.v30app .v30AssistantComposer,
+.v30app .v30AssistantSuggestions {
+  min-width:0!important;
+}
+.v30app .v30AssistantComposer>button {
+  min-width:138px!important;
+  white-space:nowrap!important;
+}
+.v30app .v30ExplorerLayout>.v32GlobeNavigator {
+  width:100%!important;
+  min-width:0!important;
+  max-width:100%!important;
+  grid-template-columns:minmax(0,1.08fr) minmax(0,.92fr)!important;
+  gap:14px!important;
+  min-height:560px!important;
+  padding:14px!important;
+}
+.v30app .v32GlobeVisual {
+  min-width:0!important;
+  min-height:530px!important;
+}
+.v30app .v32GlobePanel {
+  min-width:0!important;
+}
+.v30app .v30ReferenceDiscovery {
+  min-width:0!important;
+  width:100%!important;
+  padding-left:14px!important;
+}
+.v30app .v30ReferenceBannerCopy p {
+  overflow-wrap:anywhere!important;
+}
+.v30app .v30ReferenceCategories,
+.v30app .v30ReferenceForms,
+.v30app .v30ReferenceNeeds {
+  min-width:0!important;
+}
+.v30app .v30ReferenceForms button,
+.v30app .v30ReferenceCategories button,
+.v30app .v30ReferenceNeeds button {
+  min-width:0!important;
+  overflow:hidden!important;
+}
+@media(max-width:1180px) {
+  .v30app .v30ExplorerLayout>.v32GlobeNavigator {
+    grid-template-columns:minmax(0,1fr) minmax(0,.9fr)!important;
+  }
+  .v30app .v32GlobeVisual {min-height:470px!important}
+}
+@media(max-width:860px) {
+  .v30app>main {grid-template-columns:minmax(0,1fr)!important}
+  .v30app .v30QuickRail {
+    width:100%!important;max-width:100%!important;min-width:0!important;
+    height:auto!important;max-height:none!important;
+    flex-direction:row!important;align-items:stretch!important;
+    justify-content:flex-start!important;gap:7px!important;
+    padding:8px 12px!important;
+    overflow-x:auto!important;overflow-y:hidden!important;
+  }
+  .v30app .v30QuickRail>a {
+    flex:0 0 68px!important;width:68px!important;max-width:68px!important;
+    min-height:56px!important;
+  }
+  .v30app .v30MainContent {grid-column:1!important;grid-row:2!important}
+  .v30app .v30ExplorerLayout>.v30AssistantDock {
+    grid-template-columns:minmax(0,1fr)!important;
+    grid-template-areas:"identity" "composer" "suggestions"!important;
+  }
+  .v30app .v30ExplorerLayout>.v32GlobeNavigator {
+    grid-template-columns:minmax(0,1fr)!important;
+    min-height:0!important;
+  }
+  .v30app .v32GlobeVisual {grid-column:1!important;grid-row:1!important;min-height:420px!important}
+  .v30app .v32GlobePanel {
+    grid-column:1!important;grid-row:2!important;
+    border-left:0!important;border-top:1px solid rgba(83,147,179,.18)!important;
+    padding-top:14px!important;
+  }
+  .v30app .v30ReferenceDiscovery {padding:0!important}
+}
+@media(max-width:560px) {
+  .v30app .v30MainContent {padding:10px!important}
+  .v30app .v30ExplorerLayout>.v30AssistantDock {padding:15px!important}
+  .v30app .v30AssistantComposer {flex-direction:column!important}
+  .v30app .v30AssistantComposer>button {width:100%!important;min-height:44px!important}
+  .v30app .v32GlobeVisual {min-height:340px!important}
+}
+
+
+/* V30.28 — Rail latéral : corriger le vrai DOM (quick search + liens) */
+.v30app .v30QuickRail {
+  display:flex!important;
+  flex-direction:column!important;
+  align-items:stretch!important;
+  justify-content:flex-start!important;
+  width:76px!important;
+  min-width:76px!important;
+  max-width:76px!important;
+  gap:9px!important;
+  padding:12px 7px!important;
+  overflow-x:hidden!important;
+  overflow-y:auto!important;
+}
+.v30app .v30QuickRail .v30QuickSearch {
+  display:none!important;
+}
+.v30app .v30QuickRail>a {
+  display:flex!important;
+  flex:0 0 66px!important;
+  flex-direction:column!important;
+  align-items:center!important;
+  justify-content:center!important;
+  gap:5px!important;
+  box-sizing:border-box!important;
+  width:60px!important;
+  min-width:60px!important;
+  max-width:60px!important;
+  min-height:66px!important;
+  height:66px!important;
+  padding:7px 3px!important;
+  white-space:normal!important;
+  overflow:hidden!important;
+  overflow-wrap:anywhere!important;
+  text-align:center!important;
+  font-size:9px!important;
+  line-height:1.1!important;
+}
+.v30app .v30QuickRail>a>span {
+  display:block!important;
+  width:auto!important;
+  flex:none!important;
+  font-size:19px!important;
+  line-height:1!important;
+  white-space:nowrap!important;
+}
+@media(max-width:860px) {
+  .v30app .v30QuickRail {
+    flex-direction:row!important;
+    align-items:stretch!important;
+    justify-content:flex-start!important;
+    width:100%!important;
+    min-width:0!important;
+    max-width:100%!important;
+    height:auto!important;
+    padding:8px 12px!important;
+    overflow-x:auto!important;
+    overflow-y:hidden!important;
+  }
+  .v30app .v30QuickRail .v30QuickSearch {display:none!important}
+  .v30app .v30QuickRail>a {
+    flex:0 0 68px!important;
+    width:68px!important;
+    min-width:68px!important;
+    max-width:68px!important;
+    height:60px!important;
+    min-height:60px!important;
+  }
+}
+
+
+/* V30.29 — Retirer le rail latéral défectueux du premier écran.
+   Les mêmes huit entrées sont déjà présentées dans le panneau territorial. */
+@media(min-width:861px) {
+  .v30app>main {
+    display:grid!important;
+    grid-template-columns:minmax(0,1fr)!important;
+    align-items:start!important;
+    width:100%!important;
+    min-width:0!important;
+    overflow-x:clip!important;
+  }
+  .v30app>main>.v30QuickRail {
+    display:none!important;
+  }
+  .v30app>main>.v30MainContent {
+    grid-column:1!important;
+    grid-row:1!important;
+    width:100%!important;
+    min-width:0!important;
+    max-width:100%!important;
+    margin:0!important;
+    padding:14px clamp(14px,2vw,28px) 28px!important;
+  }
+}
+
+
+/* V30.30 — Finition de l'accueil après validation navigateur */
+.v30app .v30ExplorerLayout>.v30AssistantDock {
+  box-sizing:border-box!important;
+  min-height:148px!important;
+  height:auto!important;
+  padding:22px 20px 16px!important;
+  align-items:center!important;
+  row-gap:12px!important;
+  overflow:visible!important;
+}
+.v30app .v30AssistantIdentity {
+  align-items:center!important;
+  gap:13px!important;
+  padding-top:2px!important;
+}
+.v30app .v30AssistantIdentity>div {
+  min-width:0!important;
+  padding-top:2px!important;
+}
+.v30app .v30AssistantIdentity .eyebrow {
+  display:block!important;
+  line-height:1.35!important;
+  margin:0 0 5px!important;
+  white-space:normal!important;
+}
+.v30app .v30AssistantIdentity h2 {
+  margin:0 0 4px!important;
+  line-height:1.2!important;
+}
+.v30app .v30AssistantIdentity p {
+  margin:0!important;
+  line-height:1.45!important;
+  max-width:62ch!important;
+}
+.v30app .v30AssistantOrb {
+  flex:0 0 46px!important;
+  width:46px!important;
+  height:46px!important;
+}
+.v30app .v30AssistantComposer {
+  align-items:stretch!important;
+  gap:9px!important;
+}
+.v30app .v30AssistantInput {
+  min-height:44px!important;
+}
+.v30app .v30AssistantComposer>button {
+  min-height:44px!important;
+}
+.v30app .v30AssistantSuggestions {
+  align-items:center!important;
+  gap:7px!important;
+}
+.v30app .v30ExplorerLayout>.v32GlobeNavigator {
+  align-items:stretch!important;
+  min-height:520px!important;
+  padding:12px!important;
+  gap:12px!important;
+}
+.v30app .v32GlobeVisual {
+  min-height:490px!important;
+  overflow:hidden!important;
+}
+.v30app .v32GlobePanel {
+  padding:14px!important;
+  min-height:0!important;
+}
+.v30app .v30ReferenceBanner {
+  min-height:178px!important;
+}
+.v30app .v30ReferenceBannerCopy {
+  max-width:58ch!important;
+}
+.v30app .v30ReferenceBannerCopy h2 {
+  line-height:1.12!important;
+  margin:4px 0 6px!important;
+}
+.v30app .v30ReferenceBannerCopy p {
+  line-height:1.45!important;
+}
+.v30app .v30ReferenceCategories button {
+  min-height:70px!important;
+}
+.v30app .v30ReferenceForms button {
+  min-height:72px!important;
+}
+@media(max-width:1180px) {
+  .v30app .v30ExplorerLayout>.v30AssistantDock {
+    padding:20px 16px 15px!important;
+  }
+  .v30app .v30ExplorerLayout>.v32GlobeNavigator {min-height:480px!important}
+  .v30app .v32GlobeVisual {min-height:450px!important}
+}
+@media(max-width:860px) {
+  .v30app .v30ExplorerLayout>.v30AssistantDock {min-height:0!important}
+  .v30app .v30AssistantIdentity {align-items:flex-start!important}
+  .v30app .v32GlobeVisual {min-height:400px!important}
+}
+@media(max-width:560px) {
+  .v30app .v30ExplorerLayout>.v30AssistantDock {
+    padding:17px 14px!important;
+    gap:12px!important;
+  }
+  .v30app .v30AssistantOrb {flex-basis:40px!important;width:40px!important;height:40px!important}
+  .v30app .v32GlobeVisual {min-height:330px!important}
+}
+
+
+/* V30.31 — Restaurer l'intégralité de l'assistant sur desktop */
+@media (min-width:1101px) {
+  .v30app>main>.v30MainContent>.v30ExplorerLayout {
+    grid-template-rows:172px minmax(390px,1fr) 122px!important;
+  }
+  .v30app>main>.v30MainContent>.v30ExplorerLayout>.v30AssistantDock {
+    height:auto!important;
+    min-height:172px!important;
+    max-height:none!important;
+    box-sizing:border-box!important;
+    padding:15px 16px 13px!important;
+    gap:8px!important;
+    align-content:space-between!important;
+    overflow:visible!important;
+  }
+  .v30app>main>.v30MainContent>.v30ExplorerLayout>.v30AssistantDock .v30AssistantIdentity {
+    align-items:center!important;
+    min-height:48px!important;
+  }
+  .v30app>main>.v30MainContent>.v30ExplorerLayout>.v30AssistantDock .v30AssistantIdentity .eyebrow {
+    display:block!important;
+    visibility:visible!important;
+    line-height:1.35!important;
+    margin:0 0 4px!important;
+  }
+  .v30app>main>.v30MainContent>.v30ExplorerLayout>.v30AssistantDock .v30AssistantIdentity h2 {
+    margin:0 0 3px!important;
+    line-height:1.2!important;
+  }
+  .v30app>main>.v30MainContent>.v30ExplorerLayout>.v30AssistantDock .v30AssistantIdentity p {
+    display:block!important;
+    margin:0!important;
+    line-height:1.35!important;
+  }
+  .v30app>main>.v30MainContent>.v30ExplorerLayout>.v30AssistantDock .v30AssistantComposer {
+    min-height:40px!important;
+    align-items:stretch!important;
+  }
+  .v30app>main>.v30MainContent>.v30ExplorerLayout>.v30AssistantDock .v30AssistantSuggestions {
+    min-height:25px!important;
+    overflow:visible!important;
+    align-items:center!important;
+    flex-wrap:wrap!important;
+    margin:0!important;
+  }
+  .v30app>main>.v30MainContent>.v30ExplorerLayout>.v30AssistantDock .v30AssistantSuggestions>span,
+  .v30app>main>.v30MainContent>.v30ExplorerLayout>.v30AssistantDock .v30AssistantSuggestions>button {
+    display:inline-flex!important;
+    visibility:visible!important;
+  }
+}
+
+
+/* V30.33 — Première vue complète : assistant + globe + suggestions */
+@media (min-width:1101px) and (min-height:650px) {
+  .v30app>main>.v30MainContent {
+    padding-top:12px!important;
+    padding-bottom:10px!important;
+  }
+  .v30app>main>.v30MainContent>.v30ExplorerLayout {
+    display:grid!important;
+    grid-template-columns:minmax(0,1.08fr) minmax(0,.92fr)!important;
+    grid-template-rows:136px minmax(220px,1fr) 126px!important;
+    grid-auto-flow:row!important;
+    gap:9px 14px!important;
+    height:calc(100vh - 184px)!important;
+    min-height:490px!important;
+    max-height:620px!important;
+    align-items:stretch!important;
+  }
+  .v30app>main>.v30MainContent>.v30ExplorerLayout>.v30AssistantDock {
+    grid-column:1!important;
+    grid-row:1!important;
+    min-height:0!important;
+    height:100%!important;
+    max-height:none!important;
+    padding:12px 15px 10px!important;
+    gap:6px!important;
+    overflow:visible!important;
+    align-content:center!important;
+  }
+  .v30app>main>.v30MainContent>.v30ExplorerLayout>.v32GlobeNavigator {
+    display:contents!important;
+  }
+  .v30app>main>.v30MainContent>.v30ExplorerLayout>.v32GlobeNavigator>.v32GlobeVisual {
+    grid-column:1!important;
+    grid-row:2!important;
+    min-height:0!important;
+    height:100%!important;
+    max-height:none!important;
+  }
+  .v30app>main>.v30MainContent>.v30ExplorerLayout>.v32GlobeNavigator>.v32GlobePanel {
+    grid-column:2!important;
+    grid-row:1 / span 3!important;
+    min-height:0!important;
+    height:100%!important;
+    max-height:none!important;
+    overflow-y:auto!important;
+  }
+  .v30app>main>.v30MainContent>.v30ExplorerLayout>.v32GlobeNavigator>.v30SuggestionsWide {
+    grid-column:1!important;
+    grid-row:3!important;
+    display:block!important;
+    height:100%!important;
+    min-height:0!important;
+    max-height:none!important;
+    overflow:hidden!important;
+    padding:8px 10px!important;
+  }
+  .v30app>main>.v30MainContent>.v30ExplorerLayout .v30SuggestionsWide .v30ReferenceHeading {
+    margin:0 0 5px!important;
+  }
+  .v30app>main>.v30MainContent>.v30ExplorerLayout .v30SuggestionsWide .v30ReferenceSuggestions {
+    grid-template-columns:repeat(6,minmax(0,1fr))!important;
+    gap:6px!important;
+  }
+  .v30app>main>.v30MainContent>.v30ExplorerLayout .v30SuggestionsWide .v30SuggestionImage {
+    height:42px!important;
+  }
+  .v30app>main>.v30MainContent>.v30ExplorerLayout .v30SuggestionsWide .v30ReferenceSuggestions small {
+    display:none!important;
+  }
+}
+@media (min-width:1101px) and (max-height:649px) {
+  .v30app>main>.v30MainContent>.v30ExplorerLayout {
+    grid-template-rows:126px minmax(190px,1fr) 112px!important;
+    height:calc(100vh - 174px)!important;
+    min-height:430px!important;
+    gap:8px 12px!important;
+  }
+  .v30app>main>.v30MainContent>.v30ExplorerLayout>.v32GlobeNavigator>.v32GlobeVisual {min-height:0!important}
+  .v30app>main>.v30MainContent>.v30ExplorerLayout .v30SuggestionsWide .v30SuggestionImage {height:34px!important}
+  .v30app>main>.v30MainContent>.v30ExplorerLayout .v30SuggestionsWide .v30ReferenceSuggestions small {display:none!important}
+}
+
+
+/* V30.34 — Accueil voyageur épuré : retirer les panneaux techniques du flux */
+@media (min-width:1101px) {
+  .v30app>main>.v30MainContent>.v30hero,
+  .v30app>main>.v30MainContent>.v30healthSummary,
+  .v30app>main>.v30MainContent>.v30workspace,
+  .v30app>main>.v30MainContent>.v30opportunityPanel,
+  .v30app>main>.v30MainContent>.v30scopeLegend,
+  .v30app>main>.v30MainContent>.v30b2bScope,
+  .v30app>.v30footer {
+    display:none!important;
+  }
+  .v30app>main>.v30MainContent {
+    height:calc(100vh - 158px)!important;
+    min-height:0!important;
+    overflow:hidden!important;
+  }
+  .v30app>main>.v30MainContent>.v30ExplorerLayout {
+    height:calc(100vh - 184px)!important;
+    min-height:0!important;
+    max-height:none!important;
+  }
+}
+
+
+/* V30.35 — Empêcher le globe de recouvrir les suggestions de l'assistant */
+@media (min-width:1101px) and (min-height:650px) {
+  .v30app>main>.v30MainContent>.v30ExplorerLayout {
+    grid-template-rows:164px minmax(180px,1fr) 112px!important;
+    gap:9px 14px!important;
+  }
+  .v30app>main>.v30MainContent>.v30ExplorerLayout>.v30AssistantDock {
+    min-height:164px!important;
+    height:164px!important;
+    padding:12px 15px 10px!important;
+    gap:6px!important;
+    overflow:visible!important;
+  }
+  .v30app>main>.v30MainContent>.v30ExplorerLayout>.v32GlobeNavigator>.v32GlobeVisual {
+    min-height:0!important;
+    height:100%!important;
+  }
+  .v30app>main>.v30MainContent>.v30ExplorerLayout>.v30AssistantDock .v30AssistantSuggestions {
+    position:relative!important;
+    z-index:3!important;
+    min-height:26px!important;
+    margin-top:0!important;
+  }
+}
+@media (min-width:1101px) and (max-height:649px) {
+  .v30app>main>.v30MainContent>.v30ExplorerLayout {
+    grid-template-rows:154px minmax(160px,1fr) 104px!important;
+  }
+  .v30app>main>.v30MainContent>.v30ExplorerLayout>.v30AssistantDock {
+    min-height:154px!important;
+    height:154px!important;
+  }
+}
+
+
+/* V30.36 — Utiliser la hauteur disponible et donner plus de présence au globe */
+@media (min-width:1101px) and (min-height:680px) {
+  .v30app>main>.v30MainContent {
+    height:calc(100dvh - 158px)!important;
+    min-height:0!important;
+    max-height:none!important;
+    padding-top:12px!important;
+    padding-bottom:12px!important;
+    box-sizing:border-box!important;
+    overflow:hidden!important;
+  }
+  .v30app>main>.v30MainContent>.v30ExplorerLayout {
+    height:100%!important;
+    min-height:0!important;
+    max-height:none!important;
+    grid-template-rows:164px minmax(220px,1fr) 112px!important;
+    gap:9px 14px!important;
+    align-content:stretch!important;
+  }
+  .v30app>main>.v30MainContent>.v30ExplorerLayout>.v32GlobeNavigator>.v32GlobeVisual {
+    height:100%!important;
+    min-height:0!important;
+    background:
+      radial-gradient(ellipse at 50% 48%,rgba(24,105,205,.30),rgba(4,24,48,.30) 48%,transparent 74%),
+      #020b18!important;
+  }
+  .v30app>main>.v30MainContent>.v30ExplorerLayout>.v32GlobeNavigator>.v32GlobeVisual:before {
+    width:min(98%,860px)!important;
+    border-color:rgba(95,190,255,.30)!important;
+    box-shadow:inset 0 0 120px rgba(22,112,230,.20),0 0 130px rgba(24,130,255,.20)!important;
+  }
+  .v30app>main>.v30MainContent>.v30ExplorerLayout .v32Sphere3D {
+    width:min(96%,780px)!important;
+    max-width:780px!important;
+    box-shadow:
+      inset -58px -28px 110px rgba(0,0,0,.78),
+      inset 28px 15px 62px rgba(165,225,255,.22),
+      0 0 42px rgba(45,155,255,.58),
+      0 0 125px rgba(30,125,255,.30)!important;
+  }
+  .v30app>main>.v30MainContent>.v30ExplorerLayout>.v32GlobeNavigator>.v32GlobePanel {
+    height:100%!important;
+    max-height:none!important;
+  }
+}
+@media (min-width:1101px) and (max-height:679px) {
+  .v30app>main>.v30MainContent>.v30ExplorerLayout {
+    grid-template-rows:154px minmax(180px,1fr) 104px!important;
+  }
+  .v30app>main>.v30MainContent>.v30ExplorerLayout .v32Sphere3D {
+    width:min(88%,680px)!important;
+  }
+}
+
+
+/* V30.37 — Supprimer le vide inférieur : l'explorateur occupe le viewport restant */
+@media (min-width:1101px) and (min-height:680px) {
+  .v30app {
+    min-height:100dvh!important;
+    height:100dvh!important;
+    display:flex!important;
+    flex-direction:column!important;
+    overflow:hidden!important;
+  }
+  .v30app>.v30header {
+    flex:0 0 78px!important;
+  }
+  .v30app>main {
+    flex:1 1 auto!important;
+    min-height:0!important;
+    height:auto!important;
+    display:flex!important;
+    flex-direction:column!important;
+    overflow:hidden!important;
+  }
+  .v30app>main>.v30MainContent {
+    flex:1 1 auto!important;
+    min-height:0!important;
+    height:auto!important;
+    max-height:none!important;
+    padding:12px 0!important;
+    box-sizing:border-box!important;
+    overflow:hidden!important;
+  }
+  .v30app>main>.v30MainContent>.v30ExplorerLayout {
+    height:100%!important;
+    min-height:0!important;
+    max-height:none!important;
+    grid-template-rows:164px minmax(0,1fr) 112px!important;
+  }
+  .v30app>main>.v30QuickRail {
+    display:none!important;
+  }
+}
+
+
+/* V30.38 — Ancrer réellement l'espace d'exploration au bas du viewport.
+   Le conteneur principal gardait une hauteur intrinsèque malgré les flex précédents. */
+@media (min-width:1101px) and (min-height:680px) {
+  .v30app>main>.v30MainContent {
+    position:fixed!important;
+    top:78px!important;
+    right:0!important;
+    bottom:0!important;
+    left:0!important;
+    width:100%!important;
+    height:auto!important;
+    min-height:0!important;
+    max-height:none!important;
+    padding:12px clamp(14px,2vw,28px) 12px!important;
+    margin:0!important;
+    box-sizing:border-box!important;
+    overflow:hidden!important;
+    z-index:2!important;
+  }
+  .v30app>main>.v30MainContent>.v30ExplorerLayout {
+    width:100%!important;
+    height:100%!important;
+    min-height:0!important;
+    max-height:none!important;
+    grid-template-rows:164px minmax(0,1fr) 112px!important;
+    align-content:stretch!important;
+  }
+  .v30app>header.v30header {
+    z-index:10!important;
+  }
+}
