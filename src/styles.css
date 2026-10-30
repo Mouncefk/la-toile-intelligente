@@ -4233,3 +4233,36 @@ html,body,#root{width:100%;max-width:100%;overflow-x:hidden}
     display:none!important;
   }
 }
+
+
+/* V30.38 — Ancrer réellement l'espace d'exploration au bas du viewport.
+   Le conteneur principal gardait une hauteur intrinsèque malgré les flex précédents. */
+@media (min-width:1101px) and (min-height:680px) {
+  .v30app>main>.v30MainContent {
+    position:fixed!important;
+    top:78px!important;
+    right:0!important;
+    bottom:0!important;
+    left:0!important;
+    width:100%!important;
+    height:auto!important;
+    min-height:0!important;
+    max-height:none!important;
+    padding:12px clamp(14px,2vw,28px) 12px!important;
+    margin:0!important;
+    box-sizing:border-box!important;
+    overflow:hidden!important;
+    z-index:2!important;
+  }
+  .v30app>main>.v30MainContent>.v30ExplorerLayout {
+    width:100%!important;
+    height:100%!important;
+    min-height:0!important;
+    max-height:none!important;
+    grid-template-rows:164px minmax(0,1fr) 112px!important;
+    align-content:stretch!important;
+  }
+  .v30app>header.v30header {
+    z-index:10!important;
+  }
+}
