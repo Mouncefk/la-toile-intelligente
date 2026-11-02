@@ -14,7 +14,7 @@ A successful shell exit is not sufficient evidence that the globe can render. Th
 
 - PostgreSQL with PostGIS enabled
 - `ogr2ogr`, `curl`, and `unzip`
-- A `DATABASE_URL` connection string accepted by GDAL/OGR
+- `DATABASE_URL` in standard PostgreSQL URL form for the Node.js validator\n- `OGR_CONNECTION` in GDAL PostgreSQL connection-string form for `ogr2ogr`
 - The V29.14/V29.15 and V32 geography schema already applied
 
 ## Import
@@ -22,11 +22,11 @@ A successful shell exit is not sufficient evidence that the globe can render. Th
 Run the existing importer from the repository root:
 
 ```bash
-export DATABASE_URL='PG:host=localhost port=5432 dbname=latOile user=connect password=...'
+export DATABASE_URL='postgresql://connect:...@localhost:5432/latOile'\nexport OGR_CONNECTION='PG:host=localhost port=5432 dbname=latOile user=connect password=...'
 bash scripts/import-natural-earth-10m.sh
 ```
 
-Use the connection syntax required by GDAL/OGR. Do not paste a production password into shell history or commit it.
+Keep the two connection variables separate: Node's `pg` driver reads `DATABASE_URL`; GDAL/OGR reads `OGR_CONNECTION`. Do not paste a production password into shell history or commit it.
 
 ## Validate
 
