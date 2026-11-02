@@ -1,0 +1,36 @@
+name: V36 traveler validation
+
+on:
+  push:
+    branches: [v36-conversational-ai-adapter]
+  pull_request:
+    branches: [v30-visual-rebuild-foundation]
+    paths:
+      - 'server/v30-platform.js'
+      - 'src/v30-app.jsx'
+      - 'src/styles.css'
+      - 'scripts/test-v35-traveler-intent.mjs'
+      - 'scripts/test-v36-ai-fallback.mjs'
+      - 'package.json'
+      - 'package-lock.json'
+      - '.github/workflows/v36-traveler-validation.yml'
+
+jobs:
+  traveler:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 24
+          cache: npm
+      - name: Install dependencies
+        run: npm ci
+      - name: Check server syntax
+        run: npm run check:v33
+      - name: Test traveler intent rules
+        run: npm run test:v35:traveler-intent
+      - name: Test AI fallback and destination context
+        run: npm run test:v36:ai-fallback
+      - name: Build traveler interface
+        run: npm run build
