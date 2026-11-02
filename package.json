@@ -36,7 +36,12 @@
     "check:v30": "node --check server/v30-platform.js && node --check server/index-v27.js && node --check scripts/test-v30-first-platform.mjs",
     "check:v33": "node --check server/v30-platform.js && node --check scripts/test-v30-first-platform.mjs",
     "test:v30:http-smoke": "node scripts/test-v30-http-smoke.mjs",
-    "test:v30:entry": "node scripts/test-v30-entry.mjs"
+    "test:v30:entry": "node scripts/test-v30-entry.mjs",
+    "validate:geo-import": "node scripts/validate-natural-earth-import.mjs",
+    "check:geo-import": "node --check scripts/validate-natural-earth-import.mjs",
+    "test:v32:globe-acceptance": "node scripts/test-v32-globe-acceptance.mjs",
+    "check:v34:trust": "node --check server/v30-platform.js",
+    "test:v35:traveler-intent": "node --check server/v30-platform.js && node scripts/test-v35-traveler-intent.mjs"
   },
   "dependencies": {
     "@vitejs/plugin-react": "latest",
