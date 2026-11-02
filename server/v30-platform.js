@@ -13,7 +13,7 @@ function normalizeIntentText(value = '') {
     .replace(/[’']/g, ' ').replace(/[^a-z0-9]+/g, ' ').trim();
 }
 
-function classify(raw = '') {
+export function classify(raw = '') {
   const text = String(raw).trim();
   const t = normalizeIntentText(text);
   const has = pattern => pattern.test(t);
