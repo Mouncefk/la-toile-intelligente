@@ -390,6 +390,28 @@ v30Router.post('/session/:id/intent', async (req, res) => {
   const rawText = String(req.body.rawText || '').trim();
   if (!rawText) return res.status(400).json({ error: 'rawText_required' });
   const intent = classify(rawText);
+  const sessionQ = await safeQuery(res,
+    'SELECT id,territory_key FROM v30_traveler_sessions WHERE id=$1',
+    [req.params.id]);
+  if (!sessionQ) return;
+  if (!sessionQ.rows[0]) return res.status(404).json({ error: 'session_not_found' });
+  if (!sessionQ.rows[0].territory_key && intent.territoryKey) {
+    const territoryQ = await safeQuery(res,
+      'SELECT territory_key,country_iso3 FROM v30_territories WHERE territory_key=$1 AND active=true',
+      [intent.territoryKey]);
+    if (!territoryQ) return;
+    if (territoryQ.rows[0]) {
+      await safeQuery(res,
+        'UPDATE v30_traveler_sessions SET territory_key=$2,country_iso3=$3,stage=$4 WHERE id=$1',
+        [req.params.id, territoryQ.rows[0].territory_key, territoryQ.rows[0].country_iso3, 'territory']);
+    } else {
+      intent.territoryKey = null;
+      if (!intent.missing.includes('destination')) intent.missing.unshift('destination');
+      intent.needsClarification = true;
+      intent.followUp = 'destination';
+      intent.followUpQuestion = 'Cette destination n’est pas encore référencée dans le territoire couvert. Souhaitez-vous choisir une autre destination ou poursuivre votre découverte ?';
+    }
+  }
   const confidence = Number(intent.confidence || 0) / 100;
   const q = await safeQuery(res,
     'INSERT INTO v30_traveler_intents(session_id,raw_text,intent,confidence) VALUES($1,$2,$3,$4) RETURNING *',
