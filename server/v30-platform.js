@@ -472,14 +472,14 @@ v30Router.post('/session/:id/profile', async (req, res) => {
 v30Router.post('/session/:id/intent', async (req, res) => {
   const rawText = String(req.body.rawText || '').trim();
   if (!rawText) return res.status(400).json({ error: 'rawText_required' });
-  const baseIntent = classify(rawText);
-  const understood = await understandTravelerIntent(rawText, baseIntent);
-  const intent = understood.intent;
   const sessionQ = await safeQuery(res,
     'SELECT id,territory_key FROM v30_traveler_sessions WHERE id=$1',
     [req.params.id]);
   if (!sessionQ) return;
   if (!sessionQ.rows[0]) return res.status(404).json({ error: 'session_not_found' });
+  const baseIntent = classify(rawText);
+  const understood = await understandTravelerIntent(rawText, baseIntent);
+  const intent = understood.intent;
   if (!sessionQ.rows[0].territory_key && intent.territoryKey) {
     const territoryQ = await safeQuery(res,
       'SELECT territory_key,country_iso3 FROM v30_territories WHERE territory_key=$1 AND active=true',
