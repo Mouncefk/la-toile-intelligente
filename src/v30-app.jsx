@@ -231,7 +231,7 @@ export function V30App(){
   try{
    let currentSession=session;
    if(!currentSession){
-    const d=await v30fetch('/api/platform/v30/session',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({countryIso3:country,territoryKey:territory?.territory_key||null,freedomMode})});
+    const d=await v30fetch('/api/platform/v30/session',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({countryIso3:country,territoryKey:scope==='territory'?territory?.territory_key||null:null,freedomMode})});
     currentSession=d.session;setSession(currentSession);
    }
    const analysis=await v30fetch('/api/platform/v30/session/'+currentSession.id+'/intent',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({rawText:combined,freedomMode})});
