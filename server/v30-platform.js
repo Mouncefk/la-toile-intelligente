@@ -916,7 +916,8 @@ v30Router.get('/v32/globe/:nodeKey/geometry',async(req,res)=>{
    ? "SELECT ST_AsGeoJSON(ST_SimplifyPreserveTopology(ST_Force2D(geom),0.08))::json AS geometry FROM ne_admin0_countries_v29_14 WHERE COALESCE(NULLIF(UPPER(iso_a3),'-'),NULLIF(UPPER(adm0_a3),'-'))=$1 LIMIT 1"
    : "SELECT ST_AsGeoJSON(ST_SimplifyPreserveTopology(ST_Force2D(geom),0.03))::json AS geometry FROM ne_admin1_states_v29_14 WHERE gid_1=$1 OR adm1_code=$1 LIMIT 1";
   const q=await pool.query(sql,[x.geometry_ref.replace(/^country:/,'').replace(/^admin1:/,'')]);
-  res.json({node:x,geometry:q.rows[0]?.geometry||null,source:x.source_dataset,available:true});
+  const geometry=q.rows[0]?.geometry||null;
+   res.json({node:x,geometry,source:x.source_dataset,available:Boolean(geometry)});
  }catch(e){res.status(500).json({error:e.message})}
 });
 
@@ -1322,7 +1323,8 @@ v30Router.get('/v32/globe/:nodeKey/geometry',async(req,res)=>{
    ? "SELECT ST_AsGeoJSON(ST_SimplifyPreserveTopology(ST_Force2D(geom),0.08))::json AS geometry FROM ne_admin0_countries_v29_14 WHERE COALESCE(NULLIF(UPPER(iso_a3),'-'),NULLIF(UPPER(adm0_a3),'-'))=$1 LIMIT 1"
    : "SELECT ST_AsGeoJSON(ST_SimplifyPreserveTopology(ST_Force2D(geom),0.03))::json AS geometry FROM ne_admin1_states_v29_14 WHERE gid_1=$1 OR adm1_code=$1 LIMIT 1";
   const q=await pool.query(sql,[x.geometry_ref.replace(/^country:/,'').replace(/^admin1:/,'')]);
-  res.json({node:x,geometry:q.rows[0]?.geometry||null,source:x.source_dataset,available:true});
+  const geometry=q.rows[0]?.geometry||null;
+   res.json({node:x,geometry,source:x.source_dataset,available:Boolean(geometry)});
  }catch(e){res.status(500).json({error:e.message})}
 });
 
@@ -1728,7 +1730,8 @@ v30Router.get('/v32/globe/:nodeKey/geometry',async(req,res)=>{
    ? "SELECT ST_AsGeoJSON(ST_SimplifyPreserveTopology(ST_Force2D(geom),0.08))::json AS geometry FROM ne_admin0_countries_v29_14 WHERE COALESCE(NULLIF(UPPER(iso_a3),'-'),NULLIF(UPPER(adm0_a3),'-'))=$1 LIMIT 1"
    : "SELECT ST_AsGeoJSON(ST_SimplifyPreserveTopology(ST_Force2D(geom),0.03))::json AS geometry FROM ne_admin1_states_v29_14 WHERE gid_1=$1 OR adm1_code=$1 LIMIT 1";
   const q=await pool.query(sql,[x.geometry_ref.replace(/^country:/,'').replace(/^admin1:/,'')]);
-  res.json({node:x,geometry:q.rows[0]?.geometry||null,source:x.source_dataset,available:true});
+  const geometry=q.rows[0]?.geometry||null;
+   res.json({node:x,geometry,source:x.source_dataset,available:Boolean(geometry)});
  }catch(e){res.status(500).json({error:e.message})}
 });
 
