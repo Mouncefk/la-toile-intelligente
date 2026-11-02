@@ -481,7 +481,7 @@ v30Router.post('/session/:id/intent', async (req, res) => {
   const baseIntent = classify(rawText, { territoryKey: sessionQ.rows[0].territory_key || null });
   const understood = await understandTravelerIntent(rawText, baseIntent);
   const intent = understood.intent;
-  if (intent.territoryFromText && intent.territoryKey && sessionQ.rows[0].territory_key !== intent.territoryKey) {
+  if (intent.territoryKey && sessionQ.rows[0].territory_key !== intent.territoryKey) {
     const territoryQ = await safeQuery(res,
       'SELECT territory_key,country_iso3 FROM v30_territories WHERE territory_key=$1 AND active=true',
       [intent.territoryKey]);
