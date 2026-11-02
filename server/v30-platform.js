@@ -84,12 +84,22 @@ export function classify(raw = '') {
     : missing.includes('travel_party') ? 'travel_party'
     : missing.includes('budget') ? 'budget'
     : missing.includes('activity') ? 'activity' : null;
+  const followUpQuestions = {
+    destination: 'Avez-vous déjà une destination en tête, ou souhaitez-vous que La Toile vous aide à en découvrir une ?',
+    dates: 'À quelle période aimeriez-vous voyager ? Quelques jours de décalage sont-ils possibles ?',
+    duration: 'Combien de jours ou de nuits envisagez-vous ?',
+    travel_party: 'Voyagerez-vous seul, en couple, en famille ou en groupe ?',
+    budget: 'Quel niveau de budget souhaitez-vous privilégier : économique, confort ou haut de gamme ?',
+    activity: 'Qu’aimeriez-vous surtout vivre : nature, culture, mer, gastronomie, aventure ou autre chose ?'
+  };
   return {
     rawText: text, activity, activityPreferences: preferences,
     travelerProfile, companion, safety, territoryKey, pace, budgetLevel,
     durationDays, partySize, flexibilityDays,
     travelWindow: { month: month ? Number(month) : null, year: yearMatch ? Number(yearMatch[1]) : null },
     accessibility, missing, confidence, followUp,
+    followUpQuestion: followUp ? followUpQuestions[followUp] : null,
+    needsClarification: missing.length > 0,
     travelerDecides: true
   };
 }
@@ -380,11 +390,11 @@ v30Router.post('/session/:id/intent', async (req, res) => {
   const rawText = String(req.body.rawText || '').trim();
   if (!rawText) return res.status(400).json({ error: 'rawText_required' });
   const intent = classify(rawText);
-  const confidence = (intent.activity ? 0.35 : 0) + (intent.territoryKey ? 0.35 : 0) + (intent.travelerProfile ? 0.15 : 0) + (intent.safety ? 0.15 : 0);
+  const confidence = Number(intent.confidence || 0) / 100;
   const q = await safeQuery(res,
     'INSERT INTO v30_traveler_intents(session_id,raw_text,intent,confidence) VALUES($1,$2,$3,$4) RETURNING *',
     [req.params.id, rawText, intent, confidence]);
-  if (q) res.status(201).json({ intent, analysis: q.rows[0], next: 'solutions' });
+  if (q) res.status(201).json({ intent, analysis: q.rows[0], next: intent.needsClarification ? 'clarification' : 'solutions', followUpQuestion: intent.followUpQuestion });
 });
 
 v30Router.get('/journey/windows', async (req,res) => {
