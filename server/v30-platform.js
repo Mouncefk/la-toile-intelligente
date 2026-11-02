@@ -104,6 +104,89 @@ export function classify(raw = '') {
   };
 }
 
+const TRAVEL_INTENT_FIELDS = [
+  'activity', 'activityPreferences', 'travelerProfile', 'companion', 'safety',
+  'territoryKey', 'pace', 'budgetLevel', 'durationDays', 'partySize',
+  'flexibilityDays', 'travelWindow', 'accessibility'
+];
+
+function mergeModelIntent(base, model) {
+  const merged = { ...base };
+  for (const key of TRAVEL_INTENT_FIELDS) {
+    const value = model?.[key];
+    if (value !== undefined && value !== null && value !== '') merged[key] = value;
+  }
+  if (!Array.isArray(merged.activityPreferences)) merged.activityPreferences = [];
+  if (!merged.travelWindow || typeof merged.travelWindow !== 'object') merged.travelWindow = { month: null, year: null };
+  merged.travelWindow = {
+    month: Number.isInteger(Number(merged.travelWindow.month)) && Number(merged.travelWindow.month) >= 1 && Number(merged.travelWindow.month) <= 12 ? Number(merged.travelWindow.month) : base.travelWindow.month,
+    year: Number.isInteger(Number(merged.travelWindow.year)) && Number(merged.travelWindow.year) >= 2020 && Number(merged.travelWindow.year) <= 2100 ? Number(merged.travelWindow.year) : base.travelWindow.year
+  };
+  if (merged.durationDays !== null) merged.durationDays = Math.max(1, Math.min(365, Number(merged.durationDays) || base.durationDays));
+  if (merged.partySize !== null) merged.partySize = Math.max(1, Math.min(50, Number(merged.partySize) || base.partySize));
+  if (merged.flexibilityDays !== null) merged.flexibilityDays = Math.max(0, Math.min(30, Number(merged.flexibilityDays) || 0));
+  const missing = [];
+  if (!merged.territoryKey) missing.push('destination');
+  if (!merged.activity && !merged.activityPreferences.length) missing.push('activity');
+  if (!merged.travelWindow.month && !merged.travelWindow.year) missing.push('dates');
+  if (!merged.durationDays) missing.push('duration');
+  if (!merged.budgetLevel) missing.push('budget');
+  if (!merged.travelerProfile && !merged.partySize) missing.push('travel_party');
+  merged.missing = missing;
+  merged.confidence = Math.round((8 - Math.min(8, missing.length)) / 8 * 100);
+  const followUp = ['destination','dates','duration','travel_party','budget','activity'].find(key => missing.includes(key)) || null;
+  const questions = {
+    destination: 'Avez-vous une destination en tête, ou souhaitez-vous que La Toile vous aide à en découvrir une ?',
+    dates: 'À quelle période aimeriez-vous voyager ? Êtes-vous flexible de quelques jours ?',
+    duration: 'Combien de jours ou de nuits souhaitez-vous consacrer à ce voyage ?',
+    travel_party: 'Avec qui voyagerez-vous et combien serez-vous ?',
+    budget: 'Quel niveau de budget souhaitez-vous privilégier : économique, confort ou haut de gamme ?',
+    activity: 'Quelles expériences vous attirent le plus : nature, culture, mer, gastronomie, aventure ou autre chose ?'
+  };
+  merged.followUp = followUp;
+  merged.followUpQuestion = followUp ? questions[followUp] : null;
+  merged.needsClarification = missing.length > 0;
+  merged.travelerDecides = true;
+  return merged;
+}
+
+async function understandTravelerIntent(rawText, baseIntent) {
+  const enabled = String(process.env.TRAVEL_ASSISTANT_PROVIDER || 'rules').toLowerCase();
+  const endpoint = process.env.TRAVEL_ASSISTANT_API_URL;
+  const apiKey = process.env.TRAVEL_ASSISTANT_API_KEY;
+  const model = process.env.TRAVEL_ASSISTANT_MODEL;
+  if (enabled !== 'compatible' || !endpoint || !apiKey || !model) {
+    return { intent: baseIntent, provider: 'rules', fallback: enabled === 'compatible' };
+  }
+  const controller = new AbortController();
+  const timer = setTimeout(() => controller.abort(), 12000);
+  try {
+    const response = await fetch(endpoint, {
+      method: 'POST',
+      signal: controller.signal,
+      headers: { 'Content-Type': 'application/json', Authorization: 'Bearer ' + apiKey },
+      body: JSON.stringify({
+        model,
+        temperature: 0,
+        response_format: { type: 'json_object' },
+        messages: [
+          { role: 'system', content: 'Tu es un extracteur structuré pour une plateforme de préparation de voyage. Tu ne recommandes aucune destination et tu ne complètes jamais une information inconnue. Extrais uniquement les faits explicitement exprimés dans le récit. Réponds uniquement en JSON avec les champs activity (string ou null), activityPreferences (tableau de chaînes), travelerProfile (string ou null), companion (string ou null), safety (booléen), territoryKey (code connu ou null), pace (string ou null), budgetLevel (string ou null), durationDays (nombre ou null), partySize (nombre ou null), flexibilityDays (nombre ou null), travelWindow ({month:number|null,year:number|null}), accessibility (booléen). Si une information est ambiguë ou absente, utilise null. Le voyageur décide toujours.' },
+          { role: 'user', content: rawText }
+        ]
+      })
+    });
+    if (!response.ok) throw new Error('assistant_provider_http_' + response.status);
+    const payload = await response.json();
+    const content = payload?.choices?.[0]?.message?.content;
+    const parsed = JSON.parse(content || '{}');
+    return { intent: mergeModelIntent(baseIntent, parsed), provider: 'compatible', fallback: false };
+  } catch (error) {
+    return { intent: baseIntent, provider: 'rules', fallback: true, warning: error.name === 'AbortError' ? 'assistant_provider_timeout' : 'assistant_provider_unavailable' };
+  } finally {
+    clearTimeout(timer);
+  }
+}
+
 async function safeQuery(res, sql, params = []) {
   try {
     return await pool.query(sql, params);
@@ -389,7 +472,9 @@ v30Router.post('/session/:id/profile', async (req, res) => {
 v30Router.post('/session/:id/intent', async (req, res) => {
   const rawText = String(req.body.rawText || '').trim();
   if (!rawText) return res.status(400).json({ error: 'rawText_required' });
-  const intent = classify(rawText);
+  const baseIntent = classify(rawText);
+  const understood = await understandTravelerIntent(rawText, baseIntent);
+  const intent = understood.intent;
   const sessionQ = await safeQuery(res,
     'SELECT id,territory_key FROM v30_traveler_sessions WHERE id=$1',
     [req.params.id]);
@@ -416,7 +501,7 @@ v30Router.post('/session/:id/intent', async (req, res) => {
   const q = await safeQuery(res,
     'INSERT INTO v30_traveler_intents(session_id,raw_text,intent,confidence) VALUES($1,$2,$3,$4) RETURNING *',
     [req.params.id, rawText, intent, confidence]);
-  if (q) res.status(201).json({ intent, analysis: q.rows[0], next: intent.needsClarification ? 'clarification' : 'solutions', followUpQuestion: intent.followUpQuestion });
+  if (q) res.status(201).json({ intent, analysis: q.rows[0], next: intent.needsClarification ? 'clarification' : 'solutions', followUpQuestion: intent.followUpQuestion, assistantProvider: understood.provider, fallback: understood.fallback, warning: understood.warning || null });
 });
 
 v30Router.get('/journey/windows', async (req,res) => {
