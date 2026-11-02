@@ -38,7 +38,8 @@
     "test:v30:http-smoke": "node scripts/test-v30-http-smoke.mjs",
     "test:v30:entry": "node scripts/test-v30-entry.mjs",
     "validate:geo-import": "node scripts/validate-natural-earth-import.mjs",
-    "check:geo-import": "node --check scripts/validate-natural-earth-import.mjs"
+    "check:geo-import": "node --check scripts/validate-natural-earth-import.mjs",
+    "test:v32:globe-acceptance": "node scripts/test-v32-globe-acceptance.mjs"
   },
   "dependencies": {
     "@vitejs/plugin-react": "latest",
