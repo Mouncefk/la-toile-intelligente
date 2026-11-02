@@ -8,28 +8,184 @@ const pool = new Pool({
 
 export const v30Router = express.Router();
 
-function classify(raw = '') {
-  const t = raw.toLowerCase();
-  return {
-    activity: /artisan/.test(t) ? 'Artisanat'
-      : /désert|sahara|erg/.test(t) ? 'Désert'
-      : /montagne|ski|randonn/.test(t) ? 'Montagne'
-      : /mer|plage|balnéaire|océan/.test(t) ? 'Balnéaire'
-      : /culture|patrimoine|musée/.test(t) ? 'Culture & Patrimoine'
-      : /gastronom|cuisine/.test(t) ? 'Gastronomie' : null,
-    travelerProfile: /senior|âgé|agée|parents|mobilité/.test(t) ? 'Tourisme senior'
-      : /enfant|famille/.test(t) ? 'Famille' : null,
-    safety: /médec|pharm|hôpital|clinique|santé|sécur|urgence/.test(t),
-    territoryKey: /marrakech/.test(t) ? 'MARRAKECH'
-      : /merzouga/.test(t) ? 'MERZOUGA'
-      : /ouarzazate/.test(t) ? 'OUARZAZATE'
-      : /agadir/.test(t) ? 'AGADIR'
-      : /essaouira/.test(t) ? 'ESSAOUIRA'
-      : /ifrane/.test(t) ? 'IFRANE'
-      : /rabat/.test(t) ? 'RABAT'
-      : /casablanca/.test(t) ? 'CASABLANCA'
-      : /tanger|tangier/.test(t) ? 'TANGER' : null
+function normalizeIntentText(value = '') {
+  return String(value).normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLowerCase()
+    .replace(/[’']/g, ' ').replace(/[^a-z0-9]+/g, ' ').trim();
+}
+
+export function classify(raw = '', context = {}) {
+  const text = String(raw).trim();
+  const t = normalizeIntentText(text);
+  const has = pattern => pattern.test(t);
+  const first = (entries) => entries.find(([, pattern]) => has(pattern))?.[0] || null;
+  const activities = [
+    ['Désert', /\b(desert|sahara|erg|dune|dunes|oasis)\b/],
+    ['Artisanat', /\b(artisan|artisanat|atelier|potier|poterie|tissage|tapis|ceramique)\b/],
+    ['Montagne & nature', /\b(montagne|ski|randonnee|randonner|trek|trekking|nature|foret|foret|parc naturel)\b/],
+    ['Balnéaire & nautique', /\b(mer|plage|balneaire|ocean|baignade|surf|plongee|voile|littoral)\b/],
+    ['Culture & patrimoine', /\b(culture|patrimoine|musee|medina|monument|histoire|architecture|archeologie)\b/],
+    ['Gastronomie', /\b(gastronomie|gastronomique|cuisine|culinaire|restaurant|degustation|marche alimentaire)\b/],
+    ['Bien-être', /\b(bien etre|spa|thalasso|detente|ressourcement|yoga)\b/],
+    ['Divertissement & loisirs', /\b(parc|loisir|spectacle|festival|concert|gaming|esport|aquapark)\b/],
+    ['Observation & découverte', /\b(observation|oiseaux|ornithologie|photographie|astronomie|decouverte)\b/]
+  ];
+  const territoryEntries = [
+    ['MARRAKECH', /\b(marrakech)\b/], ['MERZOUGA', /\b(merzouga)\b/],
+    ['OUARZAZATE', /\b(ouarzazate)\b/], ['AGADIR', /\b(agadir)\b/],
+    ['ESSAOUIRA', /\b(essaouira)\b/], ['IFRANE', /\b(ifrane)\b/],
+    ['RABAT', /\b(rabat)\b/], ['CASABLANCA', /\b(casablanca)\b/],
+    ['TANGER', /\b(tanger|tangier)\b/], ['FES', /\b(fes)\b/],
+    ['CHEFCHAOUEN', /\b(chefchaouen)\b/], ['PARIS', /\b(paris)\b/]
+  ];
+  const activity = first(activities);
+  const detectedTerritory = first(territoryEntries);
+  const territoryKey = detectedTerritory || context.territoryKey || null;
+  const travelerProfile = has(/\b(senior|personne agee|personnes agees|mobilite reduite|mobilite limitee)\b/)
+    ? 'Tourisme senior'
+    : has(/\b(famille|enfant|enfants|bebe|bebe|parents)\b/) ? 'Famille'
+    : has(/\b(couple|romantique|a deux)\b/) ? 'Couple'
+    : has(/\b(solo|seul|seule|voyageur individuel)\b/) ? 'Solo'
+    : has(/\b(amis|entre amis|groupe)\b/) ? 'Groupe' : null;
+  const companion = has(/\b(mere|pere|parents|grands parents)\b/) ? 'Parent'
+    : has(/\b(enfant|enfants|bebe)\b/) ? 'Enfants'
+    : has(/\b(amis|entre amis)\b/) ? 'Amis' : null;
+  const safety = has(/\b(sante|medical|medecin|pharmacie|hopital|clinique|securite|urgence|assistance)\b/);
+  const pace = has(/\b(tranquille|calme|doucement|sans stress|repos|detente)\b/) ? 'Tranquille'
+    : has(/\b(rythme soutenu|intense|actif|aventure|sportif)\b/) ? 'Soutenu' : null;
+  const budgetLevel = has(/\b(petit budget|economique|abordable|pas cher|budget serre)\b/) ? 'Economique'
+    : has(/\b(luxe|haut de gamme|premium|prestige)\b/) ? 'Haut de gamme'
+    : has(/\b(confort|confortable|milieu de gamme)\b/) ? 'Confort' : null;
+  const durationMatch = t.match(/\b(\d{1,3})\s*(jour|jours|semaine|semaines|nuit|nuits)\b/);
+  const durationDays = durationMatch ? Math.min(365, Number(durationMatch[1]) * (/semaine/.test(durationMatch[2]) ? 7 : 1)) : null;
+  const partyMatch = t.match(/\b(\d{1,2})\s*(personne|personnes|adultes|adulte|voyageurs|voyageur)\b/);
+  const partySize = partyMatch ? Math.min(50, Number(partyMatch[1])) : null;
+  const flexibilityMatch = t.match(/\b(?:flexible|flexibilite|decaler|decalage|plus ou moins)\s*(?:de)?\s*(\d{1,2})\s*jours?\b/);
+  const flexibilityDays = flexibilityMatch ? Math.min(30, Number(flexibilityMatch[1])) : null;
+  const month = first([
+    ['01', /\b(janvier|jan)\b/], ['02', /\b(fevrier|fev)\b/], ['03', /\b(mars)\b/],
+    ['04', /\b(avril|avr)\b/], ['05', /\b(mai)\b/], ['06', /\b(juin)\b/],
+    ['07', /\b(juillet|juil)\b/], ['08', /\b(aout)\b/], ['09', /\b(septembre|sept)\b/],
+    ['10', /\b(octobre|oct)\b/], ['11', /\b(novembre|nov)\b/], ['12', /\b(decembre|dec)\b/]
+  ]);
+  const yearMatch = t.match(/\b(20\d{2})\b/);
+  const accessibility = has(/\b(fauteuil|accessible|accessibilite|mobilite reduite|sans escaliers)\b/);
+  const preferences = activities.filter(([, pattern]) => pattern.test(t)).map(([name]) => name);
+  const missing = [];
+  if (!territoryKey) missing.push('destination');
+  if (!activity) missing.push('activity');
+  if (!month && !yearMatch) missing.push('dates');
+  if (!durationDays) missing.push('duration');
+  if (!budgetLevel) missing.push('budget');
+  if (!travelerProfile && !partySize) missing.push('travel_party');
+  const known = [territoryKey, activity, month || yearMatch, durationDays, budgetLevel, travelerProfile || partySize, pace, accessibility].filter(Boolean).length;
+  const confidence = Math.round(known / 8 * 100);
+  const followUp = missing.includes('destination') ? 'destination'
+    : missing.includes('dates') ? 'dates'
+    : missing.includes('duration') ? 'duration'
+    : missing.includes('travel_party') ? 'travel_party'
+    : missing.includes('budget') ? 'budget'
+    : missing.includes('activity') ? 'activity' : null;
+  const followUpQuestions = {
+    destination: 'Avez-vous déjà une destination en tête, ou souhaitez-vous que La Toile vous aide à en découvrir une ?',
+    dates: 'À quelle période aimeriez-vous voyager ? Quelques jours de décalage sont-ils possibles ?',
+    duration: 'Combien de jours ou de nuits envisagez-vous ?',
+    travel_party: 'Voyagerez-vous seul, en couple, en famille ou en groupe ?',
+    budget: 'Quel niveau de budget souhaitez-vous privilégier : économique, confort ou haut de gamme ?',
+    activity: 'Qu’aimeriez-vous surtout vivre : nature, culture, mer, gastronomie, aventure ou autre chose ?'
   };
+  return {
+    rawText: text, activity, activityPreferences: preferences,
+    travelerProfile, companion, safety, territoryKey, territoryFromText: Boolean(detectedTerritory), pace, budgetLevel,
+    durationDays, partySize, flexibilityDays,
+    travelWindow: { month: month ? Number(month) : null, year: yearMatch ? Number(yearMatch[1]) : null },
+    accessibility, missing, confidence, followUp,
+    followUpQuestion: followUp ? followUpQuestions[followUp] : null,
+    needsClarification: missing.length > 0,
+    travelerDecides: true
+  };
+}
+
+const TRAVEL_INTENT_FIELDS = [
+  'activity', 'activityPreferences', 'travelerProfile', 'companion', 'safety',
+  'territoryKey', 'pace', 'budgetLevel', 'durationDays', 'partySize',
+  'flexibilityDays', 'travelWindow', 'accessibility'
+];
+
+function mergeModelIntent(base, model) {
+  const merged = { ...base };
+  for (const key of TRAVEL_INTENT_FIELDS) {
+    const value = model?.[key];
+    if (value !== undefined && value !== null && value !== '') merged[key] = value;
+  }
+  if (!Array.isArray(merged.activityPreferences)) merged.activityPreferences = [];
+  if (!merged.travelWindow || typeof merged.travelWindow !== 'object') merged.travelWindow = { month: null, year: null };
+  merged.travelWindow = {
+    month: Number.isInteger(Number(merged.travelWindow.month)) && Number(merged.travelWindow.month) >= 1 && Number(merged.travelWindow.month) <= 12 ? Number(merged.travelWindow.month) : base.travelWindow.month,
+    year: Number.isInteger(Number(merged.travelWindow.year)) && Number(merged.travelWindow.year) >= 2020 && Number(merged.travelWindow.year) <= 2100 ? Number(merged.travelWindow.year) : base.travelWindow.year
+  };
+  if (merged.durationDays !== null) merged.durationDays = Math.max(1, Math.min(365, Number(merged.durationDays) || base.durationDays));
+  if (merged.partySize !== null) merged.partySize = Math.max(1, Math.min(50, Number(merged.partySize) || base.partySize));
+  if (merged.flexibilityDays !== null) merged.flexibilityDays = Math.max(0, Math.min(30, Number(merged.flexibilityDays) || 0));
+  const missing = [];
+  if (!merged.territoryKey) missing.push('destination');
+  if (!merged.activity && !merged.activityPreferences.length) missing.push('activity');
+  if (!merged.travelWindow.month && !merged.travelWindow.year) missing.push('dates');
+  if (!merged.durationDays) missing.push('duration');
+  if (!merged.budgetLevel) missing.push('budget');
+  if (!merged.travelerProfile && !merged.partySize) missing.push('travel_party');
+  merged.missing = missing;
+  merged.confidence = Math.round((8 - Math.min(8, missing.length)) / 8 * 100);
+  const followUp = ['destination','dates','duration','travel_party','budget','activity'].find(key => missing.includes(key)) || null;
+  const questions = {
+    destination: 'Avez-vous une destination en tête, ou souhaitez-vous que La Toile vous aide à en découvrir une ?',
+    dates: 'À quelle période aimeriez-vous voyager ? Êtes-vous flexible de quelques jours ?',
+    duration: 'Combien de jours ou de nuits souhaitez-vous consacrer à ce voyage ?',
+    travel_party: 'Avec qui voyagerez-vous et combien serez-vous ?',
+    budget: 'Quel niveau de budget souhaitez-vous privilégier : économique, confort ou haut de gamme ?',
+    activity: 'Quelles expériences vous attirent le plus : nature, culture, mer, gastronomie, aventure ou autre chose ?'
+  };
+  merged.followUp = followUp;
+  merged.followUpQuestion = followUp ? questions[followUp] : null;
+  merged.needsClarification = missing.length > 0;
+  merged.travelerDecides = true;
+  return merged;
+}
+
+async function understandTravelerIntent(rawText, baseIntent) {
+  const enabled = String(process.env.TRAVEL_ASSISTANT_PROVIDER || 'rules').toLowerCase();
+  const endpoint = process.env.TRAVEL_ASSISTANT_API_URL;
+  const apiKey = process.env.TRAVEL_ASSISTANT_API_KEY;
+  const model = process.env.TRAVEL_ASSISTANT_MODEL;
+  if (enabled !== 'compatible' || !endpoint || !apiKey || !model) {
+    return { intent: baseIntent, provider: 'rules', fallback: enabled === 'compatible' };
+  }
+  const controller = new AbortController();
+  const timer = setTimeout(() => controller.abort(), 12000);
+  try {
+    const response = await fetch(endpoint, {
+      method: 'POST',
+      signal: controller.signal,
+      headers: { 'Content-Type': 'application/json', Authorization: 'Bearer ' + apiKey },
+      body: JSON.stringify({
+        model,
+        temperature: 0,
+        response_format: { type: 'json_object' },
+        messages: [
+          { role: 'system', content: 'Tu es un extracteur structuré pour une plateforme de préparation de voyage. Tu ne recommandes aucune destination et tu ne complètes jamais une information inconnue. Extrais uniquement les faits explicitement exprimés dans le récit. Réponds uniquement en JSON avec les champs activity (string ou null), activityPreferences (tableau de chaînes), travelerProfile (string ou null), companion (string ou null), safety (booléen), territoryKey (code connu ou null), pace (string ou null), budgetLevel (string ou null), durationDays (nombre ou null), partySize (nombre ou null), flexibilityDays (nombre ou null), travelWindow ({month:number|null,year:number|null}), accessibility (booléen). Si une information est ambiguë ou absente, utilise null. Le voyageur décide toujours.' },
+          { role: 'user', content: rawText }
+        ]
+      })
+    });
+    if (!response.ok) throw new Error('assistant_provider_http_' + response.status);
+    const payload = await response.json();
+    const content = payload?.choices?.[0]?.message?.content;
+    const parsed = JSON.parse(content || '{}');
+    return { intent: mergeModelIntent(baseIntent, parsed), provider: 'compatible', fallback: false };
+  } catch (error) {
+    return { intent: baseIntent, provider: 'rules', fallback: true, warning: error.name === 'AbortError' ? 'assistant_provider_timeout' : 'assistant_provider_unavailable' };
+  } finally {
+    clearTimeout(timer);
+  }
 }
 
 async function safeQuery(res, sql, params = []) {
@@ -317,12 +473,36 @@ v30Router.post('/session/:id/profile', async (req, res) => {
 v30Router.post('/session/:id/intent', async (req, res) => {
   const rawText = String(req.body.rawText || '').trim();
   if (!rawText) return res.status(400).json({ error: 'rawText_required' });
-  const intent = classify(rawText);
-  const confidence = (intent.activity ? 0.35 : 0) + (intent.territoryKey ? 0.35 : 0) + (intent.travelerProfile ? 0.15 : 0) + (intent.safety ? 0.15 : 0);
+  const sessionQ = await safeQuery(res,
+    'SELECT id,territory_key FROM v30_traveler_sessions WHERE id=$1',
+    [req.params.id]);
+  if (!sessionQ) return;
+  if (!sessionQ.rows[0]) return res.status(404).json({ error: 'session_not_found' });
+  const baseIntent = classify(rawText, { territoryKey: sessionQ.rows[0].territory_key || null });
+  const understood = await understandTravelerIntent(rawText, baseIntent);
+  const intent = understood.intent;
+  if (intent.territoryKey && sessionQ.rows[0].territory_key !== intent.territoryKey) {
+    const territoryQ = await safeQuery(res,
+      'SELECT territory_key,country_iso3 FROM v30_territories WHERE territory_key=$1 AND active=true',
+      [intent.territoryKey]);
+    if (!territoryQ) return;
+    if (territoryQ.rows[0]) {
+      await safeQuery(res,
+        'UPDATE v30_traveler_sessions SET territory_key=$2,country_iso3=$3,stage=$4 WHERE id=$1',
+        [req.params.id, territoryQ.rows[0].territory_key, territoryQ.rows[0].country_iso3, 'territory']);
+    } else {
+      intent.territoryKey = null;
+      if (!intent.missing.includes('destination')) intent.missing.unshift('destination');
+      intent.needsClarification = true;
+      intent.followUp = 'destination';
+      intent.followUpQuestion = 'Cette destination n’est pas encore référencée dans le territoire couvert. Souhaitez-vous choisir une autre destination ou poursuivre votre découverte ?';
+    }
+  }
+  const confidence = Number(intent.confidence || 0) / 100;
   const q = await safeQuery(res,
     'INSERT INTO v30_traveler_intents(session_id,raw_text,intent,confidence) VALUES($1,$2,$3,$4) RETURNING *',
     [req.params.id, rawText, intent, confidence]);
-  if (q) res.status(201).json({ intent, analysis: q.rows[0], next: 'solutions' });
+  if (q) res.status(201).json({ intent, analysis: q.rows[0], next: intent.needsClarification ? 'clarification' : 'solutions', followUpQuestion: intent.followUpQuestion, assistantProvider: understood.provider, fallback: understood.fallback, warning: understood.warning || null });
 });
 
 v30Router.get('/journey/windows', async (req,res) => {
@@ -916,7 +1096,8 @@ v30Router.get('/v32/globe/:nodeKey/geometry',async(req,res)=>{
    ? "SELECT ST_AsGeoJSON(ST_SimplifyPreserveTopology(ST_Force2D(geom),0.08))::json AS geometry FROM ne_admin0_countries_v29_14 WHERE COALESCE(NULLIF(UPPER(iso_a3),'-'),NULLIF(UPPER(adm0_a3),'-'))=$1 LIMIT 1"
    : "SELECT ST_AsGeoJSON(ST_SimplifyPreserveTopology(ST_Force2D(geom),0.03))::json AS geometry FROM ne_admin1_states_v29_14 WHERE gid_1=$1 OR adm1_code=$1 LIMIT 1";
   const q=await pool.query(sql,[x.geometry_ref.replace(/^country:/,'').replace(/^admin1:/,'')]);
-  res.json({node:x,geometry:q.rows[0]?.geometry||null,source:x.source_dataset,available:true});
+  const geometry=q.rows[0]?.geometry||null;
+   res.json({node:x,geometry,source:x.source_dataset,available:Boolean(geometry)});
  }catch(e){res.status(500).json({error:e.message})}
 });
 
@@ -1322,7 +1503,8 @@ v30Router.get('/v32/globe/:nodeKey/geometry',async(req,res)=>{
    ? "SELECT ST_AsGeoJSON(ST_SimplifyPreserveTopology(ST_Force2D(geom),0.08))::json AS geometry FROM ne_admin0_countries_v29_14 WHERE COALESCE(NULLIF(UPPER(iso_a3),'-'),NULLIF(UPPER(adm0_a3),'-'))=$1 LIMIT 1"
    : "SELECT ST_AsGeoJSON(ST_SimplifyPreserveTopology(ST_Force2D(geom),0.03))::json AS geometry FROM ne_admin1_states_v29_14 WHERE gid_1=$1 OR adm1_code=$1 LIMIT 1";
   const q=await pool.query(sql,[x.geometry_ref.replace(/^country:/,'').replace(/^admin1:/,'')]);
-  res.json({node:x,geometry:q.rows[0]?.geometry||null,source:x.source_dataset,available:true});
+  const geometry=q.rows[0]?.geometry||null;
+   res.json({node:x,geometry,source:x.source_dataset,available:Boolean(geometry)});
  }catch(e){res.status(500).json({error:e.message})}
 });
 
@@ -1728,7 +1910,8 @@ v30Router.get('/v32/globe/:nodeKey/geometry',async(req,res)=>{
    ? "SELECT ST_AsGeoJSON(ST_SimplifyPreserveTopology(ST_Force2D(geom),0.08))::json AS geometry FROM ne_admin0_countries_v29_14 WHERE COALESCE(NULLIF(UPPER(iso_a3),'-'),NULLIF(UPPER(adm0_a3),'-'))=$1 LIMIT 1"
    : "SELECT ST_AsGeoJSON(ST_SimplifyPreserveTopology(ST_Force2D(geom),0.03))::json AS geometry FROM ne_admin1_states_v29_14 WHERE gid_1=$1 OR adm1_code=$1 LIMIT 1";
   const q=await pool.query(sql,[x.geometry_ref.replace(/^country:/,'').replace(/^admin1:/,'')]);
-  res.json({node:x,geometry:q.rows[0]?.geometry||null,source:x.source_dataset,available:true});
+  const geometry=q.rows[0]?.geometry||null;
+   res.json({node:x,geometry,source:x.source_dataset,available:Boolean(geometry)});
  }catch(e){res.status(500).json({error:e.message})}
 });
 

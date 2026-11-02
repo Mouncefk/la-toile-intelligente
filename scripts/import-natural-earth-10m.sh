@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 set -euo pipefail
 
-: "${DATABASE_URL:?DATABASE_URL is required}"
+: "${OGR_CONNECTION:?OGR_CONNECTION is required (GDAL PostgreSQL connection string)}"
 
 ROOT="${1:-.data/natural-earth-10m}"
 mkdir -p "$ROOT"
@@ -20,7 +20,7 @@ download_and_import() {
   shp=$(find . -maxdepth 1 -name '*.shp' -print -quit)
   test -n "$shp"
   echo "Importing $shp into $table"
-  ogr2ogr -f PostgreSQL "$DATABASE_URL" "$shp"     -nln "public.$table"     -nlt PROMOTE_TO_MULTI     -lco GEOMETRY_NAME=geom     -lco FID=source_fid     -overwrite
+  ogr2ogr -f PostgreSQL "$OGR_CONNECTION" "$shp"     -nln "public.$table"     -nlt PROMOTE_TO_MULTI     -lco GEOMETRY_NAME=geom     -lco FID=source_fid     -overwrite
   rm -f "$zip" ./*.shp ./*.shx ./*.dbf ./*.prj ./*.cpg ./*.qix ./*.sbn ./*.sbx
 }
 
