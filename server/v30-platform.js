@@ -13,7 +13,7 @@ function normalizeIntentText(value = '') {
     .replace(/[’']/g, ' ').replace(/[^a-z0-9]+/g, ' ').trim();
 }
 
-export function classify(raw = '') {
+export function classify(raw = '', context = {}) {
   const text = String(raw).trim();
   const t = normalizeIntentText(text);
   const has = pattern => pattern.test(t);
@@ -38,7 +38,8 @@ export function classify(raw = '') {
     ['CHEFCHAOUEN', /\b(chefchaouen)\b/], ['PARIS', /\b(paris)\b/]
   ];
   const activity = first(activities);
-  const territoryKey = first(territoryEntries);
+  const detectedTerritory = first(territoryEntries);
+  const territoryKey = detectedTerritory || context.territoryKey || null;
   const travelerProfile = has(/\b(senior|personne agee|personnes agees|mobilite reduite|mobilite limitee)\b/)
     ? 'Tourisme senior'
     : has(/\b(famille|enfant|enfants|bebe|bebe|parents)\b/) ? 'Famille'
@@ -94,7 +95,7 @@ export function classify(raw = '') {
   };
   return {
     rawText: text, activity, activityPreferences: preferences,
-    travelerProfile, companion, safety, territoryKey, pace, budgetLevel,
+    travelerProfile, companion, safety, territoryKey, territoryFromText: Boolean(detectedTerritory), pace, budgetLevel,
     durationDays, partySize, flexibilityDays,
     travelWindow: { month: month ? Number(month) : null, year: yearMatch ? Number(yearMatch[1]) : null },
     accessibility, missing, confidence, followUp,
@@ -477,10 +478,10 @@ v30Router.post('/session/:id/intent', async (req, res) => {
     [req.params.id]);
   if (!sessionQ) return;
   if (!sessionQ.rows[0]) return res.status(404).json({ error: 'session_not_found' });
-  const baseIntent = classify(rawText);
+  const baseIntent = classify(rawText, { territoryKey: sessionQ.rows[0].territory_key || null });
   const understood = await understandTravelerIntent(rawText, baseIntent);
   const intent = understood.intent;
-  if (!sessionQ.rows[0].territory_key && intent.territoryKey) {
+  if (intent.territoryFromText && intent.territoryKey && sessionQ.rows[0].territory_key !== intent.territoryKey) {
     const territoryQ = await safeQuery(res,
       'SELECT territory_key,country_iso3 FROM v30_territories WHERE territory_key=$1 AND active=true',
       [intent.territoryKey]);
