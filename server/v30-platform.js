@@ -8,27 +8,89 @@ const pool = new Pool({
 
 export const v30Router = express.Router();
 
+function normalizeIntentText(value = '') {
+  return String(value).normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLowerCase()
+    .replace(/[’']/g, ' ').replace(/[^a-z0-9]+/g, ' ').trim();
+}
+
 function classify(raw = '') {
-  const t = raw.toLowerCase();
+  const text = String(raw).trim();
+  const t = normalizeIntentText(text);
+  const has = pattern => pattern.test(t);
+  const first = (entries) => entries.find(([, pattern]) => has(pattern))?.[0] || null;
+  const activities = [
+    ['Désert', /\b(desert|sahara|erg|dune|dunes|oasis)\b/],
+    ['Artisanat', /\b(artisan|artisanat|atelier|potier|poterie|tissage|tapis|ceramique)\b/],
+    ['Montagne & nature', /\b(montagne|ski|randonnee|randonner|trek|trekking|nature|foret|foret|parc naturel)\b/],
+    ['Balnéaire & nautique', /\b(mer|plage|balneaire|ocean|baignade|surf|plongee|voile|littoral)\b/],
+    ['Culture & patrimoine', /\b(culture|patrimoine|musee|medina|monument|histoire|architecture|archeologie)\b/],
+    ['Gastronomie', /\b(gastronomie|gastronomique|cuisine|culinaire|restaurant|degustation|marche alimentaire)\b/],
+    ['Bien-être', /\b(bien etre|spa|thalasso|detente|ressourcement|yoga)\b/],
+    ['Divertissement & loisirs', /\b(parc|loisir|spectacle|festival|concert|gaming|esport|aquapark)\b/],
+    ['Observation & découverte', /\b(observation|oiseaux|ornithologie|photographie|astronomie|decouverte)\b/]
+  ];
+  const territoryEntries = [
+    ['MARRAKECH', /\b(marrakech)\b/], ['MERZOUGA', /\b(merzouga)\b/],
+    ['OUARZAZATE', /\b(ouarzazate)\b/], ['AGADIR', /\b(agadir)\b/],
+    ['ESSAOUIRA', /\b(essaouira)\b/], ['IFRANE', /\b(ifrane)\b/],
+    ['RABAT', /\b(rabat)\b/], ['CASABLANCA', /\b(casablanca)\b/],
+    ['TANGER', /\b(tanger|tangier)\b/], ['FES', /\b(fes)\b/],
+    ['CHEFCHAOUEN', /\b(chefchaouen)\b/], ['PARIS', /\b(paris)\b/]
+  ];
+  const activity = first(activities);
+  const territoryKey = first(territoryEntries);
+  const travelerProfile = has(/\b(senior|personne agee|personnes agees|mobilite reduite|mobilite limitee)\b/)
+    ? 'Tourisme senior'
+    : has(/\b(famille|enfant|enfants|bebe|bebe|parents)\b/) ? 'Famille'
+    : has(/\b(couple|romantique|a deux)\b/) ? 'Couple'
+    : has(/\b(solo|seul|seule|voyageur individuel)\b/) ? 'Solo'
+    : has(/\b(amis|entre amis|groupe)\b/) ? 'Groupe' : null;
+  const companion = has(/\b(mere|pere|parents|grands parents)\b/) ? 'Parent'
+    : has(/\b(enfant|enfants|bebe)\b/) ? 'Enfants'
+    : has(/\b(amis|entre amis)\b/) ? 'Amis' : null;
+  const safety = has(/\b(sante|medical|medecin|pharmacie|hopital|clinique|securite|urgence|assistance)\b/);
+  const pace = has(/\b(tranquille|calme|doucement|sans stress|repos|detente)\b/) ? 'Tranquille'
+    : has(/\b(rythme soutenu|intense|actif|aventure|sportif)\b/) ? 'Soutenu' : null;
+  const budgetLevel = has(/\b(petit budget|economique|abordable|pas cher|budget serre)\b/) ? 'Economique'
+    : has(/\b(luxe|haut de gamme|premium|prestige)\b/) ? 'Haut de gamme'
+    : has(/\b(confort|confortable|milieu de gamme)\b/) ? 'Confort' : null;
+  const durationMatch = t.match(/\b(\d{1,3})\s*(jour|jours|semaine|semaines|nuit|nuits)\b/);
+  const durationDays = durationMatch ? Math.min(365, Number(durationMatch[1]) * (/semaine/.test(durationMatch[2]) ? 7 : 1)) : null;
+  const partyMatch = t.match(/\b(\d{1,2})\s*(personne|personnes|adultes|adulte|voyageurs|voyageur)\b/);
+  const partySize = partyMatch ? Math.min(50, Number(partyMatch[1])) : null;
+  const flexibilityMatch = t.match(/\b(?:flexible|flexibilite|decaler|decalage|plus ou moins)\s*(?:de)?\s*(\d{1,2})\s*jours?\b/);
+  const flexibilityDays = flexibilityMatch ? Math.min(30, Number(flexibilityMatch[1])) : null;
+  const month = first([
+    ['01', /\b(janvier|jan)\b/], ['02', /\b(fevrier|fev)\b/], ['03', /\b(mars)\b/],
+    ['04', /\b(avril|avr)\b/], ['05', /\b(mai)\b/], ['06', /\b(juin)\b/],
+    ['07', /\b(juillet|juil)\b/], ['08', /\b(aout)\b/], ['09', /\b(septembre|sept)\b/],
+    ['10', /\b(octobre|oct)\b/], ['11', /\b(novembre|nov)\b/], ['12', /\b(decembre|dec)\b/]
+  ]);
+  const yearMatch = t.match(/\b(20\d{2})\b/);
+  const accessibility = has(/\b(fauteuil|accessible|accessibilite|mobilite reduite|sans escaliers)\b/);
+  const preferences = activities.filter(([, pattern]) => pattern.test(t)).map(([name]) => name);
+  const missing = [];
+  if (!territoryKey) missing.push('destination');
+  if (!activity) missing.push('activity');
+  if (!month && !yearMatch) missing.push('dates');
+  if (!durationDays) missing.push('duration');
+  if (!budgetLevel) missing.push('budget');
+  if (!travelerProfile && !partySize) missing.push('travel_party');
+  const known = [territoryKey, activity, month || yearMatch, durationDays, budgetLevel, travelerProfile || partySize, pace, accessibility].filter(Boolean).length;
+  const confidence = Math.round(known / 8 * 100);
+  const followUp = missing.includes('destination') ? 'destination'
+    : missing.includes('dates') ? 'dates'
+    : missing.includes('duration') ? 'duration'
+    : missing.includes('travel_party') ? 'travel_party'
+    : missing.includes('budget') ? 'budget'
+    : missing.includes('activity') ? 'activity' : null;
   return {
-    activity: /artisan/.test(t) ? 'Artisanat'
-      : /désert|sahara|erg/.test(t) ? 'Désert'
-      : /montagne|ski|randonn/.test(t) ? 'Montagne'
-      : /mer|plage|balnéaire|océan/.test(t) ? 'Balnéaire'
-      : /culture|patrimoine|musée/.test(t) ? 'Culture & Patrimoine'
-      : /gastronom|cuisine/.test(t) ? 'Gastronomie' : null,
-    travelerProfile: /senior|âgé|agée|parents|mobilité/.test(t) ? 'Tourisme senior'
-      : /enfant|famille/.test(t) ? 'Famille' : null,
-    safety: /médec|pharm|hôpital|clinique|santé|sécur|urgence/.test(t),
-    territoryKey: /marrakech/.test(t) ? 'MARRAKECH'
-      : /merzouga/.test(t) ? 'MERZOUGA'
-      : /ouarzazate/.test(t) ? 'OUARZAZATE'
-      : /agadir/.test(t) ? 'AGADIR'
-      : /essaouira/.test(t) ? 'ESSAOUIRA'
-      : /ifrane/.test(t) ? 'IFRANE'
-      : /rabat/.test(t) ? 'RABAT'
-      : /casablanca/.test(t) ? 'CASABLANCA'
-      : /tanger|tangier/.test(t) ? 'TANGER' : null
+    rawText: text, activity, activityPreferences: preferences,
+    travelerProfile, companion, safety, territoryKey, pace, budgetLevel,
+    durationDays, partySize, flexibilityDays,
+    travelWindow: { month: month ? Number(month) : null, year: yearMatch ? Number(yearMatch[1]) : null },
+    accessibility, missing, confidence, followUp,
+    travelerDecides: true
   };
 }
 
