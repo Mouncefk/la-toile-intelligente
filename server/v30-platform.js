@@ -902,22 +902,129 @@ v30Router.get('/v32/globe/:nodeKey',async(req,res)=>{
  try{const node=await pool.query("SELECT * FROM v32_geo_nodes WHERE node_key=$1 AND active=true",[req.params.nodeKey]);if(!node.rows[0])return res.status(404).json({error:'geo_node_not_found'});const n=node.rows[0];const q=await pool.query("SELECT node_key,node_type,name,country_iso3,hemisphere,climate_keys,latitude,longitude FROM v32_geo_nodes WHERE parent_key=$1 AND active=true ORDER BY name",[n.node_key]);res.json({node:n,children:q.rows,zoomLevel:n.node_type==='world'?0:n.node_type==='continent'?1:n.node_type==='country'?2:n.node_type==='region'?3:n.node_type==='territory'?4:5,navigation:'progressive'});}catch(e){res.status(500).json({error:e.message})}
 });
 
+
 v30Router.get('/v32/globe/:nodeKey/geometry',async(req,res)=>{
  try{
-  const n=await pool.query("SELECT g.node_key,g.node_type,g.name,g.country_iso3,r.source_dataset,r.source_key,r.geometry_type,r.geometry_ref FROM v32_geo_nodes g LEFT JOIN v32_geo_render_sources r ON r.node_key=g.node_key WHERE g.node_key=$1 AND g.active=true",[req.params.nodeKey]);
-  if(!n.rows[0])return res.status(404).json({error:'geo_node_not_found'});
+  const n=await pool.query(
+   "SELECT g.node_key,g.node_type,g.name,g.country_iso3,g.latitude,g.longitude,r.source_dataset,r.source_key,r.geometry_type,r.geometry_ref FROM v32_geo_nodes g LEFT JOIN v32_geo_render_sources r ON r.node_key=g.node_key WHERE g.node_key=$1 AND g.active=true",
+   [req.params.nodeKey]
+  );
+
+  if(!n.rows[0]){
+   return res.status(404).json({error:'geo_node_not_found'});
+  }
+
   const x=n.rows[0];
-  if(!x.source_key)return res.json({node:x,geometry:null,source:null,available:false});
-  const table=x.node_type==='country'?'ne_admin0_countries_v29_14':(x.node_type==='region'||x.node_type==='territory'?'ne_admin1_states_v29_14':null);
-  if(!table)return res.json({node:x,geometry:null,source:x.source_dataset,available:false});
-  const exists=await pool.query("SELECT to_regclass($1) IS NOT NULL AS ok",['public.'+table]);
-  if(!exists.rows[0]?.ok)return res.json({node:x,geometry:null,source:x.source_dataset,available:false});
-  const sql=x.node_type==='country'
-   ? "SELECT ST_AsGeoJSON(ST_SimplifyPreserveTopology(ST_Force2D(geom),0.08))::json AS geometry FROM ne_admin0_countries_v29_14 WHERE COALESCE(NULLIF(UPPER(iso_a3),'-'),NULLIF(UPPER(adm0_a3),'-'))=$1 LIMIT 1"
-   : "SELECT ST_AsGeoJSON(ST_SimplifyPreserveTopology(ST_Force2D(geom),0.03))::json AS geometry FROM ne_admin1_states_v29_14 WHERE gid_1=$1 OR adm1_code=$1 LIMIT 1";
-  const q=await pool.query(sql,[x.geometry_ref.replace(/^country:/,'').replace(/^admin1:/,'')]);
-  res.json({node:x,geometry:q.rows[0]?.geometry||null,source:x.source_dataset,available:true});
- }catch(e){res.status(500).json({error:e.message})}
+  let geometry=null;
+
+  // 1. Géométrie nationale : comportement conservé
+  if(x.node_type==='country' && x.geometry_ref){
+   const countryCode=String(x.geometry_ref).replace(/^country:/,'');
+   const q=await pool.query(
+    "SELECT ST_AsGeoJSON(ST_SimplifyPreserveTopology(ST_Force2D(geom),0.08))::json AS geometry FROM ne_admin0_countries_v29_14 WHERE COALESCE(NULLIF(UPPER(iso_a3),'-99'),NULLIF(UPPER(adm0_a3),'-99'))=$1 LIMIT 1",
+    [countryCode]
+   );
+   geometry=q.rows[0]?.geometry||null;
+  }
+
+  // 2. Région administrative : recherche par code ISO ou code Natural Earth
+  else if(x.node_type==='region' && x.geometry_ref){
+   const regionCode=String(x.geometry_ref).replace(/^admin1:/,'');
+   const q=await pool.query(
+    "SELECT ST_AsGeoJSON(ST_SimplifyPreserveTopology(ST_Force2D(geom),0.03))::json AS geometry FROM ne_admin1_states_v29_14 WHERE iso_3166_2=$1 OR adm1_code=$1 LIMIT 1",
+    [regionCode]
+   );
+   geometry=q.rows[0]?.geometry||null;
+  }
+
+  // 3. Territoire touristique composé de plusieurs subdivisions
+  else if(
+   x.node_type==='territory' &&
+   x.source_dataset==='Natural Earth 10m' &&
+   x.geometry_ref
+  ){
+   const codes=String(x.geometry_ref)
+    .split(',')
+    .map(v=>v.trim())
+    .filter(v=>/^[A-Z]{2}-[A-Z0-9]{2,3}$/.test(v));
+
+   if(codes.length>0){
+    const q=await pool.query(
+     "SELECT ST_AsGeoJSON(ST_SimplifyPreserveTopology(ST_Multi(ST_UnaryUnion(ST_Collect(ST_Force2D(geom)))),0.01))::json AS geometry FROM ne_admin1_states_v29_14 WHERE iso_3166_2=ANY($1::varchar[])",
+     [codes]
+    );
+    geometry=q.rows[0]?.geometry||null;
+   }
+  }
+
+   // 3 bis. Régions administratives SIG-Maroc
+   else if(
+    x.node_type==='territory' &&
+    x.source_dataset==='SIG-Maroc GeoPackage' &&
+    typeof x.source_key==='string' &&
+    /^MA-(0[1-9]|1[0-2])$/.test(x.source_key)
+   ){
+    const q=await pool.query(
+     `WITH source AS (
+        SELECT
+         geom AS original_geom,
+         ST_SimplifyPreserveTopology(ST_Force2D(geom),0.002) AS candidate
+        FROM stg_maroc_regions_2026
+        WHERE iso_code=$1
+      ),
+      selected AS (
+        SELECT CASE
+         WHEN ST_IsValid(candidate) THEN ST_Multi(candidate)
+         ELSE ST_Multi(ST_Force2D(original_geom))
+        END AS geom
+        FROM source
+      )
+      SELECT ST_AsGeoJSON(geom)::json AS geometry
+      FROM selected
+      WHERE ST_IsValid(geom) AND NOT ST_IsEmpty(geom)`,
+     [x.source_key]
+    );
+    geometry=q.rows[0]?.geometry||null;
+   }
+  // 4. Géométrie surfacique disponible
+  if(geometry){
+   return res.json({
+    node:x,
+    geometry,
+    source:x.source_dataset,
+    available:true
+   });
+  }
+
+  // 5. Repli sur le point géographique existant
+  if(
+   x.node_type==='territory' &&
+   x.latitude!==null &&
+   x.longitude!==null &&
+   Number.isFinite(Number(x.latitude)) &&
+   Number.isFinite(Number(x.longitude))
+  ){
+   return res.json({
+    node:x,
+    geometry:{
+     type:'Point',
+     coordinates:[Number(x.longitude),Number(x.latitude)]
+    },
+    source:'v32_geo_nodes coordinates',
+    available:true
+   });
+  }
+
+  return res.json({
+   node:x,
+   geometry:null,
+   source:x.source_dataset||null,
+   available:false
+  });
+
+ }catch(e){
+  res.status(500).json({error:e.message});
+ }
 });
 
 v30Router.get('/v32/globe/:nodeKey/render-profile',async(req,res)=>{
@@ -1308,23 +1415,6 @@ v30Router.get('/v32/globe/:nodeKey',async(req,res)=>{
  try{const node=await pool.query("SELECT * FROM v32_geo_nodes WHERE node_key=$1 AND active=true",[req.params.nodeKey]);if(!node.rows[0])return res.status(404).json({error:'geo_node_not_found'});const n=node.rows[0];const q=await pool.query("SELECT node_key,node_type,name,country_iso3,hemisphere,climate_keys,latitude,longitude FROM v32_geo_nodes WHERE parent_key=$1 AND active=true ORDER BY name",[n.node_key]);res.json({node:n,children:q.rows,zoomLevel:n.node_type==='world'?0:n.node_type==='continent'?1:n.node_type==='country'?2:n.node_type==='region'?3:n.node_type==='territory'?4:5,navigation:'progressive'});}catch(e){res.status(500).json({error:e.message})}
 });
 
-v30Router.get('/v32/globe/:nodeKey/geometry',async(req,res)=>{
- try{
-  const n=await pool.query("SELECT g.node_key,g.node_type,g.name,g.country_iso3,r.source_dataset,r.source_key,r.geometry_type,r.geometry_ref FROM v32_geo_nodes g LEFT JOIN v32_geo_render_sources r ON r.node_key=g.node_key WHERE g.node_key=$1 AND g.active=true",[req.params.nodeKey]);
-  if(!n.rows[0])return res.status(404).json({error:'geo_node_not_found'});
-  const x=n.rows[0];
-  if(!x.source_key)return res.json({node:x,geometry:null,source:null,available:false});
-  const table=x.node_type==='country'?'ne_admin0_countries_v29_14':(x.node_type==='region'||x.node_type==='territory'?'ne_admin1_states_v29_14':null);
-  if(!table)return res.json({node:x,geometry:null,source:x.source_dataset,available:false});
-  const exists=await pool.query("SELECT to_regclass($1) IS NOT NULL AS ok",['public.'+table]);
-  if(!exists.rows[0]?.ok)return res.json({node:x,geometry:null,source:x.source_dataset,available:false});
-  const sql=x.node_type==='country'
-   ? "SELECT ST_AsGeoJSON(ST_SimplifyPreserveTopology(ST_Force2D(geom),0.08))::json AS geometry FROM ne_admin0_countries_v29_14 WHERE COALESCE(NULLIF(UPPER(iso_a3),'-'),NULLIF(UPPER(adm0_a3),'-'))=$1 LIMIT 1"
-   : "SELECT ST_AsGeoJSON(ST_SimplifyPreserveTopology(ST_Force2D(geom),0.03))::json AS geometry FROM ne_admin1_states_v29_14 WHERE gid_1=$1 OR adm1_code=$1 LIMIT 1";
-  const q=await pool.query(sql,[x.geometry_ref.replace(/^country:/,'').replace(/^admin1:/,'')]);
-  res.json({node:x,geometry:q.rows[0]?.geometry||null,source:x.source_dataset,available:true});
- }catch(e){res.status(500).json({error:e.message})}
-});
 
 v30Router.get('/v32/globe/:nodeKey/render-profile',async(req,res)=>{
  try{
@@ -1714,23 +1804,6 @@ v30Router.get('/v32/globe/:nodeKey',async(req,res)=>{
  try{const node=await pool.query("SELECT * FROM v32_geo_nodes WHERE node_key=$1 AND active=true",[req.params.nodeKey]);if(!node.rows[0])return res.status(404).json({error:'geo_node_not_found'});const n=node.rows[0];const q=await pool.query("SELECT node_key,node_type,name,country_iso3,hemisphere,climate_keys,latitude,longitude FROM v32_geo_nodes WHERE parent_key=$1 AND active=true ORDER BY name",[n.node_key]);res.json({node:n,children:q.rows,zoomLevel:n.node_type==='world'?0:n.node_type==='continent'?1:n.node_type==='country'?2:n.node_type==='region'?3:n.node_type==='territory'?4:5,navigation:'progressive'});}catch(e){res.status(500).json({error:e.message})}
 });
 
-v30Router.get('/v32/globe/:nodeKey/geometry',async(req,res)=>{
- try{
-  const n=await pool.query("SELECT g.node_key,g.node_type,g.name,g.country_iso3,r.source_dataset,r.source_key,r.geometry_type,r.geometry_ref FROM v32_geo_nodes g LEFT JOIN v32_geo_render_sources r ON r.node_key=g.node_key WHERE g.node_key=$1 AND g.active=true",[req.params.nodeKey]);
-  if(!n.rows[0])return res.status(404).json({error:'geo_node_not_found'});
-  const x=n.rows[0];
-  if(!x.source_key)return res.json({node:x,geometry:null,source:null,available:false});
-  const table=x.node_type==='country'?'ne_admin0_countries_v29_14':(x.node_type==='region'||x.node_type==='territory'?'ne_admin1_states_v29_14':null);
-  if(!table)return res.json({node:x,geometry:null,source:x.source_dataset,available:false});
-  const exists=await pool.query("SELECT to_regclass($1) IS NOT NULL AS ok",['public.'+table]);
-  if(!exists.rows[0]?.ok)return res.json({node:x,geometry:null,source:x.source_dataset,available:false});
-  const sql=x.node_type==='country'
-   ? "SELECT ST_AsGeoJSON(ST_SimplifyPreserveTopology(ST_Force2D(geom),0.08))::json AS geometry FROM ne_admin0_countries_v29_14 WHERE COALESCE(NULLIF(UPPER(iso_a3),'-'),NULLIF(UPPER(adm0_a3),'-'))=$1 LIMIT 1"
-   : "SELECT ST_AsGeoJSON(ST_SimplifyPreserveTopology(ST_Force2D(geom),0.03))::json AS geometry FROM ne_admin1_states_v29_14 WHERE gid_1=$1 OR adm1_code=$1 LIMIT 1";
-  const q=await pool.query(sql,[x.geometry_ref.replace(/^country:/,'').replace(/^admin1:/,'')]);
-  res.json({node:x,geometry:q.rows[0]?.geometry||null,source:x.source_dataset,available:true});
- }catch(e){res.status(500).json({error:e.message})}
-});
 
 v30Router.get('/v32/globe/:nodeKey/render-profile',async(req,res)=>{
  try{
