@@ -5,11 +5,13 @@ on:
   push:
     branches:
       - v30-first-living-tourism-platform
+      - v30-visual-rebuild-foundation
   pull_request:
     branches:
       - main
       - v29-11-living-tourism-graph
       - v30-first-living-tourism-platform
+      - v30-ui-refinement
 
 jobs:
   v30:
